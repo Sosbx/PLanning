@@ -1,6 +1,7 @@
 # © 2024 HILAL Arkane. Tous droits réservés.
 # gui/stats_view.py
 
+import sys
 import logging
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QTabWidget, QPushButton
 from PyQt6.QtGui import QColor, QBrush, QFont
