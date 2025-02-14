@@ -1,9 +1,10 @@
 # © 2024 HILAL Arkane. Tous droits réservés.
 # main.py
 
-import sys
+
 import os
 import logging
+import sys
 
 from logger_config import setup_logger
 from PyQt6.QtWidgets import QApplication
