@@ -16,6 +16,7 @@ from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, QTimer, Qt, QSize
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtGui import QPainter, QFontMetrics
 from workalendar.europe import France
+from .styles import color_system
 # Initialiser le logger
 logger = logging.getLogger(__name__)
 
@@ -34,19 +35,12 @@ class StatsView(QWidget):
         self.expanded_group = None
         self.component_columns = {}  # Déplacé ici depuis init_ui
         
-        # Définition des couleurs selon le système d'exploitation
-        if sys.platform == 'win32':
-            post_groups_colors = {
-                'matin': QColor(200, 230, 255, 255),      # Bleu plus contrasté
-                'apresMidi': QColor(255, 230, 200, 255),  # Orange plus contrasté
-                'soirNuit': QColor(230, 200, 255, 255)    # Violet plus contrasté
-            }
-        else:
-            post_groups_colors = {
-                'matin': QColor('#E3F2FD'),
-                'apresMidi': QColor('#FFF3E0'),
-                'soirNuit': QColor('#EDE7F6')
-            }
+        # Utilisation des couleurs du système de couleurs dynamique
+        post_groups_colors = {
+            'matin': color_system.get_color('weekday'),
+            'apresMidi': color_system.get_color('weekday'),
+            'soirNuit': color_system.get_color('weekday')
+        }
 
         # Définition des groupes de postes comme attribut de classe
         self.post_groups = {
@@ -229,36 +223,29 @@ class StatsView(QWidget):
     
     def update_post_groups(self):
         """Met à jour les groupes avec les postes personnalisés"""
-        # Définition des couleurs selon le système d'exploitation
-        if sys.platform == 'win32':
-            post_groups_colors = {
-                'matin': QColor(200, 230, 255, 255),      # Bleu plus contrasté
-                'apresMidi': QColor(255, 230, 200, 255),  # Orange plus contrasté
-                'soirNuit': QColor(230, 200, 255, 255)    # Violet plus contrasté
-            }
-        else:
-            post_groups_colors = {
-                'matin': QColor('#E3F2FD'),
-                'apresMidi': QColor('#FFF3E0'),
-                'soirNuit': QColor('#EDE7F6')
-            }
+        # Utilisation des couleurs du système de couleurs dynamique
+        post_colors = {
+            'matin': color_system.get_color('weekday'),
+            'apresMidi': color_system.get_color('weekday'),
+            'soirNuit': color_system.get_color('weekday')
+        }
 
         # Réinitialisation des listes de postes dans les groupes
         self.post_groups = {
             'matin': {
                 'label': 'Matin',
                 'posts': ['MM', 'CM', 'HM', 'SM', 'RM', 'ML', 'MC'],
-                'color': post_groups_colors['matin']
+                'color': post_colors['matin']
             },
             'apresMidi': {
                 'label': 'Après-midi',
                 'posts': ['CA', 'HA', 'SA', 'RA', 'AL', 'AC','CT'],
-                'color': post_groups_colors['apresMidi']
+                'color': post_colors['apresMidi']
             },
             'soirNuit': {
                 'label': 'Soir/Nuit',
                 'posts': ['CS', 'HS', 'SS', 'RS', 'NL', 'NM', 'NA', 'NC'],
-                'color': post_groups_colors['soirNuit']
+                'color': post_colors['soirNuit']
             }
         }
 

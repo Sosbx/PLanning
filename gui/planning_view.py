@@ -9,27 +9,8 @@ from core.Constantes.models import ALL_POST_TYPES, WEEKDAY_COMBINATIONS, WEEKEND
 from datetime import date, timedelta
 from PyQt6.QtCore import pyqtSignal
 from .pre_attribution_view import PreAttributionWidget
+from .styles import color_system, EDIT_DELETE_BUTTON_STYLE, ACTION_BUTTON_STYLE, ADD_BUTTON_STYLE
 
-
-
-# Import pour la détection du système d'exploitation
-import sys
-
-# Définition des couleurs adaptées selon le système d'exploitation
-if sys.platform == 'win32':
-    # Couleurs optimisées pour Windows - plus contrastées et avec alpha channel
-    WEEKEND_COLOR = QColor(200, 200, 200, 255)  # Gris plus foncé pour meilleur contraste
-    WEEKDAY_COLOR = QColor(255, 255, 255, 255)  # Blanc pur
-    DESIDERATA_COLOR = QColor(255, 180, 180, 255)  # Rouge plus foncé pour meilleure visibilité
-    WEEKEND_DESIDERATA_COLOR = QColor(255, 130, 130, 255)  # Rouge encore plus foncé pour weekends
-    WEEKDAY_TEXT_COLOR = QColor(60, 60, 60, 255)  # Gris très foncé pour meilleure lisibilité
-else:
-    # Couleurs originales pour macOS avec alpha channel ajouté
-    WEEKEND_COLOR = QColor(220, 220, 220, 255)  # Gris clair pour les weekends et jours fériés
-    WEEKDAY_COLOR = QColor(255, 255, 255, 255)  # Blanc pour les jours de semaine
-    DESIDERATA_COLOR = QColor(255, 200, 200, 255)  # Rouge clair pour les desideratas
-    WEEKEND_DESIDERATA_COLOR = QColor(255, 150, 150, 255)  # Rouge plus foncé pour les desideratas de weekend
-    WEEKDAY_TEXT_COLOR = QColor(100, 100, 100, 255)  # Gris foncé pour le texte des jours de la semaine
 
 class PlanningGenerationThread(QThread):
     """Thread dédié à la génération du planning avec gestion des étapes et des erreurs."""
@@ -128,39 +109,29 @@ class PlanningViewWidget(QWidget):
         date_layout.addWidget(self.end_date)
         
         # Bouton de génération
-        generate_button = QPushButton("Générer le planning")
-        generate_button.clicked.connect(self.generate_planning)
-        generate_button.setStyleSheet("""
-            QPushButton {
-                background-color: #f8f8f8;
-                color: #333;
-                border: 1px solid #ddd;
-                padding: 5px 10px;
-                font-size: 12px;
-                border-radius: 3px;
-            }
-            QPushButton:hover {
-                background-color: #e8e8e8;
-            }
-        """)
         self.generate_button = QPushButton("Générer le planning")
         self.generate_button.clicked.connect(self.generate_planning)
+        self.generate_button.setStyleSheet(ACTION_BUTTON_STYLE)
         date_layout.addWidget(self.generate_button)
+
+        # Bouton de validation des weekends
         self.validate_weekends_button = QPushButton("Valider les weekends")
         self.validate_weekends_button.clicked.connect(self.validate_weekends)
         self.validate_weekends_button.setEnabled(False)  # Désactivé par défaut
+        self.validate_weekends_button.setStyleSheet(ACTION_BUTTON_STYLE)
         date_layout.addWidget(self.validate_weekends_button)
 
         date_layout.setStretchFactor(self.start_date, 2)
         date_layout.setStretchFactor(self.end_date, 2)
-        date_layout.setStretchFactor(generate_button, 1)
+        date_layout.setStretchFactor(self.generate_button, 1)
         
         layout.addLayout(date_layout)
 
-        # Ajout du nouveau bouton de réinitialisation
+        # Bouton de réinitialisation
         self.reset_planning_button = QPushButton("Réinitialiser le planning")
         self.reset_planning_button.clicked.connect(self.reset_planning)
-        self.reset_planning_button.setEnabled(True)  # Activez le bouton
+        self.reset_planning_button.setEnabled(True)
+        self.reset_planning_button.setStyleSheet(EDIT_DELETE_BUTTON_STYLE)
         date_layout.addWidget(self.reset_planning_button)
 
         # Barre de progression
@@ -438,17 +409,6 @@ class PlanningViewWidget(QWidget):
         self.global_view.setColumnCount(5)
         self.global_view.setHorizontalHeaderLabels(["Date", "Créneau", "Type", "Site", "Assigné à"])
 
-        # Définition des couleurs pour les desiderata
-        colors = {
-            "primary": {
-                "weekend": QColor(255, 150, 150),     # Rouge plus foncé pour weekend
-                "normal": QColor(255, 200, 200)       # Rouge clair pour jours normaux
-            },
-            "secondary": {
-                "weekend": QColor(150, 200, 255),     # Bleu plus foncé pour weekend
-                "normal": QColor(180, 220, 255)       # Bleu clair pour jours normaux
-            }
-        }
 
         for day_planning in self.planning.days:
             for slot in day_planning.slots:
@@ -464,7 +424,7 @@ class PlanningViewWidget(QWidget):
 
                 # Coloration selon le type de jour et les desiderata
                 is_weekend = day_planning.is_weekend or day_planning.is_holiday_or_bridge
-                base_color = WEEKEND_COLOR if is_weekend else WEEKDAY_COLOR
+                base_color = color_system.get_color('weekend' if is_weekend else 'weekday')
 
                 # Vérifier les desiderata de l'assigné
                 if slot.assignee:
@@ -474,8 +434,8 @@ class PlanningViewWidget(QWidget):
                             if (desiderata.start_date <= day_planning.date <= desiderata.end_date and
                                 desiderata.overlaps_with_slot(slot)):
                                 priority = getattr(desiderata, 'priority', 'primary')
-                                color_key = "weekend" if is_weekend else "normal"
-                                base_color = colors[priority][color_key]
+                                context = 'weekend' if is_weekend else 'normal'
+                                base_color = color_system.get_color('desiderata', context, priority)
                                 break
 
                 # Appliquer la couleur
