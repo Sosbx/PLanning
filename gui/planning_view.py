@@ -12,12 +12,24 @@ from .pre_attribution_view import PreAttributionWidget
 
 
 
-# Constantes de couleurs optimisées pour un meilleur contraste sur Windows
-WEEKEND_COLOR = QColor(235, 235, 235)  # Gris plus distinct pour les weekends et jours fériés
-WEEKDAY_COLOR = QColor(255, 255, 255)  # Blanc pur pour les jours de semaine
-DESIDERATA_COLOR = QColor(255, 180, 180)  # Rouge plus vif pour les desideratas
-WEEKEND_DESIDERATA_COLOR = QColor(255, 130, 130)  # Rouge encore plus vif pour les desideratas de weekend
-WEEKDAY_TEXT_COLOR = QColor(50, 50, 50)  # Gris très foncé pour un meilleur contraste du texte
+# Import pour la détection du système d'exploitation
+import sys
+
+# Définition des couleurs adaptées selon le système d'exploitation
+if sys.platform == 'win32':
+    # Couleurs optimisées pour Windows - plus contrastées et avec alpha channel
+    WEEKEND_COLOR = QColor(200, 200, 200, 255)  # Gris plus foncé pour meilleur contraste
+    WEEKDAY_COLOR = QColor(255, 255, 255, 255)  # Blanc pur
+    DESIDERATA_COLOR = QColor(255, 180, 180, 255)  # Rouge plus foncé pour meilleure visibilité
+    WEEKEND_DESIDERATA_COLOR = QColor(255, 130, 130, 255)  # Rouge encore plus foncé pour weekends
+    WEEKDAY_TEXT_COLOR = QColor(60, 60, 60, 255)  # Gris très foncé pour meilleure lisibilité
+else:
+    # Couleurs originales pour macOS avec alpha channel ajouté
+    WEEKEND_COLOR = QColor(220, 220, 220, 255)  # Gris clair pour les weekends et jours fériés
+    WEEKDAY_COLOR = QColor(255, 255, 255, 255)  # Blanc pour les jours de semaine
+    DESIDERATA_COLOR = QColor(255, 200, 200, 255)  # Rouge clair pour les desideratas
+    WEEKEND_DESIDERATA_COLOR = QColor(255, 150, 150, 255)  # Rouge plus foncé pour les desideratas de weekend
+    WEEKDAY_TEXT_COLOR = QColor(100, 100, 100, 255)  # Gris foncé pour le texte des jours de la semaine
 
 class PlanningGenerationThread(QThread):
     """Thread dédié à la génération du planning avec gestion des étapes et des erreurs."""
@@ -429,12 +441,12 @@ class PlanningViewWidget(QWidget):
         # Définition des couleurs pour les desiderata
         colors = {
             "primary": {
-                "weekend": QColor(255, 130, 130),     # Rouge vif pour weekend
-                "normal": QColor(255, 160, 160)       # Rouge plus vif pour jours normaux
+                "weekend": QColor(255, 150, 150),     # Rouge plus foncé pour weekend
+                "normal": QColor(255, 200, 200)       # Rouge clair pour jours normaux
             },
             "secondary": {
-                "weekend": QColor(130, 180, 255),     # Bleu vif pour weekend
-                "normal": QColor(160, 200, 255)       # Bleu plus vif pour jours normaux
+                "weekend": QColor(150, 200, 255),     # Bleu plus foncé pour weekend
+                "normal": QColor(180, 220, 255)       # Bleu clair pour jours normaux
             }
         }
 
