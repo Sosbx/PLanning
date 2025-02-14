@@ -12,12 +12,12 @@ from .pre_attribution_view import PreAttributionWidget
 
 
 
-# Ajoutez ces constantes au début de chaque fichier
-WEEKEND_COLOR = QColor(220, 220, 220)  # Gris clair pour les weekends et jours fériés
-WEEKDAY_COLOR = QColor(255, 255, 255)  # Blanc pour les jours de semaine
-DESIDERATA_COLOR = QColor(255, 200, 200)  # Rouge clair pour les desideratas
-WEEKEND_DESIDERATA_COLOR = QColor(255, 150, 150)  # Rouge plus foncé pour les desideratas de weekend
-WEEKDAY_TEXT_COLOR = QColor(100, 100, 100)  # Gris foncé pour le texte des jours de la semaine
+# Constantes de couleurs optimisées pour un meilleur contraste sur Windows
+WEEKEND_COLOR = QColor(235, 235, 235)  # Gris plus distinct pour les weekends et jours fériés
+WEEKDAY_COLOR = QColor(255, 255, 255)  # Blanc pur pour les jours de semaine
+DESIDERATA_COLOR = QColor(255, 180, 180)  # Rouge plus vif pour les desideratas
+WEEKEND_DESIDERATA_COLOR = QColor(255, 130, 130)  # Rouge encore plus vif pour les desideratas de weekend
+WEEKDAY_TEXT_COLOR = QColor(50, 50, 50)  # Gris très foncé pour un meilleur contraste du texte
 
 class PlanningGenerationThread(QThread):
     """Thread dédié à la génération du planning avec gestion des étapes et des erreurs."""
@@ -429,12 +429,12 @@ class PlanningViewWidget(QWidget):
         # Définition des couleurs pour les desiderata
         colors = {
             "primary": {
-                "weekend": QColor(255, 150, 150),     # Rouge plus foncé pour weekend
-                "normal": QColor(255, 200, 200)       # Rouge clair pour jours normaux
+                "weekend": QColor(255, 130, 130),     # Rouge vif pour weekend
+                "normal": QColor(255, 160, 160)       # Rouge plus vif pour jours normaux
             },
             "secondary": {
-                "weekend": QColor(150, 200, 255),     # Bleu plus foncé pour weekend
-                "normal": QColor(180, 220, 255)       # Bleu clair pour jours normaux
+                "weekend": QColor(130, 180, 255),     # Bleu vif pour weekend
+                "normal": QColor(160, 200, 255)       # Bleu plus vif pour jours normaux
             }
         }
 

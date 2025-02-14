@@ -1,26 +1,26 @@
 # © 2024 HILAL Arkane. Tous droits réservés.
 # gui/styles.py
 
-# Couleurs optimisées pour la compatibilité cross-platform
-# Utilisation de couleurs plus douces et de l'opacité pour une meilleure cohérence
+# Styles optimisés pour un meilleur contraste sur Windows
+# Utilisation de couleurs plus vives et de contrastes renforcés
 
 EDIT_DELETE_BUTTON_STYLE = """
     QPushButton {
-        background-color: rgba(248, 249, 250, 0.95);  /* Légèrement transparent pour adoucir */
-        border: 1px solid rgba(225, 228, 232, 0.9);
+        background-color: #ffffff;  /* Blanc pur pour plus de contraste */
+        border: 1px solid #c0c4c8;  /* Bordure plus visible */
         border-radius: 4px;
         padding: 4px;
         margin: 2px;
     }
     QPushButton:hover {
-        background-color: rgba(232, 240, 254, 0.9);  /* Plus doux sur Windows */
-        border-color: rgba(26, 115, 232, 0.8);
+        background-color: #e8f0fe;
+        border-color: #1a73e8;  /* Bleu plus vif au survol */
     }
 """
 
 ACTION_BUTTON_STYLE = """
     QPushButton {
-        background-color: rgba(52, 152, 219, 0.9);  /* Bleu plus doux */
+        background-color: #2b78e4;  /* Bleu plus vif et contrasté */
         color: white;
         border: none;
         padding: 8px 15px;
@@ -28,13 +28,13 @@ ACTION_BUTTON_STYLE = """
         font-weight: bold;
     }
     QPushButton:hover {
-        background-color: rgba(41, 128, 185, 0.9);  /* Version plus sombre adoucie */
+        background-color: #1a73e8;  /* Bleu légèrement plus clair au survol */
     }
 """
 
 ADD_BUTTON_STYLE = """
     QPushButton {
-        background-color: rgba(76, 175, 80, 0.9);  /* Vert plus doux */
+        background-color: #34a853;  /* Vert plus vif et contrasté */
         color: white;
         border: none;
         padding: 8px 15px;
@@ -42,6 +42,6 @@ ADD_BUTTON_STYLE = """
         font-weight: bold;
     }
     QPushButton:hover {
-        background-color: rgba(69, 160, 73, 0.9);  /* Version plus sombre adoucie */
+        background-color: #1e8e3e;  /* Vert plus foncé au survol */
     }
 """
