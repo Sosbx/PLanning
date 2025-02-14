@@ -15,14 +15,16 @@ import logging
 from dateutil.relativedelta import relativedelta#+
 logger = logging.getLogger(__name__)
 
-# Ajoutez ces constantes au début de chaque fichier
-WEEKEND_COLOR = QColor(220, 220, 220)  # Gris clair pour les weekends et jours fériés
-WEEKDAY_COLOR = QColor(255, 255, 255)  # Blanc pour les jours de semaine
-DESIDERATA_COLOR = QColor(255, 200, 200)  # Rouge clair pour les desideratas
-WEEKEND_DESIDERATA_COLOR = QColor(255, 150, 150)  # Rouge plus foncé pour les desideratas de weekend
-WEEKDAY_TEXT_COLOR = QColor(100, 100, 100)  # Gris foncé pour le texte des jours de la semaine
-AVAILABLE_COLOR = QColor(150, 255, 150)  # Vert clair pour les médecins disponibles
-SECONDARY_DESIDERATA_COLOR = QColor(150, 200, 255)  # Bleu clair pour les desideratas secondaires
+from .styles import color_system
+
+# Utilisation du système de couleurs centralisé
+WEEKEND_COLOR = color_system.colors["weekend"]
+WEEKDAY_COLOR = color_system.colors["weekday"]
+DESIDERATA_COLOR = color_system.colors["desiderata"]["primary"]["normal"]
+WEEKEND_DESIDERATA_COLOR = color_system.colors["desiderata"]["primary"]["weekend"]
+WEEKDAY_TEXT_COLOR = color_system.colors["text"]
+AVAILABLE_COLOR = color_system.colors["available"]
+SECONDARY_DESIDERATA_COLOR = color_system.colors["desiderata"]["secondary"]["normal"]
 
 
 class CollapsibleWidget(QWidget):

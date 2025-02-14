@@ -3,8 +3,8 @@
 import sys
 import logging
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QTabWidget, QPushButton
-from PyQt6.QtGui import QBrush, QFont, QColor
-from gui.styles import color_system
+from PyQt6.QtGui import QBrush, QFont, QColor, QIcon
+from gui.styles import color_system, ACTION_BUTTON_STYLE
 from PyQt6.QtCore import Qt
 from core.Constantes.models import ALL_POST_TYPES
 from core.Constantes.data_persistence import DataPersistence
@@ -27,45 +27,40 @@ class StatsView(QWidget):
         self.doctors = doctors
         self.cats = cats
         self.data_persistence = DataPersistence()
-        self.custom_posts = {}  # Initialiser avant d'appeler load_custom_posts
+        self.custom_posts = {}
         self.custom_posts = self.load_custom_posts()
+        
+        # Référence au parent pour le détachement
+        self.parent_window = None
         
         # Initialisation des attributs pour la gestion de l'expansion
         self.expanded_group = None
-        self.component_columns = {}  # Déplacé ici depuis init_ui
+        self.component_columns = {}
         
-        # Définition des couleurs selon le système d'exploitation
-        if sys.platform == 'win32':
-            post_groups_colors = {
-                'matin': QColor(180, 220, 255, 255),      # Bleu plus vif
-                'apresMidi': QColor(255, 200, 150, 255),  # Orange plus vif
-                'soirNuit': QColor(220, 180, 255, 255)    # Violet plus vif
-            }
-        else:
-            post_groups_colors = {
-                'matin': QColor('#E3F2FD'),
-                'apresMidi': QColor('#FFF3E0'),
-                'soirNuit': QColor('#EDE7F6')
-            }
+        # Récupération des couleurs depuis le système centralisé
+        self.post_groups_colors = color_system.get_post_group_colors()
 
         # Définition des groupes de postes comme attribut de classe
         self.post_groups = {
             'matin': {
                 'label': 'Matin',
                 'posts': ['MM', 'CM', 'HM', 'SM', 'RM', 'ML', 'MC'],
-                'color': post_groups_colors['matin']
+                'color': self.post_groups_colors['matin']
             },
             'apresMidi': {
                 'label': 'Après-midi',
                 'posts': ['CA', 'HA', 'SA', 'RA', 'AL', 'AC'],
-                'color': post_groups_colors['apresMidi']
+                'color': self.post_groups_colors['apresMidi']
             },
             'soirNuit': {
                 'label': 'Soir/Nuit',
                 'posts': ['CS', 'HS', 'SS', 'RS', 'NL', 'NM', 'NA', 'NC'],
-                'color': post_groups_colors['soirNuit']
+                'color': self.post_groups_colors['soirNuit']
             }
         }
+
+        # Initialize filter_buttons dictionary
+        self.filter_buttons = {}
         
         # Ajout des postes personnalisés aux groupes
         for post_name, custom_post in self.custom_posts.items():
@@ -122,67 +117,115 @@ class StatsView(QWidget):
         self.init_ui()
 
 
+    def set_parent_window(self, window):
+        """Définit la fenêtre parente pour le détachement"""
+        self.parent_window = window
+
+    def on_detach_clicked(self):
+        """Gère le détachement des statistiques"""
+        if self.parent_window:
+            self.parent_window.detach_stats()
+        else:
+            logging.warning("Parent window not set for detachment")
+
     def init_ui(self):
-        """Initialise l'interface utilisateur"""
-        layout = QVBoxLayout(self)
+        """Initialise l'interface utilisateur complète"""
+        main_layout = QVBoxLayout(self)
+        main_layout.setSpacing(10)
         
-        # Création des tableaux
+        # Conteneur du bouton de détachement
+        detach_container = QWidget()
+        detach_layout = QHBoxLayout(detach_container)
+        detach_layout.setContentsMargins(5, 5, 5, 5)
+        
+        # Bouton de détachement avec style
+        detach_button = QPushButton("Détacher les statistiques")
+        detach_button.setStyleSheet(ACTION_BUTTON_STYLE)
+        detach_button.setMinimumHeight(35)
+        detach_button.setIcon(QIcon("icons/detach.png"))
+        detach_button.clicked.connect(self.on_detach_clicked)
+        
+        detach_layout.addStretch(1)
+        detach_layout.addWidget(detach_button)
+        main_layout.addWidget(detach_container)
+        
+        # Création des tableaux de statistiques
         self.stats_table = QTableWidget()
         self.weekend_stats_table = QTableWidget()
         self.detailed_stats_table = QTableWidget()
         self.weekly_stats_table = QTableWidget()
         self.weekday_group_stats_table = QTableWidget()
         
-        # Création des boutons de filtrage
+        # Conteneur des boutons de filtre
         filter_widget = QWidget()
         filter_layout = QHBoxLayout(filter_widget)
         filter_layout.setContentsMargins(0, 0, 0, 10)
         
+        # Création des boutons de filtre pour chaque groupe
         self.filter_buttons = {}
         for group_key, group in self.post_groups.items():
             btn = QPushButton(group['label'])
             btn.setCheckable(True)
             btn.clicked.connect(lambda checked, k=group_key: self.apply_filter(k))
+            btn.setStyleSheet(ACTION_BUTTON_STYLE)
             filter_layout.addWidget(btn)
             self.filter_buttons[group_key] = btn
         
+        # Bouton "Tous" pour le filtre
         all_btn = QPushButton("Tous")
         all_btn.setCheckable(True)
         all_btn.setChecked(True)
         all_btn.clicked.connect(lambda: self.apply_filter('all'))
+        all_btn.setStyleSheet(ACTION_BUTTON_STYLE)
         filter_layout.addWidget(all_btn)
         self.filter_buttons['all'] = all_btn
         
-        layout.addWidget(filter_widget)
+        main_layout.addWidget(filter_widget)
         
-        # Création des onglets
+        # Configuration des onglets
         tab_widget = QTabWidget()
+        tab_widget.setDocumentMode(True)
         
         def setup_table_in_tab(table, title):
-            widget = QWidget()
-            layout = QVBoxLayout(widget)
-            layout.setContentsMargins(0, 0, 0, 0)
-            layout.addWidget(table)
-            tab_widget.addTab(widget, title)
+            container = QWidget()
+            container_layout = QVBoxLayout(container)
+            container_layout.setContentsMargins(0, 0, 0, 0)
+            container_layout.addWidget(table)
             
             # Configuration commune des tableaux
             table.setHorizontalScrollMode(QTableWidget.ScrollMode.ScrollPerPixel)
             table.setVerticalScrollMode(QTableWidget.ScrollMode.ScrollPerPixel)
             table.horizontalHeader().setFixedHeight(30)
             table.verticalHeader().setVisible(False)
+            table.setAlternatingRowColors(True)
+            table.setShowGrid(True)
+            table.setStyleSheet("""
+                QTableWidget {
+                    gridline-color: #E0E0E0;
+                    border: none;
+                }
+                QHeaderView::section {
+                    background-color: #F5F5F5;
+                    border: 1px solid #E0E0E0;
+                    padding: 5px;
+                }
+            """)
+            
+            tab_widget.addTab(container, title)
         
-        # Configuration de chaque tableau dans son onglet
+        # Configuration des onglets avec leurs tableaux respectifs
         setup_table_in_tab(self.stats_table, "Statistiques générales")
         setup_table_in_tab(self.weekend_stats_table, "Statistiques weekend")
-        setup_table_in_tab(self.detailed_stats_table, "Groupe Weekend")
+        setup_table_in_tab(self.detailed_stats_table, "Groupes Weekend")
         setup_table_in_tab(self.weekly_stats_table, "Statistiques semaine")
         setup_table_in_tab(self.weekday_group_stats_table, "Groupes semaine")
         
-        layout.addWidget(tab_widget)
+        main_layout.addWidget(tab_widget)
         
-        # Configuration de la synchronisation du scroll
+        # Configuration de la synchronisation du défilement
         self.setup_scroll_sync()
         
+        # Initialisation des données si disponibles
         if self.planning and self.doctors and self.cats:
             self.update_stats()
         else:
@@ -229,36 +272,25 @@ class StatsView(QWidget):
     
     def update_post_groups(self):
         """Met à jour les groupes avec les postes personnalisés"""
-        # Définition des couleurs selon le système d'exploitation
-        if sys.platform == 'win32':
-            post_groups_colors = {
-                'matin': QColor(180, 220, 255, 255),      # Bleu plus vif
-                'apresMidi': QColor(255, 200, 150, 255),  # Orange plus vif
-                'soirNuit': QColor(220, 180, 255, 255)    # Violet plus vif
-            }
-        else:
-            post_groups_colors = {
-                'matin': QColor('#E3F2FD'),
-                'apresMidi': QColor('#FFF3E0'),
-                'soirNuit': QColor('#EDE7F6')
-            }
+        # Utilisation du système de couleurs centralisé
+        weekend_group_colors = color_system.get_weekend_group_colors()
 
         # Réinitialisation des listes de postes dans les groupes
         self.post_groups = {
             'matin': {
                 'label': 'Matin',
                 'posts': ['MM', 'CM', 'HM', 'SM', 'RM', 'ML', 'MC'],
-                'color': post_groups_colors['matin']
+                'color': self.post_groups_colors['matin']
             },
             'apresMidi': {
                 'label': 'Après-midi',
                 'posts': ['CA', 'HA', 'SA', 'RA', 'AL', 'AC','CT'],
-                'color': post_groups_colors['apresMidi']
+                'color': self.post_groups_colors['apresMidi']
             },
             'soirNuit': {
                 'label': 'Soir/Nuit',
                 'posts': ['CS', 'HS', 'SS', 'RS', 'NL', 'NM', 'NA', 'NC'],
-                'color': post_groups_colors['soirNuit']
+                'color': self.post_groups_colors['soirNuit']
             }
         }
 

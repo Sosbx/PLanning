@@ -1,4 +1,3 @@
-
 # © 2024 HILAL Arkane. Tous droits réservés.
 # .gui/main_window.py
 from PyQt6.QtWidgets import QMainWindow, QTabWidget, QPushButton, QVBoxLayout, QWidget
@@ -15,7 +14,7 @@ from .planning_comparison_view import PlanningComparisonView
 from .detached_stats_window import DetachedStatsWindow
 from .planning_management import PlanningManagementWidget
 from core.utils import resource_path
-
+from .styles import color_system, GLOBAL_STYLE
 
 
 class MainWindow(QMainWindow):
@@ -26,8 +25,11 @@ class MainWindow(QMainWindow):
         self.post_configuration = post_configuration
         self.data_persistence = DataPersistence()
         self.detached_stats_window = None
-        self.init_ui()
         
+        # Apply global style
+        self.setStyleSheet(GLOBAL_STYLE)
+        
+        self.init_ui()
         self.planning_tab.dates_changed.connect(self.on_planning_dates_changed)
 
     def init_ui(self):
@@ -61,12 +63,15 @@ class MainWindow(QMainWindow):
 
         # Onglet Statistiques
         self.stats_tab = StatsView(doctors=self.doctors, cats=self.cats)
+        self.stats_tab.set_parent_window(self)  # Définir la référence parent
         stats_container = QWidget()
         stats_layout = QVBoxLayout(stats_container)
+        stats_layout.addWidget(self.stats_tab)
+       
         detach_button = QPushButton("Détacher les statistiques")
         detach_button.clicked.connect(self.detach_stats)
         stats_layout.addWidget(detach_button)
-        stats_layout.addWidget(self.stats_tab)
+        
         self.stats_index = self.tab_widget.addTab(stats_container, self.create_tab_icon("icons/statistics.png"), "Statistiques")
 
         # Onglet Comparaison des plannings
@@ -87,10 +92,8 @@ class MainWindow(QMainWindow):
     def create_tab_icon(self, icon_path, size=32):
         return QIcon(resource_path(icon_path))
 
-   
     def on_planning_dates_changed(self, start_date, end_date):
         self.desiderata_tab.sync_dates_from_planning(start_date, end_date)
-
 
     def closeEvent(self, event):
         self.data_persistence.save_data(self.doctors, self.cats, self.post_configuration)
@@ -144,6 +147,7 @@ class MainWindow(QMainWindow):
 
         self.desiderata_tab.update_stats()
         self.personnel_tab.post_config_tab.update_configuration(self.post_configuration)
+
     def update_stats_view(self):
         if self.detached_stats_window:
             self.detached_stats_window.update_stats()
@@ -153,6 +157,7 @@ class MainWindow(QMainWindow):
     def save_data(self):
         self.data_persistence.save_data(self.doctors, self.cats, self.post_configuration)
         self.planning_management_tab.update_planning_list()
+
     def detach_stats(self):
         if not self.detached_stats_window:
             self.tab_widget.removeTab(self.stats_index)
@@ -175,7 +180,6 @@ class MainWindow(QMainWindow):
             self.tab_widget.setCurrentIndex(self.stats_index)
             # Assurez-vous que les statistiques sont à jour lors du rattachement
             self.update_stats_view()
-            
 
     def reset_all_views(self):
         # Réinitialiser la vue de comparaison

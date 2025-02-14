@@ -8,7 +8,7 @@ class ColorSystem:
     """Système de couleurs adaptatif selon le système d'exploitation"""
     def _get_window_background_color(self):
         """Couleur de fond globale pour les fenêtres"""
-        return QColor(240, 242, 245)  # Gris légèrement bleuté, confortable pour les yeux
+        return QColor(245, 247, 250) if self.is_windows else QColor(240, 242, 245)  # Gris légèrement bleuté, plus clair sur Windows
 
     def __init__(self):
         self.is_windows = sys.platform == 'win32'
@@ -36,7 +36,7 @@ class ColorSystem:
 
     def _get_weekend_color(self):
         """Couleur de fond pour les weekends"""
-        return QColor(200, 200, 200) if self.is_windows else QColor(220, 220, 220)
+        return QColor(210, 215, 220) if self.is_windows else QColor(220, 220, 220)  # Plus bleuté sur Windows
 
     def _get_weekday_color(self):
         """Couleur de fond pour les jours de semaine"""
@@ -137,13 +137,13 @@ class ColorSystem:
         if self.is_windows:
             return {
                 "edit": {
-                    "bg": "#e0e0e0",
-                    "border": "#b0b0b0",
-                    "hover": "#d0d0d0"
+                    "bg": "#e8e8e8",
+                    "border": "#cccccc",
+                    "hover": "#d8d8d8"
                 },
                 "action": {
-                    "bg": "#0078d7",
-                    "hover": "#006cc1"
+                    "bg": "#5c7d99",
+                    "hover": "#4a6a86"
                 },
                 "add": {
                     "bg": "#107c10",
