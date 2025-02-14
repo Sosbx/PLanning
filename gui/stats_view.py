@@ -1,10 +1,10 @@
 # © 2024 HILAL Arkane. Tous droits réservés.
 # gui/stats_view.py
-
 import sys
 import logging
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QTabWidget, QPushButton
-from PyQt6.QtGui import QColor, QBrush, QFont
+from PyQt6.QtGui import QBrush, QFont, QColor
+from gui.styles import color_system
 from PyQt6.QtCore import Qt
 from core.Constantes.models import ALL_POST_TYPES
 from core.Constantes.data_persistence import DataPersistence
@@ -16,7 +16,6 @@ from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, QTimer, Qt, QSize
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtGui import QPainter, QFontMetrics
 from workalendar.europe import France
-from .styles import color_system
 # Initialiser le logger
 logger = logging.getLogger(__name__)
 
@@ -35,12 +34,19 @@ class StatsView(QWidget):
         self.expanded_group = None
         self.component_columns = {}  # Déplacé ici depuis init_ui
         
-        # Utilisation des couleurs du système de couleurs dynamique
-        post_groups_colors = {
-            'matin': color_system.get_color('weekday'),
-            'apresMidi': color_system.get_color('weekday'),
-            'soirNuit': color_system.get_color('weekday')
-        }
+        # Définition des couleurs selon le système d'exploitation
+        if sys.platform == 'win32':
+            post_groups_colors = {
+                'matin': QColor(180, 220, 255, 255),      # Bleu plus vif
+                'apresMidi': QColor(255, 200, 150, 255),  # Orange plus vif
+                'soirNuit': QColor(220, 180, 255, 255)    # Violet plus vif
+            }
+        else:
+            post_groups_colors = {
+                'matin': QColor('#E3F2FD'),
+                'apresMidi': QColor('#FFF3E0'),
+                'soirNuit': QColor('#EDE7F6')
+            }
 
         # Définition des groupes de postes comme attribut de classe
         self.post_groups = {
@@ -223,29 +229,36 @@ class StatsView(QWidget):
     
     def update_post_groups(self):
         """Met à jour les groupes avec les postes personnalisés"""
-        # Utilisation des couleurs du système de couleurs dynamique
-        post_colors = {
-            'matin': color_system.get_color('weekday'),
-            'apresMidi': color_system.get_color('weekday'),
-            'soirNuit': color_system.get_color('weekday')
-        }
+        # Définition des couleurs selon le système d'exploitation
+        if sys.platform == 'win32':
+            post_groups_colors = {
+                'matin': QColor(180, 220, 255, 255),      # Bleu plus vif
+                'apresMidi': QColor(255, 200, 150, 255),  # Orange plus vif
+                'soirNuit': QColor(220, 180, 255, 255)    # Violet plus vif
+            }
+        else:
+            post_groups_colors = {
+                'matin': QColor('#E3F2FD'),
+                'apresMidi': QColor('#FFF3E0'),
+                'soirNuit': QColor('#EDE7F6')
+            }
 
         # Réinitialisation des listes de postes dans les groupes
         self.post_groups = {
             'matin': {
                 'label': 'Matin',
                 'posts': ['MM', 'CM', 'HM', 'SM', 'RM', 'ML', 'MC'],
-                'color': post_colors['matin']
+                'color': post_groups_colors['matin']
             },
             'apresMidi': {
                 'label': 'Après-midi',
                 'posts': ['CA', 'HA', 'SA', 'RA', 'AL', 'AC','CT'],
-                'color': post_colors['apresMidi']
+                'color': post_groups_colors['apresMidi']
             },
             'soirNuit': {
                 'label': 'Soir/Nuit',
                 'posts': ['CS', 'HS', 'SS', 'RS', 'NL', 'NM', 'NA', 'NC'],
-                'color': post_colors['soirNuit']
+                'color': post_groups_colors['soirNuit']
             }
         }
 
@@ -454,7 +467,7 @@ class StatsView(QWidget):
                 name_item.setFont(QFont("", -1, QFont.Weight.Bold))
                 name_item.setBackground(QColor('#E8F5E9'))
             elif person.half_parts == 1:  # Mi-temps
-                name_item.setBackground(QColor('#F3F4F6'))
+                name_item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
             self.stats_table.setItem(row, 0, name_item)
 
             # Pour les médecins, récupérer les intervalles combinés
@@ -471,16 +484,16 @@ class StatsView(QWidget):
                 # Gestion de la coloration
                 if hasattr(person, 'half_parts'):
                     if person.half_parts == 1:
-                        item.setBackground(QColor('#F3F4F6'))
+                        item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
                         
                     # Coloration selon les intervalles combinés pour les médecins
                     if post_type in combined_intervals:
                         min_val = combined_intervals[post_type]['min']
                         max_val = combined_intervals[post_type]['max']
                         if count < min_val:
-                            item.setBackground(QColor('#E8F5E9'))  # Vert clair
+                            item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
                         elif max_val != float('inf') and count > max_val:
-                            item.setBackground(QColor('#FFEBEE'))  # Rouge clair
+                            item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
                     
                 if post_type in self.custom_posts:
                     item.setBackground(self.custom_posts[post_type].color)
@@ -491,7 +504,7 @@ class StatsView(QWidget):
             # Total de la ligne
             total_item = QTableWidgetItem(str(row_total))
             if hasattr(person, 'half_parts') and person.half_parts == 1:
-                total_item.setBackground(QColor('#F3F4F6'))
+                total_item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
             self.stats_table.setItem(row, len(all_posts) + 1, total_item)
 
         # Ajout des lignes "Non attribué" et "Total"
@@ -656,9 +669,9 @@ class StatsView(QWidget):
         # Configuration des couleurs selon le système d'exploitation
         if sys.platform == 'win32':
             weekend_group_colors = {
-                'gardes': QColor(200, 230, 255, 255),      # Bleu plus contrasté
-                'visites': QColor(255, 230, 200, 255),     # Orange plus contrasté
-                'consultations': QColor(230, 200, 255, 255) # Violet plus contrasté
+                'gardes': QColor(180, 220, 255, 255),      # Bleu plus vif
+                'visites': QColor(255, 200, 150, 255),     # Orange plus vif
+                'consultations': QColor(220, 180, 255, 255) # Violet plus vif
             }
         else:
             weekend_group_colors = {
@@ -761,9 +774,9 @@ class StatsView(QWidget):
                         min_val = intervals.get('min', 0)
                         max_val = intervals.get('max', float('inf'))
                         if count < min_val:
-                            item.setBackground(QColor('#E8F5E9'))  # Vert clair
+                            item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif pour Windows
                         elif count > max_val:
-                            item.setBackground(QColor('#FFEBEE'))  # Rouge clair
+                            item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif pour Windows
                         else:
                             item.setBackground(QBrush())  # Blanc si dans l'intervalle
                 
@@ -965,7 +978,7 @@ class StatsView(QWidget):
                 
                 # Appliquer la couleur de base pour CAT ou mi-temps, sans condition
                 if is_half_time:
-                    item.setBackground(QColor('#F3F4F6'))
+                    item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
                 elif is_cat:
                     item.setBackground(QColor('#E8F5E9'))
                 
@@ -1142,7 +1155,7 @@ class StatsView(QWidget):
                 name_item.setFont(QFont("", -1, QFont.Weight.Bold))
                 name_item.setBackground(QColor('#E8F5E9'))
             elif is_half_time:
-                name_item.setBackground(QColor('#F3F4F6'))
+                name_item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
                 
             self.weekday_group_stats_table.setItem(row, 0, name_item)
 
@@ -1155,7 +1168,7 @@ class StatsView(QWidget):
                 
                 # Appliquer la coloration grise pour les médecins en demi-part
                 if is_half_time:
-                    item.setBackground(QColor('#F3F4F6'))
+                    item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
                 
                 # Appliquer la coloration selon les intervalles
                 self._apply_interval_coloring(item, count, intervals.get(group, {}), is_cat, group)
@@ -1169,7 +1182,7 @@ class StatsView(QWidget):
             
             # Appliquer la coloration grise pour les médecins en demi-part
             if is_half_time:
-                total_item.setBackground(QColor('#F3F4F6'))
+                total_item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
                 
             self._apply_interval_coloring(total_item, row_total, total_intervals, is_cat, "Total")
             self.weekday_group_stats_table.setItem(row, len(all_groups) + 1, total_item)
@@ -1323,7 +1336,7 @@ class StatsView(QWidget):
                 name_item.setFont(QFont("", -1, QFont.Weight.Bold))
                 name_item.setBackground(QColor('#E8F5E9'))
             elif person.half_parts == 1:  # Mi-temps
-                name_item.setBackground(QColor('#F3F4F6'))
+                name_item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
             self.weekly_stats_table.setItem(row, 0, name_item)
 
             # Valeurs des postes
@@ -1337,7 +1350,7 @@ class StatsView(QWidget):
                 # Gestion de la coloration
                 if hasattr(person, 'half_parts'):
                     if person.half_parts == 1:  # Mi-temps
-                        item.setBackground(QColor('#F3F4F6'))
+                        item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
                         
                     # Coloration selon les intervalles pour les médecins
                     intervals = person_intervals.get(post, {})
@@ -1345,9 +1358,9 @@ class StatsView(QWidget):
                         min_val = intervals.get('min', 0)
                         max_val = intervals.get('max', float('inf'))
                         if count < min_val:
-                            item.setBackground(QColor('#E8F5E9'))  # Vert clair
+                            item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
                         elif count > max_val:
-                            item.setBackground(QColor('#FFEBEE'))  # Rouge clair
+                            item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
                 
                 if post in self.custom_posts:
                     item.setBackground(self.custom_posts[post].color)
@@ -1358,7 +1371,7 @@ class StatsView(QWidget):
             # Total de la ligne
             total_item = QTableWidgetItem(str(row_total))
             if hasattr(person, 'half_parts') and person.half_parts == 1:
-                total_item.setBackground(QColor('#F3F4F6'))
+                total_item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
             self.weekly_stats_table.setItem(row, len(all_posts) + 1, total_item)
 
         # Ajout des lignes "Non attribué" et "Total"
@@ -1492,7 +1505,7 @@ class StatsView(QWidget):
                 name_item.setFont(QFont("", -1, QFont.Weight.Bold))
                 name_item.setBackground(QColor('#E8F5E9'))
             elif person.half_parts == 1:  # Mi-temps
-                name_item.setBackground(QColor('#F3F4F6'))
+                name_item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
             self.weekend_stats_table.setItem(row, 0, name_item)
 
             # Récupération des intervalles spécifiques à la personne
@@ -1511,24 +1524,24 @@ class StatsView(QWidget):
                 # Gestion de la coloration
                 if hasattr(person, 'half_parts'):
                     if person.half_parts == 1:  # Mi-temps
-                        item.setBackground(QColor('#F3F4F6'))
+                        item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
                     elif post == 'NL':  # Cas spécial pour NL
                         nlw_intervals = weekend_group_intervals.get('NLw', {})
                         min_val = nlw_intervals.get('min', 0)
                         max_val = nlw_intervals.get('max', float('inf'))
                         
                         if nl_total < min_val:
-                            item.setBackground(QColor('#E8F5E9'))  # Vert clair
+                            item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
                         elif nl_total > max_val:
-                            item.setBackground(QColor('#FFEBEE'))  # Rouge clair
+                            item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
                     else:  # Autres postes
                         intervals = weekend_post_intervals.get(post, {})
                         min_val = intervals.get('min', 0)
                         max_val = intervals.get('max', float('inf'))
                         if count < min_val:
-                            item.setBackground(QColor('#E8F5E9'))
+                            item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
                         elif count > max_val:
-                            item.setBackground(QColor('#FFEBEE'))
+                            item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
                 
                 if post in self.custom_posts:
                     item.setBackground(self.custom_posts[post].color)
@@ -1539,7 +1552,7 @@ class StatsView(QWidget):
             # Total de la ligne
             total_item = QTableWidgetItem(str(row_total))
             if hasattr(person, 'half_parts') and person.half_parts == 1:
-                total_item.setBackground(QColor('#F3F4F6'))
+                total_item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
             self.weekend_stats_table.setItem(row, len(all_posts) + 1, total_item)
 
         # Ajout des lignes "Non attribué" et "Total"
@@ -1897,7 +1910,7 @@ class StatsView(QWidget):
                 return
                 
             if value != target:  # Différent du quota prévu
-                item.setBackground(QColor('#FFEBEE'))  # Rouge
+                item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
             else:
                 item.setBackground(QBrush())  # Blanc si quota exact
         else:
@@ -1905,9 +1918,9 @@ class StatsView(QWidget):
             max_val = intervals.get('max', float('inf'))
             
             if value < min_val:
-                item.setBackground(QColor('#E8F5E9'))  # Vert si sous le minimum
+                item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
             elif max_val != float('inf') and value > max_val:
-                item.setBackground(QColor('#FFEBEE'))  # Rouge si au-dessus
+                item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
             else:
                 item.setBackground(QBrush())  # Blanc si dans l'intervalle
 

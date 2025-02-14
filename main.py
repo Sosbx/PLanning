@@ -13,6 +13,7 @@ from gui.main_window import MainWindow
 from gui.splash_screen import SplashScreen
 from core.Constantes.models import Doctor, CAT, create_default_post_configuration
 from core.Constantes.data_persistence import DataPersistence
+from gui.styles import GLOBAL_STYLE
 
 def resource_path(relative_path):
     """Get the absolute path to the resource, works for development and for PyInstaller."""
@@ -27,10 +28,10 @@ def set_application_style(app):
     
     # Palette de couleurs
     palette = QPalette()
-    palette.setColor(QPalette.ColorRole.Window, QColor(245, 245, 250))
+    palette.setColor(QPalette.ColorRole.Window, QColor(240, 242, 245))  # Mise à jour pour correspondre au nouveau fond
     palette.setColor(QPalette.ColorRole.WindowText, QColor(50, 50, 50))
     palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))
-    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(240, 240, 245))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(240, 242, 245))
     palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 225))
     palette.setColor(QPalette.ColorRole.ToolTipText, QColor(50, 50, 50))
     palette.setColor(QPalette.ColorRole.Text, QColor(50, 50, 50))
@@ -43,14 +44,8 @@ def set_application_style(app):
 
     app.setPalette(palette)
 
-    # Feuille de style CSS
-    app.setStyleSheet("""
-    QMainWindow, QWidget {
-        background-color: #F5F5FA;
-        color: #323232;
-        font-family: 'Helvetica Neue', 'Arial', sans-serif;
-        font-size: 13px;
-    }
+    # Application du style global et des styles spécifiques
+    app.setStyleSheet(GLOBAL_STYLE + """
     QPushButton {
         background-color: #3C6EA0;
         color: white;
