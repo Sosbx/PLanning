@@ -8,7 +8,7 @@ class ColorSystem:
     """Système de couleurs adaptatif selon le système d'exploitation"""
     def _get_window_background_color(self):
         """Couleur de fond globale pour les fenêtres"""
-        return QColor(245, 247, 250) if self.is_windows else QColor(240, 242, 245)  # Gris légèrement bleuté, plus clair sur Windows
+        return QColor(235, 240, 245) if self.is_windows else QColor(240, 242, 245)  # Gris-bleu plus prononcé sur Windows
 
     def __init__(self):
         self.is_windows = sys.platform == 'win32'
@@ -36,64 +36,63 @@ class ColorSystem:
 
     def _get_weekend_color(self):
         """Couleur de fond pour les weekends"""
-        return QColor(210, 215, 220) if self.is_windows else QColor(220, 220, 220)  # Plus bleuté sur Windows
+        return QColor(200, 210, 220) if self.is_windows else QColor(220, 220, 220)  # Plus bleuté et contrasté sur Windows
 
     def _get_weekday_color(self):
         """Couleur de fond pour les jours de semaine"""
-        return QColor(255, 255, 255)
+        return QColor(250, 252, 255) if self.is_windows else QColor(255, 255, 255)  # Légèrement bleuté sur Windows
 
     def _get_weekend_desiderata_color(self):
         """Couleur pour les desiderata en weekend"""
-        return QColor(255, 130, 130) if self.is_windows else QColor(255, 150, 150)
+        return QColor(255, 120, 120) if self.is_windows else QColor(255, 150, 150)  # Rouge plus vif sur Windows
 
     def _get_normal_desiderata_color(self):
         """Couleur pour les desiderata en semaine"""
-        return QColor(255, 180, 180) if self.is_windows else QColor(255, 200, 200)
+        return QColor(255, 160, 160) if self.is_windows else QColor(255, 200, 200)  # Rouge plus vif sur Windows
 
     def _get_weekend_secondary_color(self):
         """Couleur pour les desiderata secondaires en weekend"""
-        return QColor(130, 180, 255) if self.is_windows else QColor(150, 200, 255)
+        return QColor(120, 160, 255) if self.is_windows else QColor(150, 200, 255)  # Bleu plus vif sur Windows
 
     def _get_normal_secondary_color(self):
         """Couleur pour les desiderata secondaires en semaine"""
-        return QColor(180, 220, 255) if self.is_windows else QColor(200, 230, 255)
+        return QColor(160, 200, 255) if self.is_windows else QColor(200, 230, 255)  # Bleu plus vif sur Windows
 
     def _get_available_color(self):
         """Couleur pour indiquer la disponibilité"""
-        return QColor(150, 255, 150)
+        return QColor(120, 255, 120) if self.is_windows else QColor(150, 255, 150)  # Vert plus vif sur Windows
 
     def _get_grid_color(self):
         """Couleur des lignes de la grille"""
-        return QColor(180, 180, 180) if self.is_windows else QColor(200, 200, 200)
+        return QColor(160, 160, 160) if self.is_windows else QColor(200, 200, 200)  # Plus foncé sur Windows
 
     def _get_text_color(self):
         """Couleur du texte"""
-        return QColor(60, 60, 60) if self.is_windows else QColor(100, 100, 100)
+        return QColor(40, 40, 40) if self.is_windows else QColor(100, 100, 100)  # Noir plus prononcé sur Windows
 
-    # Nouvelles méthodes pour les couleurs des cellules de tableau
     def get_cat_background(self):
         """Couleur de fond pour les CAT"""
-        return QColor('#E8F5E9')
+        return QColor('#D8ECD9') if self.is_windows else QColor('#E8F5E9')  # Plus foncé sur Windows
 
     def get_half_time_background(self):
         """Couleur de fond pour les médecins mi-temps"""
-        return QColor('#F3F4F6')
+        return QColor('#E8E9EC') if self.is_windows else QColor('#F3F4F6')  # Plus foncé sur Windows
 
     def get_unassigned_background(self):
         """Couleur de fond pour les postes non attribués"""
-        return QColor('#F5F5F5')
+        return QColor('#EBEBEB') if self.is_windows else QColor('#F5F5F5')  # Plus foncé sur Windows
 
     def get_total_row_background(self):
         """Couleur de fond pour la ligne des totaux"""
-        return QColor('#EEEEEE')
+        return QColor('#E0E0E0') if self.is_windows else QColor('#EEEEEE')  # Plus foncé sur Windows
 
     def get_interval_colors(self):
         """Couleurs pour les intervalles de valeurs"""
         if self.is_windows:
             return {
-                'below_min': QColor(200, 255, 200, 255),  # Vert plus vif pour Windows
-                'above_max': QColor(255, 200, 200, 255),  # Rouge plus vif pour Windows
-                'within_range': QColor(255, 255, 255)  # Blanc
+                'below_min': QColor(180, 255, 180, 255),  # Vert encore plus vif pour Windows
+                'above_max': QColor(255, 180, 180, 255),  # Rouge encore plus vif pour Windows
+                'within_range': QColor(250, 252, 255)  # Légèrement bleuté
             }
         else:
             return {
@@ -106,9 +105,9 @@ class ColorSystem:
         """Couleurs pour les groupes de postes"""
         if self.is_windows:
             return {
-                'matin': QColor(180, 220, 255, 255),      # Bleu plus vif
-                'apresMidi': QColor(255, 200, 150, 255),  # Orange plus vif
-                'soirNuit': QColor(220, 180, 255, 255)    # Violet plus vif
+                'matin': QColor(160, 200, 255, 255),      # Bleu encore plus vif
+                'apresMidi': QColor(255, 180, 130, 255),  # Orange encore plus vif
+                'soirNuit': QColor(200, 160, 255, 255)    # Violet encore plus vif
             }
         else:
             return {
@@ -121,9 +120,9 @@ class ColorSystem:
         """Couleurs pour les groupes de weekend"""
         if self.is_windows:
             return {
-                'gardes': QColor(180, 220, 255, 255),      # Bleu plus vif
-                'visites': QColor(255, 200, 150, 255),     # Orange plus vif
-                'consultations': QColor(220, 180, 255, 255) # Violet plus vif
+                'gardes': QColor(160, 200, 255, 255),      # Bleu encore plus vif
+                'visites': QColor(255, 180, 130, 255),     # Orange encore plus vif
+                'consultations': QColor(200, 160, 255, 255) # Violet encore plus vif
             }
         else:
             return {
@@ -137,17 +136,17 @@ class ColorSystem:
         if self.is_windows:
             return {
                 "edit": {
-                    "bg": "#e8e8e8",
-                    "border": "#cccccc",
-                    "hover": "#d8d8d8"
+                    "bg": "#d8d8d8",
+                    "border": "#b8b8b8",
+                    "hover": "#c8c8c8"
                 },
                 "action": {
-                    "bg": "#5c7d99",
-                    "hover": "#4a6a86"
+                    "bg": "#4c6d89",
+                    "hover": "#3a5a76"
                 },
                 "add": {
-                    "bg": "#107c10",
-                    "hover": "#0b590b"
+                    "bg": "#0a6c0a",
+                    "hover": "#085708"
                 }
             }
         else:

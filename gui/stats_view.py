@@ -38,7 +38,11 @@ class StatsView(QWidget):
         self.component_columns = {}
         
         # Récupération des couleurs depuis le système centralisé
-        self.post_groups_colors = color_system.get_post_group_colors()
+        self.post_groups_colors = color_system.get_post_group_colors() if sys.platform == 'win32' else {
+            'matin': QColor('#E3F2FD'),      # Bleu clair
+            'apresMidi': QColor('#FFF3E0'),  # Orange clair
+            'soirNuit': QColor('#EDE7F6')    # Violet clair
+        }
 
         # Définition des groupes de postes comme attribut de classe
         self.post_groups = {
