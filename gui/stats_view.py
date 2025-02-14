@@ -133,22 +133,6 @@ class StatsView(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setSpacing(10)
         
-        # Conteneur du bouton de détachement
-        detach_container = QWidget()
-        detach_layout = QHBoxLayout(detach_container)
-        detach_layout.setContentsMargins(5, 5, 5, 5)
-        
-        # Bouton de détachement avec style
-        detach_button = QPushButton("Détacher les statistiques")
-        detach_button.setStyleSheet(ACTION_BUTTON_STYLE)
-        detach_button.setMinimumHeight(35)
-        detach_button.setIcon(QIcon("icons/detach.png"))
-        detach_button.clicked.connect(self.on_detach_clicked)
-        
-        detach_layout.addStretch(1)
-        detach_layout.addWidget(detach_button)
-        main_layout.addWidget(detach_container)
-        
         # Création des tableaux de statistiques
         self.stats_table = QTableWidget()
         self.weekend_stats_table = QTableWidget()

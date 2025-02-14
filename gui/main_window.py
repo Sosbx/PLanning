@@ -14,7 +14,7 @@ from .planning_comparison_view import PlanningComparisonView
 from .detached_stats_window import DetachedStatsWindow
 from .planning_management import PlanningManagementWidget
 from core.utils import resource_path
-from .styles import color_system, GLOBAL_STYLE
+from .styles import color_system, GLOBAL_STYLE, ACTION_BUTTON_STYLE
 
 
 class MainWindow(QMainWindow):
@@ -66,11 +66,18 @@ class MainWindow(QMainWindow):
         self.stats_tab.set_parent_window(self)  # Définir la référence parent
         stats_container = QWidget()
         stats_layout = QVBoxLayout(stats_container)
+        stats_layout.setContentsMargins(10, 10, 10, 10)
+        stats_layout.setSpacing(10)
+        
+        # Add stats_tab first
         stats_layout.addWidget(self.stats_tab)
-       
+        
+        # Create and style detach button
         detach_button = QPushButton("Détacher les statistiques")
+        detach_button.setStyleSheet(ACTION_BUTTON_STYLE)
         detach_button.clicked.connect(self.detach_stats)
-        stats_layout.addWidget(detach_button)
+        detach_button.setMinimumHeight(35)
+        stats_layout.addWidget(detach_button, 0, Qt.AlignmentFlag.AlignRight)
         
         self.stats_index = self.tab_widget.addTab(stats_container, self.create_tab_icon("icons/statistics.png"), "Statistiques")
 
@@ -172,10 +179,18 @@ class MainWindow(QMainWindow):
             self.detached_stats_window = None
             stats_container = QWidget()
             stats_layout = QVBoxLayout(stats_container)
-            detach_button = QPushButton("Détacher les statistiques")
-            detach_button.clicked.connect(self.detach_stats)
-            stats_layout.addWidget(detach_button)
+            stats_layout.setContentsMargins(10, 10, 10, 10)
+            stats_layout.setSpacing(10)
+            
+            # Add stats_tab first
             stats_layout.addWidget(self.stats_tab)
+            
+            # Create and style detach button
+            detach_button = QPushButton("Détacher les statistiques")
+            detach_button.setStyleSheet(ACTION_BUTTON_STYLE)
+            detach_button.clicked.connect(self.detach_stats)
+            detach_button.setMinimumHeight(35)
+            stats_layout.addWidget(detach_button, 0, Qt.AlignmentFlag.AlignRight)
             self.stats_index = self.tab_widget.insertTab(self.stats_index, stats_container, "Statistiques")
             self.tab_widget.setCurrentIndex(self.stats_index)
             # Assurez-vous que les statistiques sont à jour lors du rattachement
