@@ -1,0 +1,218 @@
+2024-10-23 16:38:46,724 - DEBUG - Récupération des postes pour Semaine
+2024-10-23 16:38:46,724 - DEBUG - Posts standard : ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:38:46,724 - DEBUG - Posts personnalisés disponibles : ['CAL', 'ALL', 'CAT', 'APL', 'CAM']
+2024-10-23 16:38:46,724 - DEBUG - Vérification du poste CAL:
+2024-10-23 16:38:46,724 - DEBUG - - Types de jour: {'weekday', 'saturday'}
+2024-10-23 16:38:46,724 - DEBUG - - Type d'assignation: both
+2024-10-23 16:38:46,724 - DEBUG - - Ajout à la liste Médecins
+2024-10-23 16:38:46,724 - DEBUG - - Poste CAL ajouté à la liste
+2024-10-23 16:38:46,724 - DEBUG - Vérification du poste ALL:
+2024-10-23 16:38:46,724 - DEBUG - - Types de jour: {'saturday'}
+2024-10-23 16:38:46,724 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,724 - DEBUG - Vérification du poste CAT:
+2024-10-23 16:38:46,724 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:38:46,724 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,724 - DEBUG - Vérification du poste APL:
+2024-10-23 16:38:46,724 - DEBUG - - Types de jour: {'sunday_holiday'}
+2024-10-23 16:38:46,724 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,724 - DEBUG - Vérification du poste CAM:
+2024-10-23 16:38:46,724 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:38:46,724 - DEBUG - - Type d'assignation: les deux
+2024-10-23 16:38:46,724 - DEBUG - Liste finale pour Semaine: ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT', 'CAL']
+2024-10-23 16:38:46,729 - DEBUG - Récupération des postes pour Samedi
+2024-10-23 16:38:46,729 - DEBUG - Posts standard : ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:38:46,729 - DEBUG - Posts personnalisés disponibles : ['CAL', 'ALL', 'CAT', 'APL', 'CAM']
+2024-10-23 16:38:46,729 - DEBUG - Vérification du poste CAL:
+2024-10-23 16:38:46,729 - DEBUG - - Types de jour: {'weekday', 'saturday'}
+2024-10-23 16:38:46,729 - DEBUG - - Type d'assignation: both
+2024-10-23 16:38:46,729 - DEBUG - - Ajout à la liste Médecins
+2024-10-23 16:38:46,729 - DEBUG - - Poste CAL ajouté à la liste
+2024-10-23 16:38:46,729 - DEBUG - Vérification du poste ALL:
+2024-10-23 16:38:46,729 - DEBUG - - Types de jour: {'saturday'}
+2024-10-23 16:38:46,729 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,729 - DEBUG - Vérification du poste CAT:
+2024-10-23 16:38:46,730 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:38:46,730 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,730 - DEBUG - Vérification du poste APL:
+2024-10-23 16:38:46,730 - DEBUG - - Types de jour: {'sunday_holiday'}
+2024-10-23 16:38:46,730 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,730 - DEBUG - Vérification du poste CAM:
+2024-10-23 16:38:46,730 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:38:46,730 - DEBUG - - Type d'assignation: les deux
+2024-10-23 16:38:46,730 - DEBUG - Liste finale pour Samedi: ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT', 'CAL']
+2024-10-23 16:38:46,733 - DEBUG - Récupération des postes pour Dimanche/Férié
+2024-10-23 16:38:46,733 - DEBUG - Posts standard : ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:38:46,733 - DEBUG - Posts personnalisés disponibles : ['CAL', 'ALL', 'CAT', 'APL', 'CAM']
+2024-10-23 16:38:46,733 - DEBUG - Vérification du poste CAL:
+2024-10-23 16:38:46,733 - DEBUG - - Types de jour: {'weekday', 'saturday'}
+2024-10-23 16:38:46,734 - DEBUG - - Type d'assignation: both
+2024-10-23 16:38:46,734 - DEBUG - Vérification du poste ALL:
+2024-10-23 16:38:46,734 - DEBUG - - Types de jour: {'saturday'}
+2024-10-23 16:38:46,734 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,734 - DEBUG - Vérification du poste CAT:
+2024-10-23 16:38:46,734 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:38:46,734 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,734 - DEBUG - Vérification du poste APL:
+2024-10-23 16:38:46,734 - DEBUG - - Types de jour: {'sunday_holiday'}
+2024-10-23 16:38:46,734 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,734 - DEBUG - Vérification du poste CAM:
+2024-10-23 16:38:46,734 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:38:46,734 - DEBUG - - Type d'assignation: les deux
+2024-10-23 16:38:46,734 - DEBUG - Liste finale pour Dimanche/Férié: ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:38:46,747 - DEBUG - Récupération des postes pour CAT_Semaine
+2024-10-23 16:38:46,747 - DEBUG - Posts standard : ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:38:46,747 - DEBUG - Posts personnalisés disponibles : ['CAL', 'ALL', 'CAT', 'APL', 'CAM']
+2024-10-23 16:38:46,747 - DEBUG - Vérification du poste CAL:
+2024-10-23 16:38:46,747 - DEBUG - - Types de jour: {'weekday', 'saturday'}
+2024-10-23 16:38:46,747 - DEBUG - - Type d'assignation: both
+2024-10-23 16:38:46,747 - DEBUG - - Ajout à la liste CAT
+2024-10-23 16:38:46,747 - DEBUG - - Poste CAL ajouté à la liste
+2024-10-23 16:38:46,747 - DEBUG - Vérification du poste ALL:
+2024-10-23 16:38:46,747 - DEBUG - - Types de jour: {'saturday'}
+2024-10-23 16:38:46,747 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,747 - DEBUG - Vérification du poste CAT:
+2024-10-23 16:38:46,747 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:38:46,747 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,747 - DEBUG - Vérification du poste APL:
+2024-10-23 16:38:46,747 - DEBUG - - Types de jour: {'sunday_holiday'}
+2024-10-23 16:38:46,747 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,747 - DEBUG - Vérification du poste CAM:
+2024-10-23 16:38:46,747 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:38:46,747 - DEBUG - - Type d'assignation: les deux
+2024-10-23 16:38:46,747 - DEBUG - Liste finale pour CAT_Semaine: ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT', 'CAL']
+2024-10-23 16:38:46,751 - DEBUG - Récupération des postes pour CAT_Samedi
+2024-10-23 16:38:46,751 - DEBUG - Posts standard : ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:38:46,751 - DEBUG - Posts personnalisés disponibles : ['CAL', 'ALL', 'CAT', 'APL', 'CAM']
+2024-10-23 16:38:46,751 - DEBUG - Vérification du poste CAL:
+2024-10-23 16:38:46,751 - DEBUG - - Types de jour: {'weekday', 'saturday'}
+2024-10-23 16:38:46,751 - DEBUG - - Type d'assignation: both
+2024-10-23 16:38:46,751 - DEBUG - - Ajout à la liste CAT
+2024-10-23 16:38:46,751 - DEBUG - - Poste CAL ajouté à la liste
+2024-10-23 16:38:46,751 - DEBUG - Vérification du poste ALL:
+2024-10-23 16:38:46,751 - DEBUG - - Types de jour: {'saturday'}
+2024-10-23 16:38:46,751 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,751 - DEBUG - Vérification du poste CAT:
+2024-10-23 16:38:46,751 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:38:46,751 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,751 - DEBUG - Vérification du poste APL:
+2024-10-23 16:38:46,751 - DEBUG - - Types de jour: {'sunday_holiday'}
+2024-10-23 16:38:46,751 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,751 - DEBUG - Vérification du poste CAM:
+2024-10-23 16:38:46,751 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:38:46,751 - DEBUG - - Type d'assignation: les deux
+2024-10-23 16:38:46,751 - DEBUG - Liste finale pour CAT_Samedi: ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT', 'CAL']
+2024-10-23 16:38:46,755 - DEBUG - Récupération des postes pour CAT_Dimanche/férié
+2024-10-23 16:38:46,755 - DEBUG - Posts standard : ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:38:46,755 - DEBUG - Posts personnalisés disponibles : ['CAL', 'ALL', 'CAT', 'APL', 'CAM']
+2024-10-23 16:38:46,755 - DEBUG - Vérification du poste CAL:
+2024-10-23 16:38:46,755 - DEBUG - - Types de jour: {'weekday', 'saturday'}
+2024-10-23 16:38:46,755 - DEBUG - - Type d'assignation: both
+2024-10-23 16:38:46,755 - DEBUG - Vérification du poste ALL:
+2024-10-23 16:38:46,755 - DEBUG - - Types de jour: {'saturday'}
+2024-10-23 16:38:46,755 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,755 - DEBUG - Vérification du poste CAT:
+2024-10-23 16:38:46,755 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:38:46,755 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,755 - DEBUG - Vérification du poste APL:
+2024-10-23 16:38:46,755 - DEBUG - - Types de jour: {'sunday_holiday'}
+2024-10-23 16:38:46,755 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:38:46,755 - DEBUG - Vérification du poste CAM:
+2024-10-23 16:38:46,755 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:38:46,755 - DEBUG - - Type d'assignation: les deux
+2024-10-23 16:38:46,755 - DEBUG - Liste finale pour CAT_Dimanche/férié: ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:39:56,904 - DEBUG - Récupération des postes pour Semaine
+2024-10-23 16:39:56,904 - DEBUG - Posts standard : ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:39:56,904 - DEBUG - Posts personnalisés disponibles : ['ALL', 'CAT', 'APL', 'CAM']
+2024-10-23 16:39:56,904 - DEBUG - Vérification du poste ALL:
+2024-10-23 16:39:56,904 - DEBUG - - Types de jour: {'saturday'}
+2024-10-23 16:39:56,904 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,904 - DEBUG - Vérification du poste CAT:
+2024-10-23 16:39:56,904 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:39:56,904 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,904 - DEBUG - Vérification du poste APL:
+2024-10-23 16:39:56,904 - DEBUG - - Types de jour: {'sunday_holiday'}
+2024-10-23 16:39:56,904 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,905 - DEBUG - Vérification du poste CAM:
+2024-10-23 16:39:56,905 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:39:56,905 - DEBUG - - Type d'assignation: les deux
+2024-10-23 16:39:56,905 - DEBUG - Liste finale pour Semaine: ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:39:56,907 - DEBUG - Récupération des postes pour Samedi
+2024-10-23 16:39:56,907 - DEBUG - Posts standard : ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:39:56,907 - DEBUG - Posts personnalisés disponibles : ['ALL', 'CAT', 'APL', 'CAM']
+2024-10-23 16:39:56,907 - DEBUG - Vérification du poste ALL:
+2024-10-23 16:39:56,907 - DEBUG - - Types de jour: {'saturday'}
+2024-10-23 16:39:56,907 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,907 - DEBUG - Vérification du poste CAT:
+2024-10-23 16:39:56,907 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:39:56,907 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,907 - DEBUG - Vérification du poste APL:
+2024-10-23 16:39:56,907 - DEBUG - - Types de jour: {'sunday_holiday'}
+2024-10-23 16:39:56,907 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,907 - DEBUG - Vérification du poste CAM:
+2024-10-23 16:39:56,907 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:39:56,907 - DEBUG - - Type d'assignation: les deux
+2024-10-23 16:39:56,907 - DEBUG - Liste finale pour Samedi: ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:39:56,910 - DEBUG - Récupération des postes pour Dimanche/Férié
+2024-10-23 16:39:56,910 - DEBUG - Posts standard : ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:39:56,910 - DEBUG - Posts personnalisés disponibles : ['ALL', 'CAT', 'APL', 'CAM']
+2024-10-23 16:39:56,910 - DEBUG - Vérification du poste ALL:
+2024-10-23 16:39:56,910 - DEBUG - - Types de jour: {'saturday'}
+2024-10-23 16:39:56,910 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,910 - DEBUG - Vérification du poste CAT:
+2024-10-23 16:39:56,910 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:39:56,910 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,910 - DEBUG - Vérification du poste APL:
+2024-10-23 16:39:56,910 - DEBUG - - Types de jour: {'sunday_holiday'}
+2024-10-23 16:39:56,910 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,910 - DEBUG - Vérification du poste CAM:
+2024-10-23 16:39:56,910 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:39:56,910 - DEBUG - - Type d'assignation: les deux
+2024-10-23 16:39:56,910 - DEBUG - Liste finale pour Dimanche/Férié: ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:39:56,912 - DEBUG - Récupération des postes pour CAT_Semaine
+2024-10-23 16:39:56,912 - DEBUG - Posts standard : ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:39:56,912 - DEBUG - Posts personnalisés disponibles : ['ALL', 'CAT', 'APL', 'CAM']
+2024-10-23 16:39:56,912 - DEBUG - Vérification du poste ALL:
+2024-10-23 16:39:56,912 - DEBUG - - Types de jour: {'saturday'}
+2024-10-23 16:39:56,912 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,912 - DEBUG - Vérification du poste CAT:
+2024-10-23 16:39:56,912 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:39:56,912 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,912 - DEBUG - Vérification du poste APL:
+2024-10-23 16:39:56,912 - DEBUG - - Types de jour: {'sunday_holiday'}
+2024-10-23 16:39:56,912 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,912 - DEBUG - Vérification du poste CAM:
+2024-10-23 16:39:56,912 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:39:56,912 - DEBUG - - Type d'assignation: les deux
+2024-10-23 16:39:56,912 - DEBUG - Liste finale pour CAT_Semaine: ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:39:56,915 - DEBUG - Récupération des postes pour CAT_Samedi
+2024-10-23 16:39:56,915 - DEBUG - Posts standard : ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:39:56,915 - DEBUG - Posts personnalisés disponibles : ['ALL', 'CAT', 'APL', 'CAM']
+2024-10-23 16:39:56,915 - DEBUG - Vérification du poste ALL:
+2024-10-23 16:39:56,915 - DEBUG - - Types de jour: {'saturday'}
+2024-10-23 16:39:56,915 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,915 - DEBUG - Vérification du poste CAT:
+2024-10-23 16:39:56,915 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:39:56,915 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,915 - DEBUG - Vérification du poste APL:
+2024-10-23 16:39:56,915 - DEBUG - - Types de jour: {'sunday_holiday'}
+2024-10-23 16:39:56,915 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,915 - DEBUG - Vérification du poste CAM:
+2024-10-23 16:39:56,915 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:39:56,915 - DEBUG - - Type d'assignation: les deux
+2024-10-23 16:39:56,915 - DEBUG - Liste finale pour CAT_Samedi: ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:39:56,917 - DEBUG - Récupération des postes pour CAT_Dimanche/férié
+2024-10-23 16:39:56,917 - DEBUG - Posts standard : ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']
+2024-10-23 16:39:56,917 - DEBUG - Posts personnalisés disponibles : ['ALL', 'CAT', 'APL', 'CAM']
+2024-10-23 16:39:56,917 - DEBUG - Vérification du poste ALL:
+2024-10-23 16:39:56,917 - DEBUG - - Types de jour: {'saturday'}
+2024-10-23 16:39:56,917 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,917 - DEBUG - Vérification du poste CAT:
+2024-10-23 16:39:56,917 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:39:56,917 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,917 - DEBUG - Vérification du poste APL:
+2024-10-23 16:39:56,917 - DEBUG - - Types de jour: {'sunday_holiday'}
+2024-10-23 16:39:56,917 - DEBUG - - Type d'assignation: médecins
+2024-10-23 16:39:56,917 - DEBUG - Vérification du poste CAM:
+2024-10-23 16:39:56,917 - DEBUG - - Types de jour: {'sunday_holiday', 'weekday', 'saturday'}
+2024-10-23 16:39:56,917 - DEBUG - - Type d'assignation: les deux
+2024-10-23 16:39:56,917 - DEBUG - Liste finale pour CAT_Dimanche/férié: ['ML', 'MC', 'MM', 'CM', 'HM', 'RM', 'SM', 'CA', 'HA', 'RA', 'SA', 'CS', 'HS', 'RS', 'SS', 'AL', 'AC', 'NC', 'NA', 'NM', 'NL', 'CT']

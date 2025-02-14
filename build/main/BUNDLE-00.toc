@@ -1,0 +1,3 @@
+([('Planificateur SOS Médecins',
+   '/Users/arkane/Documents/Planning/dist/Planificateur SOS Médecins',
+   'EXECUTABLE')],)
