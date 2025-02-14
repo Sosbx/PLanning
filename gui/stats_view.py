@@ -33,22 +33,36 @@ class StatsView(QWidget):
         self.expanded_group = None
         self.component_columns = {}  # Déplacé ici depuis init_ui
         
+        # Définition des couleurs selon le système d'exploitation
+        if sys.platform == 'win32':
+            post_groups_colors = {
+                'matin': QColor(200, 230, 255, 255),      # Bleu plus contrasté
+                'apresMidi': QColor(255, 230, 200, 255),  # Orange plus contrasté
+                'soirNuit': QColor(230, 200, 255, 255)    # Violet plus contrasté
+            }
+        else:
+            post_groups_colors = {
+                'matin': QColor('#E3F2FD'),
+                'apresMidi': QColor('#FFF3E0'),
+                'soirNuit': QColor('#EDE7F6')
+            }
+
         # Définition des groupes de postes comme attribut de classe
         self.post_groups = {
             'matin': {
                 'label': 'Matin',
                 'posts': ['MM', 'CM', 'HM', 'SM', 'RM', 'ML', 'MC'],
-                'color': QColor('#E3F2FD')
+                'color': post_groups_colors['matin']
             },
             'apresMidi': {
                 'label': 'Après-midi',
                 'posts': ['CA', 'HA', 'SA', 'RA', 'AL', 'AC'],
-                'color': QColor('#FFF3E0')
+                'color': post_groups_colors['apresMidi']
             },
             'soirNuit': {
                 'label': 'Soir/Nuit',
                 'posts': ['CS', 'HS', 'SS', 'RS', 'NL', 'NM', 'NA', 'NC'],
-                'color': QColor('#EDE7F6')
+                'color': post_groups_colors['soirNuit']
             }
         }
         
@@ -214,22 +228,36 @@ class StatsView(QWidget):
     
     def update_post_groups(self):
         """Met à jour les groupes avec les postes personnalisés"""
+        # Définition des couleurs selon le système d'exploitation
+        if sys.platform == 'win32':
+            post_groups_colors = {
+                'matin': QColor(200, 230, 255, 255),      # Bleu plus contrasté
+                'apresMidi': QColor(255, 230, 200, 255),  # Orange plus contrasté
+                'soirNuit': QColor(230, 200, 255, 255)    # Violet plus contrasté
+            }
+        else:
+            post_groups_colors = {
+                'matin': QColor('#E3F2FD'),
+                'apresMidi': QColor('#FFF3E0'),
+                'soirNuit': QColor('#EDE7F6')
+            }
+
         # Réinitialisation des listes de postes dans les groupes
         self.post_groups = {
             'matin': {
                 'label': 'Matin',
                 'posts': ['MM', 'CM', 'HM', 'SM', 'RM', 'ML', 'MC'],
-                'color': QColor('#E3F2FD')
+                'color': post_groups_colors['matin']
             },
             'apresMidi': {
                 'label': 'Après-midi',
                 'posts': ['CA', 'HA', 'SA', 'RA', 'AL', 'AC','CT'],
-                'color': QColor('#FFF3E0')
+                'color': post_groups_colors['apresMidi']
             },
             'soirNuit': {
                 'label': 'Soir/Nuit',
                 'posts': ['CS', 'HS', 'SS', 'RS', 'NL', 'NM', 'NA', 'NC'],
-                'color': QColor('#EDE7F6')
+                'color': post_groups_colors['soirNuit']
             }
         }
 
@@ -637,22 +665,36 @@ class StatsView(QWidget):
         # Mettre à jour les composants des groupes avec les postes personnalisés
         self._update_group_components()
 
+        # Configuration des couleurs selon le système d'exploitation
+        if sys.platform == 'win32':
+            weekend_group_colors = {
+                'gardes': QColor(200, 230, 255, 255),      # Bleu plus contrasté
+                'visites': QColor(255, 230, 200, 255),     # Orange plus contrasté
+                'consultations': QColor(230, 200, 255, 255) # Violet plus contrasté
+            }
+        else:
+            weekend_group_colors = {
+                'gardes': QColor('#E3F2FD'),
+                'visites': QColor('#FFF3E0'),
+                'consultations': QColor('#EDE7F6')
+            }
+
         # Configuration des données de base
         weekend_groups = {
             'gardes': {
                 'label': 'Gardes',
                 'groups': ['NLw', 'NAMw'],
-                'color': QColor('#E3F2FD')
+                'color': weekend_group_colors['gardes']
             },
             'visites': {
                 'label': 'Visites',
                 'groups': ['VmS', 'VmD', 'VaSD'],
-                'color': QColor('#FFF3E0')
+                'color': weekend_group_colors['visites']
             },
             'consultations': {
                 'label': 'Consultations',
                 'groups': ['CmS', 'CmD', 'CaSD', 'CsSD'],
-                'color': QColor('#EDE7F6')
+                'color': weekend_group_colors['consultations']
             }
         }
  # Collecte des groupes principaux
