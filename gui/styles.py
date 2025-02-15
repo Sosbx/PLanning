@@ -51,7 +51,7 @@ class ColorSystem:
             'info': QColor('#95B8D4'),
             'light': QColor('#F5F8FA'),
             'dark': QColor('#2D3748'),
-            'window_background': QColor('#E6EEF5'),
+            'window_background': QColor('#E1E9F4'),
             
             'text': {
                 'primary': QColor('#2D3748'),
@@ -88,7 +88,7 @@ class ColorSystem:
                     'weekend': QColor('#D1D9E6')
                 },
                 'secondary': {
-                    'normal': QColor('#E6EEF5'),
+                    'normal': QColor('#E1E9F4'),
                     'weekend': QColor('#D1D9E6')
                 }
             }
@@ -106,7 +106,7 @@ class ColorSystem:
     def get_post_group_colors(self):
         """Get colors for post groups."""
         return {
-            'matin': QColor('#E6EEF5'),      # Light blue
+            'matin': QColor('#E1E9F4'),      # Light blue
             'apresMidi': QColor('#F0E6D4'),  # Light orange
             'soirNuit': QColor('#E6E6F0')    # Light purple
         }
@@ -114,7 +114,7 @@ class ColorSystem:
     def get_weekend_group_colors(self):
         """Get colors for weekend groups."""
         return {
-            'gardes': QColor('#E6EEF5'),     # Light blue
+            'gardes': QColor('#E1E9F4'),     # Light blue
             'visites': QColor('#F0E6D4'),    # Light orange
             'consultations': QColor('#E6E6F0') # Light purple
         }
@@ -175,7 +175,7 @@ GLOBAL_STYLE = """
         font-family: Arial;
         font-size: 14px;
         color: #2D3748;
-        background-color: #E6EEF5;
+        background-color: #E1E9F4;
     }
     
     QPushButton {
