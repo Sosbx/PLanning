@@ -19,7 +19,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class CustomSpinBox(QSpinBox):
     def wheelEvent(self, event):
         event.ignore()
@@ -41,49 +40,25 @@ class SpecificConfigDialog(QDialog):
         layout = QVBoxLayout(self)
         self.setStyleSheet("""
             QDialog {
-                background-color: #f5f6fa;
+                background-color: #dce4ee;  # Changer en #c2cad6
             }
             QGroupBox {
-                background-color: white;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                margin-top: 1em;
-                padding: 12px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
-                color: #2d3436;
-                font-weight: bold;
+                background-color: #e5e9f0;  # Changer en #d8e0e9
+                border: 1px solid #b0c0d0;  # Changer en 2px solid #2c5282
             }
             QLabel {
-                color: #2d3436;
+                color: #2c5282;  # Changer en #000000
             }
             QDateEdit, QRadioButton {
-                background-color: white;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                padding: 5px;
-                min-width: 120px;
-            }
-            QDateEdit:hover, QRadioButton:hover {
-                border-color: #3498db;
+                background-color: #e5e9f0;  # Changer en #ffffff
+                border: 1px solid #b0c0d0;  # Changer en 2px solid #2c5282
             }
             QTableWidget {
-                border: 1px solid #ddd;
-                border-radius: 4px;
+                background-color: #e5e9f0;  # Changer en #ffffff
             }
-            QPushButton {
-                background-color: #3498db;
-                color: white;
-                border: none;
-                padding: 8px 15px;
-                border-radius: 4px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #2980b9;
+            QHeaderView::section {
+                background-color: #dde5ed;  # Changer en #2c5282
+                color: #2c5282;  # Changer en #ffffff
             }
         """)
         
@@ -134,19 +109,19 @@ class SpecificConfigDialog(QDialog):
         self.post_table.verticalHeader().setVisible(False)
         self.post_table.setStyleSheet("""
             QHeaderView::section {
-                background-color: #f8f9fa;
+                background-color: #dde5ed;
                 padding: 8px;
                 border: none;
-                border-bottom: 2px solid #e1e4e8;
+                border-bottom: 2px solid #b0c0d0;
                 font-weight: bold;
-                color: #2d3436;
+                color: #2c5282;
             }
             QTableWidget::item {
                 padding: 8px;
-                border-bottom: 1px solid #f0f2f5;
+                border-bottom: 1px solid #b0c0d0;
             }
             QTableWidget::item:hover {
-                background-color: #f8f9fa;
+                background-color: #dde5ed;
             }
         """)
         posts_layout.addWidget(self.post_table)
@@ -191,6 +166,8 @@ class SpecificConfigDialog(QDialog):
         self.day_type_group.buttonClicked.connect(self.update_table)
         weekday_radio.setChecked(True)
         self.update_table()
+        
+        
 
     def update_table(self):
         self.post_table.setRowCount(0)
@@ -864,17 +841,45 @@ class DragSelectCalendar(QCalendarWidget):
         self.updateCells()
 
     def paintCell(self, painter, rect, date):
-        """Affiche les cellules du calendrier"""
+        """Affiche les cellules du calendrier avec motifs et symboles"""
         super().paintCell(painter, rect, date)
         
         py_date = date.toPyDate()
+        weekday = date.dayOfWeek()
+        
+        # Définir la police pour les symboles
+        font = painter.font()
+        font.setPointSize(10)
+        painter.setFont(font)
+        
+        # Dessiner le fond selon le type de jour
+        if weekday >= 6:  # Weekend
+            # Motif rayé pour le weekend
+            painter.fillRect(rect, QColor("#d8e0e9"))
+            painter.setPen(QColor("#b0c0d0"))
+            for i in range(0, rect.width(), 4):
+                painter.drawLine(rect.left() + i, rect.top(), rect.left() + i, rect.bottom())
+        
         if py_date in self.selected_dates:
-            # Dessiner le fond bleu pour les dates sélectionnées
-            painter.fillRect(rect, QColor(173, 216, 230, 180))
+            # Fond bleu foncé pour les dates sélectionnées
+            painter.fillRect(rect, QColor("#2c5282"))
             
-            # Redessiner le texte pour qu'il soit bien visible
+            # Symbole de sélection en blanc
+            painter.setPen(QColor("#ffffff"))
+            text = str(date.day()) + " ✓"
+        else:
+            # Texte noir pour meilleur contraste
+            painter.setPen(QColor("#000000"))
             text = str(date.day())
-            painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
+            
+            # Ajouter des symboles pour les types de jours
+            if weekday == 6:  # Samedi
+                text += " ◆"  # Symbole pour samedi
+            elif weekday == 7:  # Dimanche
+                text += " ★"  # Symbole pour dimanche
+        
+        # Dessiner le texte centré
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
 
     def getSelectedDates(self):
         """Retourne la liste des dates sélectionnées"""
@@ -948,13 +953,17 @@ class AddConfigDialog(QDialog):
                 border-color: #3498db;
             }
             QSpinBox {
-                background-color: white;
-                border: 2px solid #e1e4e8;
+                background-color: #ffffff;
+                border: 2px solid #2c5282;
                 border-radius: 4px;
                 padding: 5px;
+                color: #000000;
             }
             QSpinBox:hover {
-                border-color: #3498db;
+                border-color: #000000;
+            }
+            QSpinBox:focus {
+                border: 3px solid #000000;
             }
             QTableWidget {
                 border: 2px solid #e1e4e8;
