@@ -51,23 +51,69 @@ class PlanningManagementWidget(QWidget):
 
     def init_ui(self):
         layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+        layout.setContentsMargins(10, 10, 10, 10)
 
-        # Boutons
+        # Boutons avec style professionnel
         button_layout = QHBoxLayout()
+        button_layout.setSpacing(8)
+
         self.save_button = QPushButton("Sauvegarder le planning")
         self.load_button = QPushButton("Charger un planning")
         self.export_csv_button = QPushButton("Exporter en CSV")
         self.export_excel_button = QPushButton("Exporter en Excel")
         
+        # Appliquer le style des boutons d'action
+        for button in [self.save_button, self.load_button, self.export_csv_button, self.export_excel_button]:
+            button.setStyleSheet("""
+                QPushButton {
+                    background-color: #2c5282;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    font-size: 10pt;
+                }
+                QPushButton:hover {
+                    background-color: #1a365d;
+                }
+                QPushButton:pressed {
+                    background-color: #2a4365;
+                }
+            """)
+            button.setMinimumWidth(150)
+        
         button_layout.addWidget(self.save_button)
         button_layout.addWidget(self.load_button)
         button_layout.addWidget(self.export_csv_button)
         button_layout.addWidget(self.export_excel_button)
+        button_layout.addStretch()
         
         layout.addLayout(button_layout)
 
-        # Liste des plannings
+        # Liste des plannings avec style professionnel
         self.planning_list = QListWidget()
+        self.planning_list.setStyleSheet("""
+            QListWidget {
+                background-color: #f8fafc;
+                border: 1px solid #c0d0e0;
+                border-radius: 4px;
+                padding: 5px;
+                font-size: 10pt;
+            }
+            QListWidget::item {
+                padding: 8px;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            QListWidget::item:selected {
+                background-color: #e8f0f8;
+                color: #2c5282;
+            }
+            QListWidget::item:hover {
+                background-color: #f0f5fa;
+            }
+        """)
         layout.addWidget(self.planning_list)
 
         # Connecter les boutons aux fonctions

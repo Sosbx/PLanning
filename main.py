@@ -5,6 +5,7 @@
 import os
 import logging
 import sys
+from PyQt6.QtCore import Qt
 
 from logger_config import setup_logger
 from PyQt6.QtWidgets import QApplication
@@ -25,11 +26,7 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 def set_application_style(app):
-    # Activation du support High DPI pour Windows
-    if sys.platform == 'win32':
-        QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
-        QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
-    
+    # High DPI support is enabled by default in PyQt6
     app.setStyle("Fusion")
     
     # Palette de couleurs adaptative

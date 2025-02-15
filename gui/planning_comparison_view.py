@@ -15,13 +15,13 @@ from workalendar.europe import France
 
 
 
-# Ajoutez ces constantes au début de chaque fichier
-WEEKEND_COLOR = QColor(220, 220, 220)  # Gris clair pour les weekends et jours fériés
-WEEKDAY_COLOR = QColor(255, 255, 255)  # Blanc pour les jours de semaine
-DESIDERATA_COLOR = QColor(255, 200, 200)  # Rouge clair pour les desideratas
-WEEKEND_DESIDERATA_COLOR = QColor(255, 150, 150)  # Rouge plus foncé pour les desideratas de weekend
-WEEKDAY_TEXT_COLOR = QColor(100, 100, 100)  # Gris foncé pour le texte des jours de la semaine
-AVAILABLE_COLOR = QColor(150, 255, 150)  # Vert clair pour les médecins disponibles
+# Constantes de couleurs professionnelles
+WEEKEND_COLOR = QColor(215, 225, 235)  # Bleu-gris clair pour les weekends
+WEEKDAY_COLOR = QColor(250, 252, 255)  # Blanc légèrement bleuté
+DESIDERATA_COLOR = QColor(180, 200, 255)  # Bleu moyen pour les desideratas
+WEEKEND_DESIDERATA_COLOR = QColor(150, 180, 255)  # Bleu plus soutenu pour les weekends
+WEEKDAY_TEXT_COLOR = QColor(30, 35, 40)  # Gris foncé pour le texte
+AVAILABLE_COLOR = QColor(200, 230, 255)  # Bleu clair pour les disponibilités
 
 class PlanningComparisonView(QWidget):
     def __init__(self, planning, doctors, cats, main_window):
@@ -75,20 +75,87 @@ class PlanningComparisonView(QWidget):
         }
         
     def init_ui(self):
-        # Layout principal
+        # Layout principal avec style
         layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+        layout.setContentsMargins(10, 10, 10, 10)
+
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #f8fafc;
+            }
+            QComboBox {
+                background-color: white;
+                border: 1px solid #c0d0e0;
+                border-radius: 4px;
+                padding: 6px;
+                min-width: 200px;
+                color: #2d3748;
+            }
+            QComboBox:hover {
+                border-color: #2c5282;
+            }
+            QComboBox::drop-down {
+                border: none;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border: none;
+            }
+            QLabel {
+                color: #2d3748;
+                font-size: 10pt;
+            }
+            QTableWidget {
+                border: 1px solid #c0d0e0;
+                border-radius: 4px;
+                gridline-color: #e2e8f0;
+            }
+            QHeaderView::section {
+                background-color: #e8f0f8;
+                color: #2c5282;
+                border: 1px solid #c0d0e0;
+                padding: 4px;
+            }
+            QScrollBar {
+                background-color: #f8fafc;
+                width: 12px;
+                height: 12px;
+            }
+            QScrollBar::handle {
+                background-color: #c0d0e0;
+                border-radius: 6px;
+                min-height: 30px;
+            }
+            QScrollBar::handle:hover {
+                background-color: #2c5282;
+            }
+        """)
 
         # Sélecteurs en haut
         controls_layout = QHBoxLayout()
+        controls_layout.setSpacing(10)
+        
+        selector_container1 = QWidget()
+        selector_layout1 = QVBoxLayout(selector_container1)
+        selector_layout1.setSpacing(4)
         self.selector1 = QComboBox()
+        self.info_label1 = QLabel("")
+        selector_layout1.addWidget(self.selector1)
+        selector_layout1.addWidget(self.info_label1)
+        
+        selector_container2 = QWidget()
+        selector_layout2 = QVBoxLayout(selector_container2)
+        selector_layout2.setSpacing(4)
         self.selector2 = QComboBox()
-        self.info_label1 = QLabel("")  # Label pour afficher les informations sous le premier menu
-        self.info_label2 = QLabel("")  # Label pour afficher les informations sous le deuxième menu
+        self.info_label2 = QLabel("")
+        selector_layout2.addWidget(self.selector2)
+        selector_layout2.addWidget(self.info_label2)
+        
         self.update_selectors()
-        controls_layout.addWidget(self.selector1)
-        controls_layout.addWidget(self.info_label1)
-        controls_layout.addWidget(self.selector2)
-        controls_layout.addWidget(self.info_label2)
+        
+        controls_layout.addWidget(selector_container1)
+        controls_layout.addWidget(selector_container2)
         layout.addLayout(controls_layout)
         
         # Tableaux de planning
@@ -662,7 +729,31 @@ class ComparisonBottomSection(QWidget):
         
     def init_ui(self):
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 5, 0, 0)
+        layout.setContentsMargins(0, 10, 0, 0)
+        layout.setSpacing(10)
+
+        self.setStyleSheet("""
+            QComboBox {
+                background-color: white;
+                border: 1px solid #c0d0e0;
+                border-radius: 4px;
+                padding: 6px;
+                color: #2d3748;
+            }
+            QComboBox:hover {
+                border-color: #2c5282;
+            }
+            QTextEdit {
+                background-color: white;
+                border: 1px solid #c0d0e0;
+                border-radius: 4px;
+                padding: 6px;
+                color: #2d3748;
+            }
+            QTextEdit:focus {
+                border-color: #2c5282;
+            }
+        """)
 
         # Section gauche
         left_section = QVBoxLayout()
@@ -873,14 +964,24 @@ class FullPlanningTable(QTableWidget):
         self.setRowCount(31)
         self.setColumnCount(total_months * 4 + 1)
 
-        # Création des en-têtes
+        # En-têtes avec police en gras
         headers = ["Jour"]
         current_date = start_date.replace(day=1)
         for _ in range(total_months):
             month_name = current_date.strftime("%b")
             headers.extend([f"{month_name}\nJ", f"{month_name}\nM", f"{month_name}\nAM", f"{month_name}\nS"])
             current_date = (current_date.replace(day=28) + timedelta(days=4)).replace(day=1)
-        self.setHorizontalHeaderLabels(headers)
+        
+        # Appliquer le style aux en-têtes
+        header_font = QFont()
+        header_font.setBold(True)
+        header_font.setPointSize(10)
+        
+        for col, text in enumerate(headers):
+            header_item = QTableWidgetItem(text)
+            header_item.setFont(header_font)
+            header_item.setForeground(QBrush(QColor(40, 40, 40)))
+            self.setHorizontalHeaderItem(col, header_item)
 
         # Définition des couleurs
         colors = {
@@ -905,17 +1006,22 @@ class FullPlanningTable(QTableWidget):
             month_col = (current_date.year - start_date.year) * 12 + current_date.month - start_date.month
             col_offset = month_col * 4 + 1
 
+            # Police en gras pour toutes les cellules
+            bold_font = QFont()
+            bold_font.setBold(True)
+            bold_font.setPointSize(10)
+            
             # Configuration du jour et du jour de la semaine
             day_item = QTableWidgetItem(str(current_date.day))
+            day_item.setFont(bold_font)
             day_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            day_item.setForeground(QBrush(QColor(40, 40, 40)))
             self.setItem(day_row, 0, day_item)
             
             weekday_item = QTableWidgetItem(self.get_weekday_abbr(current_date.weekday()))
+            weekday_item.setFont(bold_font)
             weekday_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            weekday_item.setForeground(QBrush(WEEKDAY_TEXT_COLOR))
-            font = QFont()
-            font.setPointSize(8)
-            weekday_item.setFont(font)
+            weekday_item.setForeground(QBrush(QColor(40, 40, 40)))
             self.setItem(day_row, col_offset, weekday_item)
 
             # Traitement du planning du jour
@@ -940,7 +1046,9 @@ class FullPlanningTable(QTableWidget):
                         posts_text = ", ".join(unassigned_posts)
                     
                     item = QTableWidgetItem(posts_text)
+                    item.setFont(bold_font)
                     item.setData(Qt.ItemDataRole.UserRole, day_planning)
+                    item.setForeground(QBrush(QColor(40, 40, 40)))
                     
                     # Couleur de base
                     base_color = colors["base"]["weekend" if is_weekend_or_holiday else "normal"]
@@ -1153,6 +1261,42 @@ class PostAssignmentDialog(QDialog):
 
     def init_ui(self):
         layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+        layout.setContentsMargins(10, 10, 10, 10)
+
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #f8fafc;
+            }
+            QLabel {
+                color: #2d3748;
+                font-size: 10pt;
+            }
+            QComboBox {
+                background-color: white;
+                border: 1px solid #c0d0e0;
+                border-radius: 4px;
+                padding: 6px;
+                min-width: 200px;
+                color: #2d3748;
+            }
+            QComboBox:hover {
+                border-color: #2c5282;
+            }
+            QPushButton {
+                background-color: #2c5282;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+                min-width: 100px;
+                font-size: 10pt;
+            }
+            QPushButton:hover {
+                background-color: #1a365d;
+            }
+        """)
 
         # Affichage du nom de l'assigné par défaut (comparé)
         layout.addWidget(QLabel(f"Nouvel assigné pour le {self.day.date}:"))

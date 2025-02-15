@@ -29,23 +29,35 @@ class PersonnelManagementWidget(QWidget):
         
         self.setStyleSheet("""
             QWidget {
-                background-color: #f5f6fa;
+                background-color: #dce4ee;
             }
             QFrame {
-                background-color: white;
-                border: 1px solid #e1e4e8;
-                border-radius: 3px;
+                background-color: #dce4ee;
+                border: 1px solid #b0c0d0;
+                border-radius: 4px;
             }
-            QPushButton {
-                background-color: #f0f0f0;
-                color: #333;
-                border: 1px solid #ddd;
-                padding: 4px 8px;
-                border-radius: 3px;
+            QTabWidget::pane {
+                border: 1px solid #b0c0d0;
+                background-color: #dce4ee;
+                border-radius: 4px;
+            }
+            QTabBar::tab {
+                background-color: #dde5ed;
+                color: #2c5282;
+                border: 1px solid #b0c0d0;
+                padding: 6px 12px;
+                margin-right: 2px;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+            }
+            QTabBar::tab:selected {
+                background-color: #dce4ee;
+                border-bottom: none;
+                color: #1a365d;
                 font-weight: bold;
             }
-            QPushButton:hover {
-                background-color: #e8e8e8;
+            QTabBar::tab:hover {
+                background-color: #e5ebf2;
             }
         """)
         
@@ -81,7 +93,7 @@ class PersonnelManagementWidget(QWidget):
             font-style: italic;
             padding: 0 4px;
             margin: 0;
-            background-color: #f8f9fa;
+            background-color: #dde5ed;
             border-radius: 2px;
             font-size: 11px;
         """)
@@ -94,8 +106,8 @@ class PersonnelManagementWidget(QWidget):
         doctors_container = QFrame()
         doctors_container.setStyleSheet("""
             QFrame {
-                background-color: white;
-                border: 1px solid #ddd;
+                background-color: #e5e9f0;
+                border: 1px solid #c0d0e0;
                 border-radius: 4px;
             }
         """)
@@ -151,7 +163,7 @@ class PersonnelManagementWidget(QWidget):
             font-style: italic;
             padding: 0 4px;
             margin: 0;
-            background-color: #f8f9fa;
+            background-color: #e5e9f0;
             border-radius: 2px;
             font-size: 11px;
         """)
@@ -164,8 +176,8 @@ class PersonnelManagementWidget(QWidget):
         cats_container = QFrame()
         cats_container.setStyleSheet("""
             QFrame {
-                background-color: white;
-                border: 1px solid #ddd;
+                background-color: #e5e9f0;
+                border: 1px solid #c0d0e0;
                 border-radius: 4px;
             }
         """)
@@ -221,28 +233,28 @@ class PersonnelManagementWidget(QWidget):
             doctor_frame = QFrame()
             doctor_frame.setStyleSheet("""
                 QFrame {
-                    border: 1px solid #e1e4e8;
-                    background-color: white;
-                    border-radius: 3px;
-                    padding: 3px;
+                    border: 1px solid #c0d0e0;
+                    background-color: #e3f2fd;
+                    border-radius: 4px;
+                    padding: 4px;
                 }
                 QFrame:hover {
-                    border-color: #3498db;
-                    background-color: #f8f9fa;
+                    border-color: #2c5282;
+                    background-color: #bbdefb;
                 }
             """)
             
             if doctor.half_parts == 1:
                 doctor_frame.setStyleSheet("""
                     QFrame {
-                        border: 1px solid #e1e4e8;
-                        background-color: #fff8dc;
-                        border-radius: 3px;
-                        padding: 3px;
+                        border: 1px solid #e6b800;
+                        background-color: #fff3cd;
+                        border-radius: 4px;
+                        padding: 4px;
                     }
                     QFrame:hover {
-                        border-color: #3498db;
-                        background-color: #fff3c4;
+                        border-color: #cc9900;
+                        background-color: #ffe5b4;
                     }
                 """)
             
@@ -274,12 +286,13 @@ class PersonnelManagementWidget(QWidget):
             if doctor.half_parts == 1:
                 half_parts_label = QLabel("½")
                 half_parts_label.setStyleSheet("""
-                    background-color: #ffd700;
+                    background-color: #ffb700;
                     color: #000;
                     padding: 1px 3px;
                     border-radius: 2px;
                     font-weight: bold;
                     font-size: 9px;
+                    border: 1px solid #e69b00;
                 """)
                 doctor_layout.addWidget(half_parts_label)
 
@@ -327,14 +340,14 @@ class PersonnelManagementWidget(QWidget):
             cat_frame = QFrame()
             cat_frame.setStyleSheet("""
                 QFrame {
-                    border: 1px solid #e1e4e8;
-                    background-color: white;
-                    border-radius: 3px;
-                    padding: 3px;
+                    border: 1px solid #c0d0e0;
+                    background-color: #e5e9f0;
+                    border-radius: 4px;
+                    padding: 4px;
                 }
                 QFrame:hover {
-                    border-color: #3498db;
-                    background-color: #f8f9fa;
+                    border-color: #2c5282;
+                    background-color: #dde1e8;
                 }
             """)
             
@@ -454,40 +467,46 @@ class PersonnelDialog(QDialog):
     def init_ui(self):
         self.setStyleSheet("""
             QDialog {
-                background-color: #f5f6fa;
+                background-color: #f8fafc;
             }
             QGroupBox {
                 background-color: white;
-                border: 1px solid #ddd;
+                border: 1px solid #c0d0e0;
                 border-radius: 4px;
                 margin-top: 0.5em;
-                padding: 6px;
+                padding: 8px;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 6px;
-                padding: 0 3px;
-                color: #2d3436;
+                left: 8px;
+                padding: 0 4px;
+                color: #2c5282;
                 font-weight: bold;
             }
             QLabel {
-                color: #2d3436;
+                color: #2d3748;
             }
             QLineEdit, QSpinBox {
                 background-color: white;
-                border: 1px solid #ddd;
-                border-radius: 3px;
-                padding: 4px;
+                border: 1px solid #c0d0e0;
+                border-radius: 4px;
+                padding: 6px;
                 min-width: 180px;
+                color: #2d3748;
             }
             QLineEdit:focus, QSpinBox:focus {
-                border-color: #3498db;
+                border-color: #2c5282;
+                background-color: #f8fafc;
             }
             QPushButton {
-                padding: 6px 12px;
-                border-radius: 3px;
+                padding: 8px 16px;
+                border-radius: 4px;
                 font-weight: bold;
-                min-width: 80px;
+                min-width: 100px;
+                font-size: 10pt;
+            }
+            QPushButton:hover {
+                background-color: #f0f5fa;
             }
         """)
 
@@ -569,40 +588,46 @@ class CATDialog(QDialog):
     def init_ui(self):
         self.setStyleSheet("""
             QDialog {
-                background-color: #f5f6fa;
+                background-color: #f8fafc;
             }
             QGroupBox {
                 background-color: white;
-                border: 1px solid #ddd;
+                border: 1px solid #c0d0e0;
                 border-radius: 4px;
                 margin-top: 0.5em;
-                padding: 6px;
+                padding: 8px;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 6px;
-                padding: 0 3px;
-                color: #2d3436;
+                left: 8px;
+                padding: 0 4px;
+                color: #2c5282;
                 font-weight: bold;
             }
             QLabel {
-                color: #2d3436;
+                color: #2d3748;
             }
             QLineEdit {
                 background-color: white;
-                border: 1px solid #ddd;
-                border-radius: 3px;
-                padding: 4px;
+                border: 1px solid #c0d0e0;
+                border-radius: 4px;
+                padding: 6px;
                 min-width: 180px;
+                color: #2d3748;
             }
             QLineEdit:focus {
-                border-color: #3498db;
+                border-color: #2c5282;
+                background-color: #f8fafc;
             }
             QPushButton {
-                padding: 6px 12px;
-                border-radius: 3px;
+                padding: 8px 16px;
+                border-radius: 4px;
                 font-weight: bold;
-                min-width: 80px;
+                min-width: 100px;
+                font-size: 10pt;
+            }
+            QPushButton:hover {
+                background-color: #f0f5fa;
             }
         """)
 
