@@ -9,7 +9,7 @@ from core.Constantes.models import ALL_POST_TYPES, WEEKDAY_COMBINATIONS, WEEKEND
 from datetime import date, timedelta
 from PyQt6.QtCore import pyqtSignal
 from .pre_attribution_view import PreAttributionWidget
-from .styles import color_system, EDIT_DELETE_BUTTON_STYLE, ACTION_BUTTON_STYLE, ADD_BUTTON_STYLE
+from .styles import color_system, EDIT_DELETE_BUTTON_STYLE, ACTION_BUTTON_STYLE, ADD_BUTTON_STYLE, StyleConstants
 
 
 class PlanningGenerationThread(QThread):
@@ -88,9 +88,17 @@ class PlanningViewWidget(QWidget):
 
     def init_ui(self):
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(
+            StyleConstants.SPACING['md'],
+            StyleConstants.SPACING['md'],
+            StyleConstants.SPACING['md'],
+            StyleConstants.SPACING['md']
+        )
+        layout.setSpacing(StyleConstants.SPACING['md'])
 
         # Contrôles de date et bouton de génération
         date_layout = QHBoxLayout()
+        date_layout.setSpacing(StyleConstants.SPACING['sm'])
         
         self.start_date = QDateEdit()
         self.start_date.setCalendarPopup(True)
@@ -134,15 +142,80 @@ class PlanningViewWidget(QWidget):
         self.reset_planning_button.setStyleSheet(EDIT_DELETE_BUTTON_STYLE)
         date_layout.addWidget(self.reset_planning_button)
 
-        # Barre de progression
+        # Barre de progression avec style
         self.progress_bar = QProgressBar(self)
+        self.progress_bar.setStyleSheet(f"""
+            QProgressBar {{
+                border: 1px solid {color_system.colors['container']['border'].name()};
+                border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
+                background-color: {color_system.colors['container']['background'].name()};
+                padding: {StyleConstants.SPACING['xxs']}px;
+                text-align: center;
+            }}
+            QProgressBar::chunk {{
+                background-color: {color_system.colors['primary'].name()};
+                border-radius: {StyleConstants.BORDER_RADIUS['sm'] - 1}px;
+            }}
+        """)
+        self.progress_bar.setMinimumHeight(StyleConstants.SPACING['lg'])
         layout.addWidget(self.progress_bar)
 
-        # Créer un widget avec des onglets
+        # Widget avec des onglets
         tab_widget = QTabWidget()
+        tab_widget.setStyleSheet(f"""
+            QTabWidget::pane {{
+                border: 1px solid {color_system.colors['container']['border'].name()};
+                background-color: {color_system.colors['container']['background'].name()};
+                border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
+            }}
+            QTabBar::tab {{
+                background-color: {color_system.colors['table']['header'].name()};
+                color: {color_system.colors['text']['primary'].name()};
+                padding: {StyleConstants.SPACING['xs']}px {StyleConstants.SPACING['md']}px;
+                border: 1px solid {color_system.colors['container']['border'].name()};
+                border-bottom: none;
+                border-top-left-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
+                border-top-right-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
+                min-width: 100px;
+                font-family: {StyleConstants.FONT['family']['primary']};
+                font-size: {StyleConstants.FONT['size']['md']};
+            }}
+            QTabBar::tab:selected {{
+                background-color: {color_system.colors['primary'].name()};
+                color: {color_system.colors['text']['light'].name()};
+                font-weight: {StyleConstants.FONT['weight']['medium']};
+            }}
+            QTabBar::tab:hover:!selected {{
+                background-color: {color_system.colors['table']['hover'].name()};
+                transition: background-color {StyleConstants.ANIMATION['fast']}ms;
+            }}
+        """)
         
-        # Vue globale du planning
+        # Vue globale du planning avec style
         self.global_view = QTableWidget(self)
+        self.global_view.setStyleSheet(f"""
+            QTableWidget {{
+                border: 1px solid {color_system.colors['table']['border'].name()};
+                gridline-color: {color_system.colors['table']['border'].name()};
+                font-family: {StyleConstants.FONT['family']['primary']};
+                font-size: {StyleConstants.FONT['size']['md']};
+            }}
+            QHeaderView::section {{
+                background-color: {color_system.colors['table']['header'].name()};
+                color: {color_system.colors['text']['primary'].name()};
+                padding: {StyleConstants.SPACING['xs']}px;
+                border: none;
+                border-bottom: 2px solid {color_system.colors['table']['border'].name()};
+                font-weight: {StyleConstants.FONT['weight']['medium']};
+            }}
+            QTableWidget::item {{
+                padding: {StyleConstants.SPACING['xs']}px;
+            }}
+            QTableWidget::item:selected {{
+                background-color: {color_system.colors['table']['selected'].name()};
+                color: {color_system.colors['text']['primary'].name()};
+            }}
+        """)
         tab_widget.addTab(self.global_view, "Vue globale")
         layout.addWidget(tab_widget)
         
@@ -446,7 +519,7 @@ class PlanningViewWidget(QWidget):
         
         # Fixer la hauteur des lignes
         for row in range(self.global_view.rowCount()):
-            self.global_view.setRowHeight(row, 25)
+            self.global_view.setRowHeight(row, StyleConstants.SPACING['xl'])
 
         # Empêcher l'édition des cellules
         self.global_view.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)

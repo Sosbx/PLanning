@@ -1,30 +1,28 @@
 # © 2024 HILAL Arkane. Tous droits réservés.
 # .gui/doctor_planning_view
+# © 2024 HILAL Arkane. Tous droits réservés.
+# .gui/doctor_planning_view
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QComboBox, QScrollArea, 
                              QLabel, QScrollArea, QSplitter, QPushButton, QFrame)
-from PyQt6.QtCore import Qt, QTimer,QSize
+from PyQt6.QtCore import Qt, QTimer, QSize
 from PyQt6.QtGui import QColor, QBrush, QFont, QIcon
 from datetime import date, timedelta, datetime, time
 from typing import Union, Optional, Dict, List, Tuple
 from collections import defaultdict
 from core.utils import get_post_period
-
 from core.Constantes.models import Doctor, CAT, TimeSlot
-
 import logging
-from dateutil.relativedelta import relativedelta#+
+from dateutil.relativedelta import relativedelta
+from .styles import color_system, StyleConstants
+
 logger = logging.getLogger(__name__)
 
-from .styles import color_system
-
-# Utilisation du système de couleurs centralisé
-WEEKEND_COLOR = color_system.colors["weekend"]
-WEEKDAY_COLOR = color_system.colors["weekday"]
-DESIDERATA_COLOR = color_system.colors["desiderata"]["primary"]["normal"]
-WEEKEND_DESIDERATA_COLOR = color_system.colors["desiderata"]["primary"]["weekend"]
-WEEKDAY_TEXT_COLOR = color_system.colors["text"]
-AVAILABLE_COLOR = color_system.colors["available"]
-SECONDARY_DESIDERATA_COLOR = color_system.colors["desiderata"]["secondary"]["normal"]
+# Get colors from color system
+WEEKEND_COLOR = color_system.get_color('weekend')
+WEEKDAY_COLOR = color_system.get_color('weekday')
+WEEKDAY_TEXT_COLOR = color_system.get_color('text', 'primary')
+AVAILABLE_COLOR = color_system.get_color('available')
+SECONDARY_DESIDERATA_COLOR = color_system.get_color('desiderata', 'secondary', 'normal')
 
 
 class CollapsibleWidget(QWidget):
@@ -158,23 +156,11 @@ class DoctorPlanningView(QWidget):
         right_layout = QVBoxLayout(right_widget)
         right_layout.setContentsMargins(0, 0, 0, 0)
 
-        # Police en gras pour les en-têtes
-        header_font = QFont()
-        header_font.setBold(True)
-        header_font.setPointSize(10)
-
         # Section des postes attribués
         self.assigned_section = CollapsibleWidget("Détails des postes")
         self.detail_table = QTableWidget()
         self.detail_table.setColumnCount(2)
-        
-        # En-têtes avec style pour detail_table
-        for col, text in enumerate(["Poste", "Médecin"]):
-            header_item = QTableWidgetItem(text)
-            header_item.setFont(header_font)
-            header_item.setForeground(QBrush(QColor(40, 40, 40)))
-            self.detail_table.setHorizontalHeaderItem(col, header_item)
-            
+        self.detail_table.setHorizontalHeaderLabels(["Poste", "Médecin"])
         self.detail_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.assigned_section.add_widget(self.detail_table)
         right_layout.addWidget(self.assigned_section)
@@ -183,13 +169,7 @@ class DoctorPlanningView(QWidget):
         self.available_section = CollapsibleWidget("Médecins disponibles")
         self.available_table = QTableWidget()
         self.available_table.setColumnCount(1)
-        
-        # En-tête avec style pour available_table
-        header_item = QTableWidgetItem("Médecin")
-        header_item.setFont(header_font)
-        header_item.setForeground(QBrush(QColor(40, 40, 40)))
-        self.available_table.setHorizontalHeaderItem(0, header_item)
-        
+        self.available_table.setHorizontalHeaderLabels(["Médecin"])
         self.available_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.available_section.add_widget(self.available_table)
         right_layout.addWidget(self.available_section)
@@ -198,13 +178,7 @@ class DoctorPlanningView(QWidget):
         self.secondary_section = CollapsibleWidget("Médecins avec desiderata secondaire")
         self.secondary_table = QTableWidget()
         self.secondary_table.setColumnCount(1)
-        
-        # En-tête avec style pour secondary_table
-        header_item = QTableWidgetItem("Médecin")
-        header_item.setFont(header_font)
-        header_item.setForeground(QBrush(QColor(40, 40, 40)))
-        self.secondary_table.setHorizontalHeaderItem(0, header_item)
-        
+        self.secondary_table.setHorizontalHeaderLabels(["Médecin"])
         self.secondary_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.secondary_section.add_widget(self.secondary_table)
         right_layout.addWidget(self.secondary_section)
@@ -293,29 +267,19 @@ class DoctorPlanningView(QWidget):
         """Met à jour la section des postes attribués"""
         self.detail_table.setRowCount(len(display_posts))
         for i, (post_type, assignee) in enumerate(display_posts):
-            # Police en gras pour toutes les cellules
-            bold_font = QFont()
-            bold_font.setBold(True)
-            
             # Poste
             post_item = QTableWidgetItem(post_type)
-            post_item.setFont(bold_font)
             post_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            post_item.setForeground(QBrush(QColor(40, 40, 40)))
             self.detail_table.setItem(i, 0, post_item)
             
             # Médecin assigné
             doctor_item = QTableWidgetItem(assignee)
-            doctor_item.setFont(bold_font)
             doctor_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            
+            self.detail_table.setItem(i, 1, doctor_item)
+
             # Style pour les postes non assignés
             if assignee == "Non assigné":
-                doctor_item.setForeground(QBrush(QColor(120, 120, 120)))
-            else:
-                doctor_item.setForeground(QBrush(QColor(40, 40, 40)))
-                
-            self.detail_table.setItem(i, 1, doctor_item)
+                doctor_item.setForeground(QBrush(QColor(150, 150, 150)))
 
     def _update_available_doctors(self, current_date: date, period: Optional[int], day_type: str):
         """
@@ -749,7 +713,7 @@ class DoctorPlanningView(QWidget):
             self.table.setRowCount(31)
             self.table.setColumnCount(total_months * 4 + 1)
 
-            # En-têtes avec police en gras
+            # En-têtes
             headers = ["Jour"]
             current_date = date(start_date.year, start_date.month, 1)
             for _ in range(total_months):
@@ -757,16 +721,7 @@ class DoctorPlanningView(QWidget):
                 headers.extend([f"{month_name}\nJ", f"{month_name}\nM", f"{month_name}\nAM", f"{month_name}\nS"])
                 current_date = (current_date.replace(day=28) + timedelta(days=4)).replace(day=1)
             
-            # Appliquer le style aux en-têtes
-            header_font = QFont()
-            header_font.setBold(True)
-            header_font.setPointSize(10)
-            
-            for col, text in enumerate(headers):
-                header_item = QTableWidgetItem(text)
-                header_item.setFont(header_font)
-                header_item.setForeground(QBrush(QColor(40, 40, 40)))
-                self.table.setHorizontalHeaderItem(col, header_item)
+            self.table.setHorizontalHeaderLabels(headers)
 
             # Remplissage des données
             current_date = start_date
@@ -837,11 +792,6 @@ class DoctorPlanningView(QWidget):
             # Obtention de la personne sélectionnée
             selected_person = next((p for p in self.doctors + self.cats if p.name == selected_name), None)
             
-            # Police en gras pour toutes les cellules
-            bold_font = QFont()
-            bold_font.setBold(True)
-            bold_font.setPointSize(10)
-
             # Remplissage des cellules pour chaque période
             for i in range(3):
                 item = QTableWidgetItem()
@@ -850,8 +800,6 @@ class DoctorPlanningView(QWidget):
                 # Texte de la cellule
                 text = ", ".join(slot.abbreviation for slot in post_list)
                 item.setText(text)
-                item.setFont(bold_font)
-                item.setForeground(QBrush(QColor(40, 40, 40)))
                 
                 # Coloration selon desiderata
                 current_color = background_color
@@ -869,24 +817,19 @@ class DoctorPlanningView(QWidget):
 
     def _set_basic_row_items(self, day_row, col_offset, current_date):
         """Configure les cellules de base d'une ligne (jour et jour de la semaine)"""
-        # Police en gras pour toutes les cellules
-        bold_font = QFont()
-        bold_font.setBold(True)
-        bold_font.setPointSize(10)
-        
         # Jour
         day_item = QTableWidgetItem(str(current_date.day))
-        day_item.setFont(bold_font)
         day_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-        day_item.setForeground(QBrush(QColor(40, 40, 40)))
         self.table.setItem(day_row, 0, day_item)
         
         # Jour de la semaine
         weekday_names = ["L", "M", "M", "J", "V", "S", "D"]
         weekday_item = QTableWidgetItem(weekday_names[current_date.weekday()])
-        weekday_item.setFont(bold_font)
         weekday_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-        weekday_item.setForeground(QBrush(QColor(40, 40, 40)))
+        weekday_item.setForeground(QBrush(WEEKDAY_TEXT_COLOR))
+        font = QFont()
+        font.setPointSize(8)
+        weekday_item.setFont(font)
         self.table.setItem(day_row, col_offset, weekday_item)
 
     def _adjust_table_dimensions(self):

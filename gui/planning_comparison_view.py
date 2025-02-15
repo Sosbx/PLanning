@@ -15,13 +15,15 @@ from workalendar.europe import France
 
 
 
-# Constantes de couleurs professionnelles
-WEEKEND_COLOR = QColor(215, 225, 235)  # Bleu-gris clair pour les weekends
-WEEKDAY_COLOR = QColor(250, 252, 255)  # Blanc légèrement bleuté
-DESIDERATA_COLOR = QColor(180, 200, 255)  # Bleu moyen pour les desideratas
-WEEKEND_DESIDERATA_COLOR = QColor(150, 180, 255)  # Bleu plus soutenu pour les weekends
-WEEKDAY_TEXT_COLOR = QColor(30, 35, 40)  # Gris foncé pour le texte
-AVAILABLE_COLOR = QColor(200, 230, 255)  # Bleu clair pour les disponibilités
+from .styles import color_system, StyleConstants
+
+# Get colors from color system
+WEEKEND_COLOR = color_system.get_color('weekend')
+WEEKDAY_COLOR = color_system.get_color('weekday')
+WEEKDAY_TEXT_COLOR = color_system.get_color('text', 'primary')
+AVAILABLE_COLOR = color_system.get_color('available')
+DESIDERATA_COLOR = color_system.get_color('desiderata', 'secondary', 'normal')
+WEEKEND_DESIDERATA_COLOR = color_system.get_color('desiderata', 'secondary', 'weekend')
 
 class PlanningComparisonView(QWidget):
     def __init__(self, planning, doctors, cats, main_window):
@@ -915,16 +917,16 @@ class FullPlanningTable(QTableWidget):
         self.parent = parent
         self.colors = {
             "primary": {
-                "weekend": QColor(255, 150, 150),     # Rouge plus foncé pour weekend
-                "normal": QColor(255, 200, 200)       # Rouge clair pour jours normaux
+                "weekend": color_system.get_color('desiderata', 'primary', 'weekend'),
+                "normal": color_system.get_color('desiderata', 'primary', 'normal')
             },
             "secondary": {
-                "weekend": QColor(150, 200, 255),     # Bleu plus foncé pour weekend
-                "normal": QColor(180, 220, 255)       # Bleu clair pour jours normaux
+                "weekend": color_system.get_color('desiderata', 'secondary', 'weekend'),
+                "normal": color_system.get_color('desiderata', 'secondary', 'normal')
             },
             "base": {
-                "weekend": QColor(220, 220, 220),    # Gris pour weekend
-                "normal": QColor(255, 255, 255)      # Blanc pour jours normaux
+                "weekend": color_system.get_color('weekend'),
+                "normal": color_system.get_color('weekday')
             }
         }
         self.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
@@ -983,21 +985,8 @@ class FullPlanningTable(QTableWidget):
             header_item.setForeground(QBrush(QColor(40, 40, 40)))
             self.setHorizontalHeaderItem(col, header_item)
 
-        # Définition des couleurs
-        colors = {
-            "primary": {
-                "weekend": QColor(255, 150, 150),     # Rouge plus foncé pour weekend
-                "normal": QColor(255, 200, 200)       # Rouge clair pour jours normaux
-            },
-            "secondary": {
-                "weekend": QColor(150, 200, 255),     # Bleu plus foncé pour weekend
-                "normal": QColor(180, 220, 255)       # Bleu clair pour jours normaux
-            },
-            "base": {
-                "weekend": WEEKEND_COLOR,
-                "normal": WEEKDAY_COLOR
-            }
-        }
+        # Use the color system
+        colors = self.colors
 
         # Remplissage des données
         current_date = start_date

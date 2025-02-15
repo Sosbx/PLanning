@@ -9,8 +9,7 @@ from PyQt6.QtGui import QFont, QColor, QIcon
 from core.Constantes.models import Doctor, CAT, ALL_POST_TYPES, Desiderata
 from core.Constantes.data_persistence import DataPersistence
 from .post_configuration import PostConfigurationWidget
-from .styles import EDIT_DELETE_BUTTON_STYLE, ADD_BUTTON_STYLE, ACTION_BUTTON_STYLE
-
+from .styles import color_system, EDIT_DELETE_BUTTON_STYLE, ADD_BUTTON_STYLE, ACTION_BUTTON_STYLE, GLOBAL_STYLE
 
 class PersonnelManagementWidget(QWidget):
     def __init__(self, doctors, cats, post_configuration, main_window):
@@ -26,43 +25,12 @@ class PersonnelManagementWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setSpacing(4)
         layout.setContentsMargins(4, 4, 4, 4)
-        
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #dce4ee;
-            }
-            QFrame {
-                background-color: #dce4ee;
-                border: 1px solid #b0c0d0;
-                border-radius: 4px;
-            }
-            QTabWidget::pane {
-                border: 1px solid #b0c0d0;
-                background-color: #dce4ee;
-                border-radius: 4px;
-            }
-            QTabBar::tab {
-                background-color: #dde5ed;
-                color: #2c5282;
-                border: 1px solid #b0c0d0;
-                padding: 6px 12px;
-                margin-right: 2px;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
-            }
-            QTabBar::tab:selected {
-                background-color: #dce4ee;
-                border-bottom: none;
-                color: #1a365d;
-                font-weight: bold;
-            }
-            QTabBar::tab:hover {
-                background-color: #e5ebf2;
-            }
-        """)
+
+        # Application du style global
+        self.setStyleSheet(GLOBAL_STYLE)
         
         tab_widget = QTabWidget()
-        
+
         # Onglet des médecins
         doctors_tab = QWidget()
         doctors_layout = QVBoxLayout(doctors_tab)
@@ -77,10 +45,10 @@ class PersonnelManagementWidget(QWidget):
         header_layout.setSpacing(4)
         
         doctors_title = QLabel("Gestion des Médecins")
-        doctors_title.setStyleSheet("""
+        doctors_title.setStyleSheet(f"""
             font-size: 11px;
             font-weight: bold;
-            color: #2c3e50;
+            color: {color_system.colors['text']['primary'].name()};
             padding: 0;
             margin: 0;
             background: none;
@@ -88,12 +56,12 @@ class PersonnelManagementWidget(QWidget):
         header_layout.addWidget(doctors_title)
         
         self.doctors_stats = QLabel()
-        self.doctors_stats.setStyleSheet("""
-            color: #7f8c8d;
+        self.doctors_stats.setStyleSheet(f"""
+            color: {color_system.colors['text']['secondary'].name()};
             font-style: italic;
             padding: 0 4px;
             margin: 0;
-            background-color: #dde5ed;
+            background-color: {color_system.colors['table']['header'].name()};
             border-radius: 2px;
             font-size: 11px;
         """)
@@ -104,12 +72,12 @@ class PersonnelManagementWidget(QWidget):
 
         # Conteneur des médecins
         doctors_container = QFrame()
-        doctors_container.setStyleSheet("""
-            QFrame {
-                background-color: #e5e9f0;
-                border: 1px solid #c0d0e0;
+        doctors_container.setStyleSheet(f"""
+            QFrame {{
+                background-color: {color_system.colors['container']['background'].name()};
+                border: 1px solid {color_system.colors['container']['border'].name()};
                 border-radius: 4px;
-            }
+            }}
         """)
         
         doctors_container_layout = QVBoxLayout(doctors_container)
@@ -124,7 +92,7 @@ class PersonnelManagementWidget(QWidget):
         
         doctors_layout.addWidget(doctors_container)
 
-        # Bouton d'ajout
+        # Bouton d'ajout avec style standard
         add_doctor_button = QPushButton("Ajouter un médecin")
         add_doctor_button.setIcon(QIcon("icons/ajouter.png"))
         add_doctor_button.clicked.connect(lambda: self.add_personnel("Médecin"))
@@ -133,53 +101,53 @@ class PersonnelManagementWidget(QWidget):
 
         tab_widget.addTab(doctors_tab, "Médecins")
 
-        # Onglet des CAT
+        # Onglet des CAT (style similaire aux médecins)
         cats_tab = QWidget()
         cats_layout = QVBoxLayout(cats_tab)
         cats_layout.setSpacing(4)
         cats_layout.setContentsMargins(4, 4, 4, 4)
 
         # En-tête avec statistiques
-        cats_header_container = QWidget()
-        cats_header_container.setFixedHeight(20)
-        cats_header_layout = QHBoxLayout(cats_header_container)
-        cats_header_layout.setContentsMargins(0, 0, 0, 0)
-        cats_header_layout.setSpacing(4)
+        header_container = QWidget()
+        header_container.setFixedHeight(20)
+        header_layout = QHBoxLayout(header_container)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(4)
         
         cats_title = QLabel("Gestion des CAT")
-        cats_title.setStyleSheet("""
+        cats_title.setStyleSheet(f"""
             font-size: 11px;
             font-weight: bold;
-            color: #2c3e50;
+            color: {color_system.colors['text']['primary'].name()};
             padding: 0;
             margin: 0;
             background: none;
         """)
-        cats_header_layout.addWidget(cats_title)
+        header_layout.addWidget(cats_title)
         
         self.cats_stats = QLabel()
-        self.cats_stats.setStyleSheet("""
-            color: #7f8c8d;
+        self.cats_stats.setStyleSheet(f"""
+            color: {color_system.colors['text']['secondary'].name()};
             font-style: italic;
             padding: 0 4px;
             margin: 0;
-            background-color: #e5e9f0;
+            background-color: {color_system.colors['table']['header'].name()};
             border-radius: 2px;
             font-size: 11px;
         """)
-        cats_header_layout.addWidget(self.cats_stats)
-        cats_header_layout.addStretch()
+        header_layout.addWidget(self.cats_stats)
+        header_layout.addStretch()
         
-        cats_layout.addWidget(cats_header_container)
-        
+        cats_layout.addWidget(header_container)
+
         # Conteneur des CAT
         cats_container = QFrame()
-        cats_container.setStyleSheet("""
-            QFrame {
-                background-color: #e5e9f0;
-                border: 1px solid #c0d0e0;
+        cats_container.setStyleSheet(f"""
+            QFrame {{
+                background-color: {color_system.colors['container']['background'].name()};
+                border: 1px solid {color_system.colors['container']['border'].name()};
                 border-radius: 4px;
-            }
+            }}
         """)
         
         cats_container_layout = QVBoxLayout(cats_container)
@@ -189,14 +157,14 @@ class PersonnelManagementWidget(QWidget):
         self.cats_grid = QWidget()
         cats_container_layout.addWidget(self.cats_grid)
         cats_layout.addWidget(cats_container)
-        
-        # Bouton d'ajout
+
+        # Bouton d'ajout avec style standard
         add_cat_button = QPushButton("Ajouter un CAT")
         add_cat_button.setIcon(QIcon("icons/ajouter.png"))
         add_cat_button.clicked.connect(lambda: self.add_personnel("CAT"))
         add_cat_button.setStyleSheet(ADD_BUTTON_STYLE)
         cats_layout.addWidget(add_cat_button)
-        
+
         tab_widget.addTab(cats_tab, "CAT")
 
         # Onglet configuration des postes
@@ -206,6 +174,7 @@ class PersonnelManagementWidget(QWidget):
         layout.addWidget(tab_widget)
         self.update_tables()
 
+    
     def update_tables(self):
         self.update_doctors_table()
         self.update_cats_table()
@@ -231,31 +200,31 @@ class PersonnelManagementWidget(QWidget):
             grid_col = col * 2  # Multiplié par 2 car chaque cellule occupe 2 colonnes
 
             doctor_frame = QFrame()
-            doctor_frame.setStyleSheet("""
-                QFrame {
-                    border: 1px solid #c0d0e0;
-                    background-color: #e3f2fd;
+            doctor_frame.setStyleSheet(f"""
+                QFrame {{
+                    border: 1px solid {color_system.colors['container']['border'].name()};
+                    background-color: {color_system.colors['container']['background'].name()};
                     border-radius: 4px;
                     padding: 4px;
-                }
-                QFrame:hover {
-                    border-color: #2c5282;
-                    background-color: #bbdefb;
-                }
+                }}
+                QFrame:hover {{
+                    border-color: {color_system.colors['primary'].name()};
+                    background-color: {color_system.colors['table']['hover'].name()};
+                }}
             """)
-            
+
             if doctor.half_parts == 1:
-                doctor_frame.setStyleSheet("""
-                    QFrame {
-                        border: 1px solid #e6b800;
-                        background-color: #fff3cd;
+                doctor_frame.setStyleSheet(f"""
+                    QFrame {{
+                        border: 1px solid {color_system.colors['warning'].name()};
+                        background-color: {color_system.colors['table']['alternate'].name()};
                         border-radius: 4px;
                         padding: 4px;
-                    }
-                    QFrame:hover {
-                        border-color: #cc9900;
-                        background-color: #ffe5b4;
-                    }
+                    }}
+                    QFrame:hover {{
+                        border-color: {color_system.colors['warning'].name()};
+                        background-color: {color_system.colors['table']['hover'].name()};
+                    }}
                 """)
             
             doctor_layout = QHBoxLayout(doctor_frame)
@@ -324,10 +293,16 @@ class PersonnelManagementWidget(QWidget):
             self.doctors_grid.setColumnStretch(i, 1)
             
     def update_cats_table(self):
+        # Clear existing layout if it exists
         if self.cats_grid.layout():
+            while self.cats_grid.layout().count():
+                item = self.cats_grid.layout().takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
             QWidget().setLayout(self.cats_grid.layout())
 
         cats_layout = QVBoxLayout(self.cats_grid)
+        cats_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         cats_layout.setSpacing(4)
         cats_layout.setContentsMargins(2, 2, 2, 2)
 
@@ -338,27 +313,28 @@ class PersonnelManagementWidget(QWidget):
 
         for index, cat in enumerate(sorted_cats):
             cat_frame = QFrame()
-            cat_frame.setStyleSheet("""
-                QFrame {
-                    border: 1px solid #c0d0e0;
-                    background-color: #e5e9f0;
+            # Utilisation des couleurs du système
+            cat_frame.setStyleSheet(f"""
+                QFrame {{
+                    border: 1px solid {color_system.colors['container']['border'].name()};
+                    background-color: {color_system.colors['container']['background'].name()};
                     border-radius: 4px;
                     padding: 4px;
-                }
-                QFrame:hover {
-                    border-color: #2c5282;
-                    background-color: #dde1e8;
-                }
+                }}
+                QFrame:hover {{
+                    border-color: {color_system.colors['primary'].name()};
+                    background-color: {color_system.colors['table']['hover'].name()};
+                }}
             """)
             
             cat_layout = QHBoxLayout(cat_frame)
             cat_layout.setContentsMargins(3, 3, 3, 3)
             cat_layout.setSpacing(4)
 
-            # Numéro
+            # Numéro avec style du système
             number_label = QLabel(f"{index + 1}.")
-            number_label.setStyleSheet("""
-                color: #7f8c8d;
+            number_label.setStyleSheet(f"""
+                color: {color_system.colors['text']['secondary'].name()};
                 font-weight: bold;
                 min-width: 16px;
                 font-size: 11px;
@@ -366,18 +342,24 @@ class PersonnelManagementWidget(QWidget):
             number_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             cat_layout.addWidget(number_label)
 
-            # Nom
+            # Nom avec style du système
             name_label = QLabel(cat.name)
-            name_label.setStyleSheet("""
+            name_label.setStyleSheet(f"""
                 font-size: 11px;
                 font-weight: bold;
-                color: #2c3e50;
+                color: {color_system.colors['text']['primary'].name()};
             """)
             cat_layout.addWidget(name_label)
 
             cat_layout.addStretch()
 
-            # Boutons d'action
+            # Conteneur pour les boutons d'action
+            action_container = QWidget()
+            action_layout = QHBoxLayout(action_container)
+            action_layout.setContentsMargins(0, 0, 0, 0)
+            action_layout.setSpacing(4)
+
+            # Bouton d'édition avec style standard
             edit_button = QPushButton()
             edit_button.setIcon(QIcon("icons/edition.png"))
             edit_button.setIconSize(QSize(14, 14))
@@ -386,6 +368,7 @@ class PersonnelManagementWidget(QWidget):
             edit_button.clicked.connect(lambda _, c=cat: self.edit_personnel(c))
             edit_button.setStyleSheet(EDIT_DELETE_BUTTON_STYLE)
             
+            # Bouton de suppression avec style standard
             delete_button = QPushButton()
             delete_button.setIcon(QIcon("icons/supprimer.png"))
             delete_button.setIconSize(QSize(14, 14))
@@ -394,11 +377,13 @@ class PersonnelManagementWidget(QWidget):
             delete_button.clicked.connect(lambda _, c=cat: self.delete_personnel(c))
             delete_button.setStyleSheet(EDIT_DELETE_BUTTON_STYLE)
             
-            cat_layout.addWidget(edit_button)
-            cat_layout.addWidget(delete_button)
+            action_layout.addWidget(edit_button)
+            action_layout.addWidget(delete_button)
+            cat_layout.addWidget(action_container)
 
             cats_layout.addWidget(cat_frame)
 
+        # Ajouter un espace extensible à la fin
         cats_layout.addStretch()
 
     def add_personnel(self, personnel_type):
@@ -465,99 +450,88 @@ class PersonnelDialog(QDialog):
         self.init_ui()
 
     def init_ui(self):
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #f8fafc;
-            }
-            QGroupBox {
-                background-color: white;
-                border: 1px solid #c0d0e0;
-                border-radius: 4px;
-                margin-top: 0.5em;
-                padding: 8px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 8px;
-                padding: 0 4px;
-                color: #2c5282;
-                font-weight: bold;
-            }
-            QLabel {
-                color: #2d3748;
-            }
-            QLineEdit, QSpinBox {
-                background-color: white;
-                border: 1px solid #c0d0e0;
-                border-radius: 4px;
-                padding: 6px;
-                min-width: 180px;
-                color: #2d3748;
-            }
-            QLineEdit:focus, QSpinBox:focus {
-                border-color: #2c5282;
-                background-color: #f8fafc;
-            }
-            QPushButton {
-                padding: 8px 16px;
-                border-radius: 4px;
-                font-weight: bold;
-                min-width: 100px;
-                font-size: 10pt;
-            }
-            QPushButton:hover {
-                background-color: #f0f5fa;
-            }
-        """)
-
+        # Application du style global
+        self.setStyleSheet(GLOBAL_STYLE)
+        
         layout = QVBoxLayout(self)
         layout.setSpacing(6)
         layout.setContentsMargins(6, 6, 6, 6)
         
         # Groupe d'informations
         info_group = QGroupBox("Informations")
+        info_group.setStyleSheet(f"""
+            QGroupBox {{
+                background-color: {color_system.colors['container']['background'].name()};
+                border: 1px solid {color_system.colors['container']['border'].name()};
+                border-radius: 4px;
+                margin-top: 0.5em;
+                padding: 8px;
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: 8px;
+                padding: 0 4px;
+                color: {color_system.colors['primary'].name()};
+                font-weight: bold;
+            }}
+        """)
+        
         form_layout = QFormLayout(info_group)
         form_layout.setSpacing(8)
 
+        # Champ Nom
         self.name_input = QLineEdit()
         self.name_input.setPlaceholderText("Entrez le nom")
+        self.name_input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: white;
+                border: 1px solid {color_system.colors['container']['border'].name()};
+                border-radius: 4px;
+                padding: 6px;
+                min-width: 180px;
+                color: {color_system.colors['text']['primary'].name()};
+            }}
+            QLineEdit:focus {{
+                border-color: {color_system.colors['primary'].name()};
+                background-color: {color_system.colors['container']['background'].name()};
+            }}
+        """)
         form_layout.addRow("Nom:", self.name_input)
 
+        # Champ Parts (uniquement pour les médecins)
         if self.personnel_type == "Médecin":
             self.half_parts_input = QSpinBox()
             self.half_parts_input.setRange(1, 2)
             self.half_parts_input.setPrefix("  ")
             self.half_parts_input.setSuffix(" parts")
+            self.half_parts_input.setStyleSheet(f"""
+                QSpinBox {{
+                    background-color: white;
+                    border: 1px solid {color_system.colors['container']['border'].name()};
+                    border-radius: 4px;
+                    padding: 6px;
+                    min-width: 100px;
+                }}
+                QSpinBox:focus {{
+                    border-color: {color_system.colors['primary'].name()};
+                }}
+            """)
             form_layout.addRow("Parts:", self.half_parts_input)
 
         layout.addWidget(info_group)
 
-        # Boutons
+        # Conteneur des boutons
         button_container = QWidget()
         button_layout = QHBoxLayout(button_container)
         button_layout.setSpacing(6)
         
+        # Bouton Enregistrer
         save_button = QPushButton("Enregistrer")
-        save_button.setStyleSheet("""
-            QPushButton {
-                background-color: #2ecc71;
-                color: white;
-            }
-            QPushButton:hover {
-                background-color: #27ae60;
-            }
-        """)
+        save_button.setStyleSheet(color_system.styles['button']['success'])
         
+        # Bouton Annuler
         cancel_button = QPushButton("Annuler")
-        cancel_button.setStyleSheet("""
-            QPushButton {
-                background-color: #e74c3c;
-                color: white;
-            }
-            QPushButton:hover {
-                background-color: #c0392b;
-            }
-        """)
+        cancel_button.setStyleSheet(color_system.styles['button']['danger'])
         
         save_button.clicked.connect(self.accept)
         cancel_button.clicked.connect(self.reject)
@@ -568,6 +542,7 @@ class PersonnelDialog(QDialog):
         
         layout.addWidget(button_container)
 
+        # Charger les données si en mode édition
         if self.person:
             self.name_input.setText(self.person.name)
             if isinstance(self.person, Doctor):
@@ -586,92 +561,68 @@ class CATDialog(QDialog):
         self.init_ui()
 
     def init_ui(self):
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #f8fafc;
-            }
-            QGroupBox {
-                background-color: white;
-                border: 1px solid #c0d0e0;
-                border-radius: 4px;
-                margin-top: 0.5em;
-                padding: 8px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 8px;
-                padding: 0 4px;
-                color: #2c5282;
-                font-weight: bold;
-            }
-            QLabel {
-                color: #2d3748;
-            }
-            QLineEdit {
-                background-color: white;
-                border: 1px solid #c0d0e0;
-                border-radius: 4px;
-                padding: 6px;
-                min-width: 180px;
-                color: #2d3748;
-            }
-            QLineEdit:focus {
-                border-color: #2c5282;
-                background-color: #f8fafc;
-            }
-            QPushButton {
-                padding: 8px 16px;
-                border-radius: 4px;
-                font-weight: bold;
-                min-width: 100px;
-                font-size: 10pt;
-            }
-            QPushButton:hover {
-                background-color: #f0f5fa;
-            }
-        """)
-
+        # Application du style global
+        self.setStyleSheet(GLOBAL_STYLE)
+        
         layout = QVBoxLayout(self)
         layout.setSpacing(6)
         layout.setContentsMargins(6, 6, 6, 6)
         
         # Groupe d'informations
         info_group = QGroupBox("Informations")
+        info_group.setStyleSheet(f"""
+            QGroupBox {{
+                background-color: {color_system.colors['container']['background'].name()};
+                border: 1px solid {color_system.colors['container']['border'].name()};
+                border-radius: 4px;
+                margin-top: 0.5em;
+                padding: 8px;
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: 8px;
+                padding: 0 4px;
+                color: {color_system.colors['primary'].name()};
+                font-weight: bold;
+            }}
+        """)
+        
         form_layout = QFormLayout(info_group)
         form_layout.setSpacing(8)
 
+        # Champ Nom
         self.name_input = QLineEdit()
         self.name_input.setPlaceholderText("Entrez le nom")
+        self.name_input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: white;
+                border: 1px solid {color_system.colors['container']['border'].name()};
+                border-radius: 4px;
+                padding: 6px;
+                min-width: 180px;
+                color: {color_system.colors['text']['primary'].name()};
+            }}
+            QLineEdit:focus {{
+                border-color: {color_system.colors['primary'].name()};
+                background-color: {color_system.colors['container']['background'].name()};
+            }}
+        """)
         form_layout.addRow("Nom:", self.name_input)
 
         layout.addWidget(info_group)
 
-        # Boutons
+        # Conteneur des boutons
         button_container = QWidget()
         button_layout = QHBoxLayout(button_container)
         button_layout.setSpacing(6)
         
+        # Bouton Enregistrer
         save_button = QPushButton("Enregistrer")
-        save_button.setStyleSheet("""
-            QPushButton {
-                background-color: #2ecc71;
-                color: white;
-            }
-            QPushButton:hover {
-                background-color: #27ae60;
-            }
-        """)
+        save_button.setStyleSheet(color_system.styles['button']['success'])
         
+        # Bouton Annuler
         cancel_button = QPushButton("Annuler")
-        cancel_button.setStyleSheet("""
-            QPushButton {
-                background-color: #e74c3c;
-                color: white;
-            }
-            QPushButton:hover {
-                background-color: #c0392b;
-            }
-        """)
+        cancel_button.setStyleSheet(color_system.styles['button']['danger'])
         
         save_button.clicked.connect(self.accept)
         cancel_button.clicked.connect(self.reject)
@@ -682,6 +633,7 @@ class CATDialog(QDialog):
         
         layout.addWidget(button_container)
 
+        # Charger les données si en mode édition
         if self.cat:
             self.name_input.setText(self.cat.name)
 

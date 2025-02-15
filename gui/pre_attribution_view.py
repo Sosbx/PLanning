@@ -9,6 +9,7 @@ from PyQt6.QtGui import QColor, QBrush, QFont
 from datetime import date, datetime, timedelta
 from workalendar.europe import France
 from core.Constantes.models import PostManager, Doctor
+from .styles import color_system
 
 class PreAttributionWidget(QWidget):
     """Widget principal pour la vue de pré-attribution"""
@@ -137,15 +138,15 @@ class AvailablePostList(QTableWidget):
         
         self.setStyleSheet("""
             QTableWidget {
-                gridline-color: #E0E0E0;
-                border: 1px solid #D0D0D0;
+                gridline-color: """ + color_system.colors['table']['border'].name() + """;
+                border: 1px solid """ + color_system.colors['container']['border'].name() + """;
             }
             QTableWidget::item {
                 padding: 5px;
-                border-bottom: 1px solid #F0F0F0;
+                border-bottom: 1px solid """ + color_system.colors['table']['border'].name() + """;
             }
             QTableWidget::item:selected {
-                background-color: #E6E6FA;
+                background-color: """ + color_system.colors['table']['selected'].name() + """;
             }
         """)
 
@@ -167,7 +168,7 @@ class AvailablePostList(QTableWidget):
             status = "Attribué" if is_attributed else "Disponible"
             status_item = QTableWidgetItem(status)
             status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            color = QColor(255, 200, 200) if is_attributed else QColor(200, 255, 200)
+            color = color_system.get_color('error') if is_attributed else color_system.get_color('available')
             status_item.setBackground(QBrush(color))
             self.setItem(row, 1, status_item)
 
@@ -497,7 +498,7 @@ class PreAttributionTable(QTableWidget):
                 
                 is_bridge = prev_is_off and next_is_off
             
-            background_color = QColor(220, 220, 220) if (is_weekend or is_holiday or is_bridge) else QColor(255, 255, 255)
+            background_color = color_system.get_color('weekend') if (is_weekend or is_holiday or is_bridge) else color_system.get_color('weekday')
 
             # Colonne jour
             day_item = QTableWidgetItem(str(current_date.day))
@@ -508,7 +509,7 @@ class PreAttributionTable(QTableWidget):
             # Colonne jour de la semaine
             weekday_item = QTableWidgetItem(["L", "M", "M", "J", "V", "S", "D"][current_date.weekday()])
             weekday_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            weekday_item.setForeground(QBrush(QColor(150, 150, 150)))
+            weekday_item.setForeground(QBrush(color_system.get_color('text', 'secondary')))
             weekday_item.setBackground(QBrush(background_color))
             self.setItem(row, base_col + 1, weekday_item)
 
@@ -562,9 +563,9 @@ class PreAttributionTable(QTableWidget):
                     priority = getattr(desiderata, 'priority', 'primary')
                     
                     if priority == 'primary':
-                        color = QColor(255, 150, 150) if is_special_day else QColor(255, 200, 200)
+                        color = color_system.get_color('desiderata', 'primary', 'weekend' if is_special_day else 'normal')
                     else:  # secondary
-                        color = QColor(150, 200, 255) if is_special_day else QColor(180, 220, 255)
+                        color = color_system.get_color('desiderata', 'secondary', 'weekend' if is_special_day else 'normal')
                     
                     item.setBackground(QBrush(color))
                 
@@ -581,7 +582,7 @@ class PreAttributionTable(QTableWidget):
             item = self.item(row, col)
             if item:
                 item.setText(post)
-                item.setBackground(QBrush(QColor(200, 255, 200)))  # Vert clair pour les attributions
+                item.setBackground(QBrush(color_system.get_color('available')))  # Vert clair pour les attributions
 
 
 class AttributionHistoryWidget(QTableWidget):
@@ -603,15 +604,15 @@ class AttributionHistoryWidget(QTableWidget):
         
         self.setStyleSheet("""
             QTableWidget {
-                gridline-color: #E0E0E0;
-                border: 1px solid #D0D0D0;
+                gridline-color: """ + color_system.colors['table']['border'].name() + """;
+                border: 1px solid """ + color_system.colors['container']['border'].name() + """;
             }
             QTableWidget::item {
                 padding: 5px;
-                border-bottom: 1px solid #F0F0F0;
+                border-bottom: 1px solid """ + color_system.colors['table']['border'].name() + """;
             }
             QTableWidget::item:selected {
-                background-color: #E6E6FA;
+                background-color: """ + color_system.colors['table']['selected'].name() + """;
             }
         """)
 
@@ -636,7 +637,7 @@ class AttributionHistoryWidget(QTableWidget):
         
         # Type d'action avec code couleur
         action_item = QTableWidgetItem(action_type)
-        color = QColor(255, 200, 200) if action_type == "Suppression" else QColor(200, 255, 200)
+        color = color_system.get_color('error') if action_type == "Suppression" else color_system.get_color('available')
         action_item.setBackground(QBrush(color))
         self.setItem(row, 1, action_item)
         
