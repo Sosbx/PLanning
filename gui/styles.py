@@ -7,89 +7,89 @@ class ColorSystem:
     def __init__(self):
         self.styles = {
             'button': {
-                'success': f"""
-                    QPushButton {{
-                        background-color: #28a745;
-                        color: white;
+                'success': """
+                    QPushButton {
+                        background-color: #98C1A9;
+                        color: #2D3748;
                         border: none;
                         padding: 6px 12px;
                         border-radius: 4px;
                         font-weight: 500;
-                    }}
-                    QPushButton:hover {{
-                        background-color: #218838;
-                    }}
-                    QPushButton:pressed {{
-                        background-color: #1e7e34;
-                    }}
+                    }
+                    QPushButton:hover {
+                        background-color: #7DAD8C;
+                    }
+                    QPushButton:pressed {
+                        background-color: #689A78;
+                    }
                 """,
-                'danger': f"""
-                    QPushButton {{
-                        background-color: #dc3545;
-                        color: white;
+                'danger': """
+                    QPushButton {
+                        background-color: #D4A5A5;
+                        color: #2D3748;
                         border: none;
                         padding: 6px 12px;
                         border-radius: 4px;
                         font-weight: 500;
-                    }}
-                    QPushButton:hover {{
-                        background-color: #c82333;
-                    }}
-                    QPushButton:pressed {{
-                        background-color: #bd2130;
-                    }}
+                    }
+                    QPushButton:hover {
+                        background-color: #C28E8E;
+                    }
+                    QPushButton:pressed {
+                        background-color: #B07979;
+                    }
                 """
             }
         }
         
         self.colors = {
-            'primary': QColor('#007bff'),
-            'secondary': QColor('#6c757d'),
-            'success': QColor('#28a745'),
-            'danger': QColor('#dc3545'),
-            'warning': QColor('#ffc107'),
-            'info': QColor('#17a2b8'),
-            'light': QColor('#f8f9fa'),
-            'dark': QColor('#343a40'),
-            'window_background': QColor('#ffffff'),
+            'primary': QColor('#8BA6C9'),
+            'secondary': QColor('#A3B8CC'),
+            'success': QColor('#98C1A9'),
+            'danger': QColor('#D4A5A5'),
+            'warning': QColor('#E6C095'),
+            'info': QColor('#95B8D4'),
+            'light': QColor('#F5F8FA'),
+            'dark': QColor('#2D3748'),
+            'window_background': QColor('#E6EEF5'),
             
             'text': {
-                'primary': QColor('#212529'),
-                'secondary': QColor('#6c757d'),
-                'light': QColor('#ffffff'),
-                'dark': QColor('#000000')
+                'primary': QColor('#2D3748'),
+                'secondary': QColor('#64748B'),
+                'light': QColor('#F5F8FA'),
+                'dark': QColor('#1A202C')
             },
             
             'container': {
-                'background': QColor('#ffffff'),
-                'border': QColor('#dee2e6'),
-                'hover': QColor('#f8f9fa')
+                'background': QColor('#F5F8FA'),
+                'border': QColor('#D8E2E9'),
+                'hover': QColor('#EDF2F7')
             },
             
             'table': {
-                'header': QColor('#f8f9fa'),
-                'border': QColor('#dee2e6'),
-                'hover': QColor('#f5f5f5'),
-                'selected': QColor('#e9ecef'),
-                'alternate': QColor('#f8f9fa')
+                'header': QColor('#E9ECF0'),
+                'border': QColor('#DFE3E8'),
+                'hover': QColor('#EDF2F7'),
+                'selected': QColor('#E2E8F0'),
+                'alternate': QColor('#F7F9FB')
             },
             
             'focus': {
-                'outline': QColor('#80bdff')
+                'outline': QColor('#8BA6C9')
             },
             
-            'weekend': QColor('#f8d7da'),
-            'weekday': QColor('#ffffff'),
-            'available': QColor('#d4edda'),
+            'weekend': QColor('#D1D9E6'),
+            'weekday': QColor('#F5F8FA'),
+            'available': QColor('#E6F0E9'),
             
             'desiderata': {
                 'primary': {
-                    'normal': QColor('#fff3cd'),
-                    'weekend': QColor('#ffe5d0')
+                    'normal': QColor('#F0E6D4'),
+                    'weekend': QColor('#D1D9E6')
                 },
                 'secondary': {
-                    'normal': QColor('#cce5ff'),
-                    'weekend': QColor('#b8daff')
+                    'normal': QColor('#E6EEF5'),
+                    'weekend': QColor('#D1D9E6')
                 }
             }
         }
@@ -106,17 +106,17 @@ class ColorSystem:
     def get_post_group_colors(self):
         """Get colors for post groups."""
         return {
-            'matin': QColor('#e3f2fd'),      # Light blue
-            'apresMidi': QColor('#fff3e0'),  # Light orange
-            'soirNuit': QColor('#ede7f6')    # Light purple
+            'matin': QColor('#E6EEF5'),      # Light blue
+            'apresMidi': QColor('#F0E6D4'),  # Light orange
+            'soirNuit': QColor('#E6E6F0')    # Light purple
         }
     
     def get_weekend_group_colors(self):
         """Get colors for weekend groups."""
         return {
-            'gardes': QColor('#e3f2fd'),     # Light blue
-            'visites': QColor('#fff3e0'),    # Light orange
-            'consultations': QColor('#ede7f6') # Light purple
+            'gardes': QColor('#E6EEF5'),     # Light blue
+            'visites': QColor('#F0E6D4'),    # Light orange
+            'consultations': QColor('#E6E6F0') # Light purple
         }
 
 class StyleConstants:
@@ -170,106 +170,103 @@ class StyleConstants:
 color_system = ColorSystem()
 
 # Global styles
-GLOBAL_STYLE = f"""
-    QWidget {{
-        font-family: {StyleConstants.FONT['family']['primary']};
-        font-size: {StyleConstants.FONT['size']['md']};
-        color: {color_system.colors['text']['primary'].name()};
-    }}
+GLOBAL_STYLE = """
+    QWidget {
+        font-family: Arial;
+        font-size: 14px;
+        color: #2D3748;
+        background-color: #E6EEF5;
+    }
     
-    QPushButton {{
-        padding: {StyleConstants.SPACING['xs']}px {StyleConstants.SPACING['sm']}px;
-        border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
-        border: 1px solid {color_system.colors['container']['border'].name()};
-        background-color: {color_system.colors['container']['background'].name()};
-    }}
+    QPushButton {
+        padding: 8px 12px;
+        border-radius: 4px;
+        border: 1px solid #D8E2E9;
+        background-color: #F5F8FA;
+    }
     
-    QPushButton:hover {{
-        background-color: {color_system.colors['container']['hover'].name()};
-
-    }}
+    QPushButton:hover {
+        background-color: #EDF2F7;
+    }
     
-    QPushButton:pressed {{
-        background-color: {color_system.colors['container']['border'].name()};
-    }}
+    QPushButton:pressed {
+        background-color: #D8E2E9;
+    }
     
-    QLineEdit, QTextEdit, QComboBox {{
-        padding: {StyleConstants.SPACING['xs']}px;
-        border: 1px solid {color_system.colors['container']['border'].name()};
-        border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
-        background-color: {color_system.colors['container']['background'].name()};
-    }}
+    QLineEdit, QTextEdit, QComboBox {
+        padding: 8px;
+        border: 1px solid #D8E2E9;
+        border-radius: 4px;
+        background-color: #F5F8FA;
+    }
     
-    QLineEdit:focus, QTextEdit:focus, QComboBox:focus {{
-        border: 2px solid {color_system.colors['focus']['outline'].name()};
+    QLineEdit:focus, QTextEdit:focus, QComboBox:focus {
+        border: 2px solid #8BA6C9;
         outline: none;
-    }}
+    }
 """
 
 # Action button style (primary actions)
-ACTION_BUTTON_STYLE = f"""
-    QPushButton {{
-        background-color: {color_system.colors['primary'].name()};
-        color: {color_system.colors['text']['light'].name()};
+ACTION_BUTTON_STYLE = """
+    QPushButton {
+        background-color: #8BA6C9;
+        color: #2D3748;
         border: none;
-        padding: {StyleConstants.SPACING['xs']}px {StyleConstants.SPACING['md']}px;
-        border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
-        font-weight: {StyleConstants.FONT['weight']['medium']};
-    }}
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-weight: 500;
+    }
     
-    QPushButton:hover {{
-        background-color: {color_system.colors['info'].name()};
-
-    }}
+    QPushButton:hover {
+        background-color: #7691B4;
+    }
     
-    QPushButton:pressed {{
-        background-color: {color_system.colors['secondary'].name()};
-    }}
+    QPushButton:pressed {
+        background-color: #64748B;
+    }
     
-    QPushButton:disabled {{
-        background-color: {color_system.colors['secondary'].name()};
-        color: {color_system.colors['text']['secondary'].name()};
-    }}
+    QPushButton:disabled {
+        background-color: #A3B8CC;
+        color: #64748B;
+    }
 """
 
 # Add button style (success actions)
-ADD_BUTTON_STYLE = f"""
-    QPushButton {{
-        background-color: {color_system.colors['success'].name()};
-        color: {color_system.colors['text']['light'].name()};
+ADD_BUTTON_STYLE = """
+    QPushButton {
+        background-color: #98C1A9;
+        color: #2D3748;
         border: none;
-        padding: {StyleConstants.SPACING['xs']}px {StyleConstants.SPACING['md']}px;
-        border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
-        font-weight: {StyleConstants.FONT['weight']['medium']};
-    }}
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-weight: 500;
+    }
     
-    QPushButton:hover {{
-        background-color: {color_system.colors['info'].name()};
-
-    }}
+    QPushButton:hover {
+        background-color: #7DAD8C;
+    }
     
-    QPushButton:pressed {{
-        background-color: {color_system.colors['secondary'].name()};
-    }}
+    QPushButton:pressed {
+        background-color: #64748B;
+    }
 """
 
 # Edit/Delete button style (danger actions)
-EDIT_DELETE_BUTTON_STYLE = f"""
-    QPushButton {{
-        background-color: {color_system.colors['danger'].name()};
-        color: {color_system.colors['text']['light'].name()};
+EDIT_DELETE_BUTTON_STYLE = """
+    QPushButton {
+        background-color: #D4A5A5;
+        color: #2D3748;
         border: none;
-        padding: {StyleConstants.SPACING['xs']}px {StyleConstants.SPACING['md']}px;
-        border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
-        font-weight: {StyleConstants.FONT['weight']['medium']};
-    }}
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-weight: 500;
+    }
     
-    QPushButton:hover {{
-        background-color: {color_system.colors['warning'].name()};
-
-    }}
+    QPushButton:hover {
+        background-color: #C28E8E;
+    }
     
-    QPushButton:pressed {{
-        background-color: {color_system.colors['secondary'].name()};
-    }}
+    QPushButton:pressed {
+        background-color: #64748B;
+    }
 """

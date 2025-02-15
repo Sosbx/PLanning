@@ -65,7 +65,6 @@ class MainWindow(QMainWindow):
             }}
             QTabBar::tab:hover:!selected {{
                 background-color: {color_system.colors['table']['hover'].name()};
-                transition: background-color {StyleConstants.ANIMATION['fast']}ms;
             }}
             QTabBar::tab:focus {{
                 outline: none;
@@ -96,7 +95,6 @@ class MainWindow(QMainWindow):
         self.tab_widget.addTab(self.personnel_tab,
                              self.create_tab_icon("icons/personnel.png"), 
                              "Gestion du personnel")
-
 
     def create_tab_icon(self, icon_path, size=32):
         """Crée une icône pour un onglet"""
@@ -149,8 +147,29 @@ class MainWindow(QMainWindow):
                                     self.post_configuration)
         
         if hasattr(self.planning_tab, 'planning') and self.planning_tab.planning:
-            # [Code de mise à jour du planning...]
-            pass
+            start_date = self.planning_tab.planning.start_date
+            end_date = self.planning_tab.planning.end_date
+            
+            # Mettre à jour les dates dans PlanningViewWidget
+            self.planning_tab.start_date.setDate(QDate(start_date))
+            self.planning_tab.end_date.setDate(QDate(end_date))
+            
+            # Mettre à jour les dates dans DesiderataManagementWidget
+            self.desiderata_tab.sync_dates_from_planning(start_date, end_date)
+            
+            self.update_stats_view()
+            self.comparison_view.planning = self.planning_tab.planning
+            self.comparison_view.update_comparison(preserve_selection=True)
+            self.doctor_planning_view.planning = self.planning_tab.planning
+            self.doctor_planning_view.update_table()
+        else:
+            # Réinitialiser les vues si aucun planning n'est chargé
+            self.stats_tab.clear_stats()
+            self.comparison_view.reset_view()
+            self.doctor_planning_view.clear_view()
+
+        self.desiderata_tab.update_stats()
+        self.personnel_tab.post_config_tab.update_configuration(self.post_configuration)
 
     def save_data(self):
         """Sauvegarde les données"""
@@ -229,9 +248,6 @@ class MainWindow(QMainWindow):
             "Exporter"
         )
 
-    def create_tab_icon(self, icon_path, size=32):
-        return QIcon(resource_path(icon_path))
-
     def on_planning_dates_changed(self, start_date, end_date):
         self.desiderata_tab.sync_dates_from_planning(start_date, end_date)
 
@@ -259,87 +275,11 @@ class MainWindow(QMainWindow):
             self.logger.error(f"Erreur lors de la mise à jour du planning : {e}", exc_info=True)
             return False
 
-    def update_data(self):
-        self.personnel_tab.update_tables()
-        self.planning_tab.update_data(self.doctors, self.cats, self.post_configuration)
-        
-        if hasattr(self.planning_tab, 'planning') and self.planning_tab.planning:
-            start_date = self.planning_tab.planning.start_date
-            end_date = self.planning_tab.planning.end_date
-            
-            # Mettre à jour les dates dans PlanningViewWidget
-            self.planning_tab.start_date.setDate(QDate(start_date))
-            self.planning_tab.end_date.setDate(QDate(end_date))
-            
-            # Mettre à jour les dates dans DesiderataManagementWidget
-            self.desiderata_tab.sync_dates_from_planning(start_date, end_date)
-            
-            self.update_stats_view()
-            self.comparison_view.planning = self.planning_tab.planning
-            self.comparison_view.update_comparison(preserve_selection=True)
-            self.doctor_planning_view.planning = self.planning_tab.planning
-            self.doctor_planning_view.update_table()
-        else:
-            # Réinitialiser les vues si aucun planning n'est chargé
-            self.stats_tab.clear_stats()
-            self.comparison_view.reset_view()
-            self.doctor_planning_view.clear_view()
-
-        self.desiderata_tab.update_stats()
-        self.personnel_tab.post_config_tab.update_configuration(self.post_configuration)
-
     def update_stats_view(self):
         if self.detached_stats_window:
             self.detached_stats_window.update_stats()
         else:
             self.stats_tab.update_stats(self.planning_tab.planning, self.doctors, self.cats)
-
-    def save_data(self):
-        self.data_persistence.save_data(self.doctors, self.cats, self.post_configuration)
-        self.planning_management_tab.update_planning_list()
-
-    def detach_stats(self):
-        if not self.detached_stats_window:
-            self.tab_widget.removeTab(self.stats_index)
-            self.detached_stats_window = DetachedStatsWindow(self)
-            self.detached_stats_window.show()
-            # Assurez-vous que les statistiques sont à jour lors du détachement
-            self.update_stats_view()
-
-    def reattach_stats(self):
-        """Rattache la vue des statistiques"""
-        if self.detached_stats_window:
-            self.detached_stats_window.close()
-            self.detached_stats_window = None
-            
-            # Recréation du conteneur des stats
-            stats_container = QWidget()
-            stats_layout = QVBoxLayout(stats_container)
-            stats_layout.setContentsMargins(
-                StyleConstants.SPACING['md'],
-                StyleConstants.SPACING['md'],
-                StyleConstants.SPACING['md'],
-                StyleConstants.SPACING['md']
-            )
-            stats_layout.setSpacing(StyleConstants.SPACING['md'])
-            
-            stats_layout.addWidget(self.stats_tab)
-            
-            # Bouton de détachement
-            detach_button = QPushButton("Détacher les statistiques")
-            detach_button.setStyleSheet(ACTION_BUTTON_STYLE)
-            detach_button.clicked.connect(self.detach_stats)
-            detach_button.setMinimumHeight(StyleConstants.SPACING['xl'])
-            stats_layout.addWidget(detach_button, 0, Qt.AlignmentFlag.AlignRight)
-            
-            self.stats_index = self.tab_widget.insertTab(
-                self.stats_index,
-                stats_container,
-                self.create_tab_icon("icons/statistics.png"),
-                "Statistiques"
-            )
-            self.tab_widget.setCurrentIndex(self.stats_index)
-            self.update_stats_view()
 
     def reset_all_views(self):
         # Réinitialiser la vue de comparaison
