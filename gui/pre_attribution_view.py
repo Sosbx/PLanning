@@ -29,6 +29,11 @@ class PreAttributionWidget(QWidget):
         # Refresh custom posts when they change
         if hasattr(self.main_window, 'personnel_tab'):
             self.main_window.personnel_tab.post_config_tab.custom_posts_updated.connect(self.refresh_custom_posts)
+            
+        # Initialize display for first person if any
+        current_person = self.get_current_person()
+        if current_person:
+            self.planning_table.update_display(current_person)
 
     def refresh_custom_posts(self):
         """Refresh custom posts and update UI"""
@@ -44,8 +49,6 @@ class PreAttributionWidget(QWidget):
 
         # Sélecteur de personnes
         self.person_selector = QComboBox()
-        self.update_person_selector()
-        self.person_selector.currentIndexChanged.connect(self.on_person_changed)
         layout.addWidget(self.person_selector)
 
         # Création du splitter principal horizontal
@@ -74,6 +77,12 @@ class PreAttributionWidget(QWidget):
 
         # Connecter le signal de clic sur cellule
         self.planning_table.cell_clicked.connect(self.on_cell_clicked)
+        
+        # Connect person selector signal after all widgets are created
+        self.person_selector.currentIndexChanged.connect(self.on_person_changed)
+        
+        # Initialize person selector after all connections
+        self.update_person_selector()
 
     def on_cell_clicked(self, date, period):
         """Gère le clic sur une cellule du tableau"""
@@ -83,6 +92,9 @@ class PreAttributionWidget(QWidget):
 
     def update_person_selector(self):
         """Met à jour la liste des personnes dans le sélecteur"""
+        # Stocker la personne actuellement sélectionnée
+        current_person_name = self.person_selector.currentText()
+        
         self.person_selector.clear()
         sorted_doctors = sorted(self.doctors, key=lambda x: x.name.lower())
         sorted_cats = sorted(self.cats, key=lambda x: x.name.lower())
@@ -95,6 +107,16 @@ class PreAttributionWidget(QWidget):
         
         for cat in sorted_cats:
             self.person_selector.addItem(cat.name)
+            
+        # Restaurer la sélection précédente si possible
+        if current_person_name:
+            index = self.person_selector.findText(current_person_name)
+            if index >= 0:
+                self.person_selector.setCurrentIndex(index)
+                # Force update display for the current person
+                current_person = self.get_current_person()
+                if current_person:
+                    self.planning_table.update_display(current_person)
 
     def on_person_changed(self):
         """Gère le changement de personne sélectionnée"""
@@ -168,7 +190,7 @@ class AvailablePostList(QTableWidget):
             status = "Attribué" if is_attributed else "Disponible"
             status_item = QTableWidgetItem(status)
             status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            color = color_system.get_color('error') if is_attributed else color_system.get_color('available')
+            color = QColor('#C28E8E') if is_attributed else QColor('#D1E6D6')
             status_item.setBackground(QBrush(color))
             self.setItem(row, 1, status_item)
 
@@ -534,9 +556,13 @@ class PreAttributionTable(QTableWidget):
 
     def update_display(self, person):
         """Met à jour l'affichage pour la personne sélectionnée"""
-        self.fill_calendar()  # Réinitialise l'affichage
+        # Réinitialiser l'affichage avec le calendrier de base
+        self.fill_calendar()
         
-        # Affichage des desiderata
+        if not person:
+            return
+            
+        # Affichage des desiderata en premier pour qu'ils soient toujours visibles
         for desiderata in person.desiderata:
             current_date = desiderata.start_date
             while current_date <= desiderata.end_date:
@@ -562,17 +588,25 @@ class PreAttributionTable(QTableWidget):
                     is_special_day = is_weekend or is_holiday or is_bridge
                     priority = getattr(desiderata, 'priority', 'primary')
                     
+                    # Obtenir la couleur du système de couleurs
                     if priority == 'primary':
-                        color = color_system.get_color('desiderata', 'primary', 'weekend' if is_special_day else 'normal')
+                        color = color_system.colors['desiderata']['primary']['weekend' if is_special_day else 'normal']
                     else:  # secondary
-                        color = color_system.get_color('desiderata', 'secondary', 'weekend' if is_special_day else 'normal')
+                        color = color_system.colors['desiderata']['secondary']['weekend' if is_special_day else 'normal']
                     
-                    item.setBackground(QBrush(color))
+                    # Vérifier que la couleur est bien un QColor
+                    if isinstance(color, QColor):
+                        item.setBackground(QBrush(color))
+                    else:
+                        # Fallback sur une couleur par défaut si la couleur n'est pas valide
+                        fallback_color = QColor('#E2E8F0')
+                        item.setBackground(QBrush(fallback_color))
                 
                 current_date += timedelta(days=1)
 
-        # Affichage des pré-attributions
-        for (d, p), post in self.pre_attribution_widget.pre_attributions.get(person.name, {}).items():
+        # Affichage des pré-attributions par dessus les desiderata
+        attributions = self.pre_attribution_widget.pre_attributions.get(person.name, {})
+        for (d, p), post in attributions.items():
             row = d.day - 1
             month_col = (d.year - self.start_date.year) * 12 + d.month - self.start_date.month
             base_col = month_col * 5
@@ -582,7 +616,13 @@ class PreAttributionTable(QTableWidget):
             item = self.item(row, col)
             if item:
                 item.setText(post)
-                item.setBackground(QBrush(color_system.get_color('available')))  # Vert clair pour les attributions
+                # Utiliser directement la couleur du système
+                available_color = color_system.colors['available']
+                if isinstance(available_color, QColor):
+                    item.setBackground(QBrush(available_color))
+                else:
+                    # Fallback sur une couleur par défaut
+                    item.setBackground(QBrush(QColor('#D1E6D6')))
 
 
 class AttributionHistoryWidget(QTableWidget):

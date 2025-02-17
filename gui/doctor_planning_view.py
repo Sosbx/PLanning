@@ -22,7 +22,8 @@ WEEKEND_COLOR = color_system.get_color('weekend')
 WEEKDAY_COLOR = color_system.get_color('weekday')
 WEEKDAY_TEXT_COLOR = color_system.get_color('text', 'primary')
 AVAILABLE_COLOR = color_system.get_color('available')
-SECONDARY_DESIDERATA_COLOR = color_system.get_color('desiderata', 'secondary', 'normal')
+SECONDARY_DESIDERATA_COLOR = color_system.get_color('desiderata', 'normal', 'secondary')
+
 
 
 class CollapsibleWidget(QWidget):

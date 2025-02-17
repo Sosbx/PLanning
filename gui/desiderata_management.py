@@ -18,6 +18,7 @@ import logging
 import csv
 import codecs
 from datetime import datetime
+from gui.styles import color_system
 from PyQt6.QtWidgets import QFileDialog
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,10 @@ class DesiderataCalendarWidget(QTableWidget):
         self.verticalHeader().setVisible(False)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+        
+        # Appliquer le style de base du tableau
+        self.setStyleSheet(color_system.styles['table']['base'])
+        
         self.create_calendar()
         self.cellPressed.connect(self.on_cell_pressed)
         self.cellEntered.connect(self.on_cell_entered)
@@ -77,18 +82,19 @@ class DesiderataCalendarWidget(QTableWidget):
             is_weekend = current_date.weekday() >= 5
             is_holiday = self.cal.is_holiday(current_date)
             is_bridge = self.is_bridge_day(current_date)
-            background_color = QColor(220, 220, 220) if is_weekend or is_holiday or is_bridge else QColor(255, 255, 255)
+            background_color = color_system.get_color('weekend') if is_weekend or is_holiday or is_bridge else color_system.get_color('weekday')
 
             # Colonne de jour pour chaque mois
             day_item = QTableWidgetItem(str(current_date.day))
             day_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             day_item.setBackground(QBrush(background_color))
+            day_item.setForeground(QBrush(color_system.get_color('text', 'primary')))
             self.setItem(row, base_col, day_item)
 
             # Colonne du jour de la semaine
             weekday_item = QTableWidgetItem(days_abbr[current_date.weekday()])
             weekday_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            weekday_item.setForeground(QBrush(QColor(150, 150, 150)))
+            weekday_item.setForeground(QBrush(color_system.get_color('text', 'secondary')))
             weekday_item.setBackground(QBrush(background_color))
             self.setItem(row, base_col + 1, weekday_item)
 
@@ -96,6 +102,7 @@ class DesiderataCalendarWidget(QTableWidget):
             for i in range(3):
                 item = QTableWidgetItem()
                 item.setBackground(QBrush(background_color))
+                item.setForeground(QBrush(color_system.get_color('text', 'primary')))
                 self.setItem(row, base_col + 2 + i, item)
 
             current_date += timedelta(days=1)
@@ -154,45 +161,31 @@ class DesiderataCalendarWidget(QTableWidget):
         date = self.get_date_from_cell(row, col - (col % 5))
         is_weekend_or_holiday = date and (date.weekday() >= 5 or self.cal.is_holiday(date) or self.is_bridge_day(date))
         
-        # Définition des couleurs
-        colors = {
-            "primary": {
-                "weekend": QColor(255, 150, 150),     # Rouge plus foncé pour weekend
-                "normal": QColor(255, 200, 200)       # Rouge clair pour jours normaux
-            },
-            "secondary": {
-                "weekend": QColor(150, 200, 255),     # Bleu plus foncé pour weekend
-                "normal": QColor(180, 220, 255)       # Bleu clair pour jours normaux
-            },
-            "base": {
-                "weekend": QColor(220, 220, 220),     # Gris pour weekend
-                "normal": QColor(255, 255, 255)       # Blanc pour jours normaux
-            }
-        }
-
+        # Utiliser les couleurs du système
         if priority is None:  # Protection contre les valeurs None
             priority = "primary"
 
         if force_select:
-            new_color = colors[priority]["weekend" if is_weekend_or_holiday else "normal"]
+            new_color = color_system.get_color('desiderata', priority, 'weekend' if is_weekend_or_holiday else 'normal')
         elif self.is_selecting:
             if self.is_deselecting:
                 # Mode désélection : restaurer la couleur de base
-                new_color = colors["base"]["weekend" if is_weekend_or_holiday else "normal"]
+                new_color = color_system.get_color('weekend' if is_weekend_or_holiday else 'weekday')
             else:
                 # Mode sélection : appliquer la nouvelle couleur selon le type de jour
-                new_color = colors[priority]["weekend" if is_weekend_or_holiday else "normal"]
+                new_color = color_system.get_color('desiderata', priority, 'weekend' if is_weekend_or_holiday else 'normal')
         else:
             # Clic simple : inverser l'état
             current_priority = self.get_cell_priority(item)
             if current_priority == priority:
                 # Si même priorité, restaurer la couleur de base
-                new_color = colors["base"]["weekend" if is_weekend_or_holiday else "normal"]
+                new_color = color_system.get_color('weekend' if is_weekend_or_holiday else 'weekday')
             else:
                 # Sinon, appliquer la nouvelle couleur
-                new_color = colors[priority]["weekend" if is_weekend_or_holiday else "normal"]
+                new_color = color_system.get_color('desiderata', priority, 'weekend' if is_weekend_or_holiday else 'normal')
 
-        item.setBackground(QBrush(new_color))
+        if new_color:  # Vérifier que la couleur est valide
+            item.setBackground(QBrush(new_color))
 
     def mousePressEvent(self, event):
         """Gère les clics de souris pour les deux types de desiderata"""
@@ -237,9 +230,14 @@ class DesiderataCalendarWidget(QTableWidget):
     def get_cell_priority(self, item) -> str:
         """Détermine la priorité d'une cellule selon sa couleur"""
         color = item.background().color()
-        if color in [QColor(255, 150, 150), QColor(255, 200, 200)]:  # Rouge
+        primary_weekend = color_system.get_color('desiderata', 'primary', 'weekend')
+        primary_normal = color_system.get_color('desiderata', 'primary', 'normal')
+        secondary_weekend = color_system.get_color('desiderata', 'secondary', 'weekend')
+        secondary_normal = color_system.get_color('desiderata', 'secondary', 'normal')
+        
+        if color in [primary_weekend, primary_normal]:
             return "primary"
-        elif color in [QColor(150, 200, 255), QColor(180, 220, 255)]:  # Bleu
+        elif color in [secondary_weekend, secondary_normal]:
             return "secondary"
         return None
 

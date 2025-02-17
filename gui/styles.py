@@ -39,6 +39,35 @@ class ColorSystem:
                         background-color: #9E6767;
                     }
                 """
+            },
+            'table': {
+                'base': """
+                    QTableWidget {
+                        background-color: #EDF2F7;
+                        alternate-background-color: #E2E8F0;
+                        border: 1px solid #B4C2D3;
+                        gridline-color: #B4C2D3;
+                        font-family: Arial;
+                        font-size: 14px;
+                    }
+                    QHeaderView::section {
+                        background-color: #C6D1E1;
+                        color: #2D3748;
+                        padding: 4px;
+                        border: 1px solid #B4C2D3;
+                        font-weight: 500;
+                    }
+                    QTableWidget::item {
+                        padding: 4px;
+                    }
+                    QTableWidget::item:hover {
+                        background-color: #D8E1ED;
+                    }
+                    QTableWidget::item:selected {
+                        background-color: #B8C7DB;
+                        color: #2D3748;
+                    }
+                """
             }
         }
         
@@ -84,12 +113,12 @@ class ColorSystem:
             
             'desiderata': {
                 'primary': {
-                    'normal': QColor('#E6D4B8'),
-                    'weekend': QColor('#C6D0E1')
+                    'normal': QColor('#FFD4D4'),  # Rouge clair pour jours normaux
+                    'weekend': QColor('#FFA8A8')  # Rouge plus foncé pour weekends
                 },
                 'secondary': {
-                    'normal': QColor('#D8E1ED'),
-                    'weekend': QColor('#C6D0E1')
+                    'normal': QColor('#D4E4FF'),  # Bleu clair pour jours normaux
+                    'weekend': QColor('#A8C8FF')  # Bleu plus foncé pour weekends
                 }
             }
         }

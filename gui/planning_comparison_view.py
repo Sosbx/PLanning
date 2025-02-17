@@ -949,6 +949,7 @@ class FullPlanningTable(QTableWidget):
         return self.colors["base"]["weekend" if is_weekend else "normal"]
 
 
+   
     def populate_table(self, selected):
         """Remplit le tableau avec les données du planning"""
         if not self.parent.planning or not self.parent.planning.days:
@@ -985,8 +986,21 @@ class FullPlanningTable(QTableWidget):
             header_item.setForeground(QBrush(QColor(40, 40, 40)))
             self.setHorizontalHeaderItem(col, header_item)
 
-        # Use the color system
-        colors = self.colors
+        # Définition des couleurs par défaut
+        default_colors = {
+            "primary": {
+                "weekend": QColor(255, 150, 150),     # Rouge plus foncé pour weekend
+                "normal": QColor(255, 200, 200)       # Rouge clair pour jours normaux
+            },
+            "secondary": {
+                "weekend": QColor(150, 200, 255),     # Bleu plus foncé pour weekend
+                "normal": QColor(180, 220, 255)       # Bleu clair pour jours normaux
+            },
+            "base": {
+                "weekend": QColor(220, 220, 220),     # Gris pour weekend
+                "normal": QColor(255, 255, 255)       # Blanc pour jours normaux
+            }
+        }
 
         # Remplissage des données
         current_date = start_date
@@ -1040,7 +1054,7 @@ class FullPlanningTable(QTableWidget):
                     item.setForeground(QBrush(QColor(40, 40, 40)))
                     
                     # Couleur de base
-                    base_color = colors["base"]["weekend" if is_weekend_or_holiday else "normal"]
+                    base_color = default_colors["base"]["weekend" if is_weekend_or_holiday else "normal"]
                     item.setBackground(QBrush(base_color))
                     
                     # Vérification des desiderata
@@ -1050,7 +1064,7 @@ class FullPlanningTable(QTableWidget):
                             if desiderata.start_date <= current_date <= desiderata.end_date:
                                 if desiderata.period == i + 1:
                                     priority = getattr(desiderata, 'priority', 'primary')
-                                    color = colors[priority]["weekend" if is_weekend_or_holiday else "normal"]
+                                    color = default_colors[priority]["weekend" if is_weekend_or_holiday else "normal"]
                                     item.setBackground(QBrush(color))
                     
                     self.setItem(day_row, col_offset + i + 1, item)
