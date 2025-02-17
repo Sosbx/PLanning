@@ -1,6 +1,7 @@
 from setuptools import setup, find_packages
 from Cython.Build import cythonize
 import os
+import time
 
 # Liste des modules à compiler avec Cython
 core_modules = [
@@ -28,25 +29,45 @@ core_modules = [
     "main.py"
 ]
 
-# Compiler directives pour Cython
+# Compiler directives pour Cython avec protection renforcée
 compiler_directives = {
     'language_level': "3",
-    'boundscheck': False,  # Désactive les vérifications de limites pour de meilleures performances
-    'wraparound': False,   # Désactive le wrapping négatif des indices
-    'initializedcheck': False,  # Désactive les vérifications d'initialisation
-    'nonecheck': False,    # Désactive les vérifications de None
-    'cdivision': True,     # Utilise la division C au lieu de la division Python
+    'boundscheck': False,
+    'wraparound': False,
+    'initializedcheck': False,
+    'nonecheck': False,
+    'cdivision': True,
+    'embedsignature': False,  # Supprime les signatures Python
+    'annotation_typing': False,  # Supprime les informations de type
+    'binding': False,  # Désactive la génération de code de binding
+    'optimize.use_switch': True,  # Utilise les switch statements C
+    'optimize.inline_defnode_calls': True,  # Inline les appels de fonctions
+    'remove_docstrings': True,  # Supprime les docstrings
+    'profile': False,  # Désactive le profiling
 }
+
+# Configuration de l'obfuscation
+import random
+import string
+
+def generate_random_name(length=8):
+    return ''.join(random.choices(string.ascii_letters, k=length))
+
+# Renomme les modules de manière aléatoire
+obfuscated_modules = [(module, generate_random_name()) for module in core_modules]
 
 setup(
     name='PlanificateurSOSMedecins',
     version='1.0.0',
     packages=find_packages(),
     ext_modules=cythonize(
-        core_modules,
+        [module for module, _ in obfuscated_modules],
         compiler_directives=compiler_directives,
-        # Compile en mode release pour de meilleures performances et protection
-        compile_time_env={"CYTHON_RELEASE": True}
+        compile_time_env={
+            "CYTHON_RELEASE": True,
+            "OBFUSCATED": True,
+            "BUILD_TIME": str(int(time.time())),
+        }
     ),
     # Inclure les fichiers non-Python nécessaires
     package_data={
