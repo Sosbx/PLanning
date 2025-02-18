@@ -234,6 +234,18 @@ GLOBAL_STYLE = """
         outline: none;
     }
 
+    QSpinBox, QDateEdit {
+        padding: 8px;
+        border: 1px solid #CBD5E1;
+        border-radius: 4px;
+        background-color: #FFFFFF;
+    }
+
+    QSpinBox:focus, QDateEdit:focus {
+        border: 2px solid #7691B4;
+        outline: none;
+    }
+
     QTableView {
         background-color: #EDF2F7;
         alternate-background-color: #E2E8F0;
@@ -303,19 +315,21 @@ ADD_BUTTON_STYLE = """
 # Edit/Delete button style (danger actions)
 EDIT_DELETE_BUTTON_STYLE = """
     QPushButton {
-        background-color: #C28E8E;
+        background-color: transparent;
         color: #2D3748;
-        border: none;
+        border: 1px solid #C28E8E;
         padding: 8px 16px;
         border-radius: 4px;
         font-weight: 500;
     }
     
     QPushButton:hover {
-        background-color: #B07979;
+        background-color: rgba(194, 142, 142, 0.1);
+        border-color: #B07979;
     }
     
     QPushButton:pressed {
-        background-color: #64748B;
+        background-color: rgba(194, 142, 142, 0.2);
+        border-color: #9E6767;
     }
 """

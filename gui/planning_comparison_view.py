@@ -46,157 +46,133 @@ class PlanningComparisonView(QWidget):
             3: ["CS", "HS", "SS", "RS", "NA", "NM", "NC"]   # Soir
         }
         
-        # Cache des horaires
-        self._start_times = {
-            1: (8, 0),   # Matin: 8h
-            2: (14, 0),  # Après-midi: 14h
-            3: (20, 0)   # Soir: 20h
-        }
-        self._end_times = {
-            1: (13, 0),  # Matin: 13h
-            2: (18, 0),  # Après-midi: 18h
-            3: (23, 0)   # Soir: 23h
+        # Initialisation des groupes de postes pour le bilan
+        self.post_groups = {
+            "Matin": ["ML", "MC", "MM", "CM", "HM", "SM", "RM"],
+            "Après-midi": ["CA", "HA", "SA", "RA", "AL", "AC", "CT"],
+            "Soir": ["CS", "HS", "SS", "RS", "NA", "NM", "NC"]
         }
         
         self.init_ui()
-        self.synchronize_scrollbars()
-        
-        self.selector1.currentIndexChanged.connect(self.on_selector_changed)
-        self.selector2.currentIndexChanged.connect(self.on_selector_changed)
 
-        self.post_groups = {
-            "VmS": ["ML"],
-            "VmD": ["ML", "MC"],
-            "VaSD": ["AL", "AC"],
-            "CmS": ["CM", "HM","MM"],
-            "CmD": ["CM", "HM", "SM", "RM"],
-            "CaSD": ["CA", "HA", "RA", "SA"],
-            "CsSD": ["CS", "HS", "RS", "SS"],
-            "NLw": ["NL"],
-            "NAMw": ["NM", "NA"]
-        }
-        
     def init_ui(self):
-        # Layout principal avec style
-        layout = QVBoxLayout(self)
-        layout.setSpacing(10)
-        layout.setContentsMargins(10, 10, 10, 10)
+        # Layout principal avec marges et espacement standardisés
+        layout = QVBoxLayout(self)  # Changé en QVBoxLayout pour un meilleur contrôle vertical
+        layout.setContentsMargins(
+            StyleConstants.SPACING['md'],
+            StyleConstants.SPACING['md'],
+            StyleConstants.SPACING['md'],
+            StyleConstants.SPACING['md']
+        )
+        layout.setSpacing(StyleConstants.SPACING['md'])
 
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #f8fafc;
-            }
-            QComboBox {
-                background-color: white;
-                border: 1px solid #c0d0e0;
-                border-radius: 4px;
-                padding: 6px;
+        # Style global du widget
+        self.setStyleSheet(f"""
+            QWidget {{
+                background-color: {color_system.colors['container']['background'].name()};
+                font-family: {StyleConstants.FONT['family']['primary']};
+                font-size: {StyleConstants.FONT['size']['md']};
+                color: {color_system.colors['text']['primary'].name()};
+            }}
+            QComboBox {{
+                background-color: {color_system.colors['container']['background'].name()};
+                border: 1px solid {color_system.colors['container']['border'].name()};
+                border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
+                padding: {StyleConstants.SPACING['xs']}px;
                 min-width: 200px;
-                color: #2d3748;
-            }
-            QComboBox:hover {
-                border-color: #2c5282;
-            }
-            QComboBox::drop-down {
-                border: none;
-            }
-            QComboBox::down-arrow {
-                image: none;
-                border: none;
-            }
-            QLabel {
-                color: #2d3748;
-                font-size: 10pt;
-            }
-            QTableWidget {
-                border: 1px solid #c0d0e0;
-                border-radius: 4px;
-                gridline-color: #e2e8f0;
-            }
-            QHeaderView::section {
-                background-color: #e8f0f8;
-                color: #2c5282;
-                border: 1px solid #c0d0e0;
-                padding: 4px;
-            }
-            QScrollBar {
-                background-color: #f8fafc;
-                width: 12px;
-                height: 12px;
-            }
-            QScrollBar::handle {
-                background-color: #c0d0e0;
-                border-radius: 6px;
-                min-height: 30px;
-            }
-            QScrollBar::handle:hover {
-                background-color: #2c5282;
-            }
+            }}
+            QComboBox:hover {{
+                border-color: {color_system.colors['primary'].name()};
+            }}
         """)
 
-        # Sélecteurs en haut
-        controls_layout = QHBoxLayout()
-        controls_layout.setSpacing(10)
-        
-        selector_container1 = QWidget()
-        selector_layout1 = QVBoxLayout(selector_container1)
-        selector_layout1.setSpacing(4)
-        self.selector1 = QComboBox()
-        self.info_label1 = QLabel("")
-        selector_layout1.addWidget(self.selector1)
-        selector_layout1.addWidget(self.info_label1)
-        
-        selector_container2 = QWidget()
-        selector_layout2 = QVBoxLayout(selector_container2)
-        selector_layout2.setSpacing(4)
-        self.selector2 = QComboBox()
-        self.info_label2 = QLabel("")
-        selector_layout2.addWidget(self.selector2)
-        selector_layout2.addWidget(self.info_label2)
-        
-        self.update_selectors()
-        
-        controls_layout.addWidget(selector_container1)
-        controls_layout.addWidget(selector_container2)
-        layout.addLayout(controls_layout)
-        
-        # Tableaux de planning
-        tables_layout = QHBoxLayout()
-        tables_layout.setSpacing(10)  # Réduire l'espace entre les tableaux
+        # Zone des sélecteurs
+        selectors_layout = QHBoxLayout()
+        selectors_layout.setSpacing(StyleConstants.SPACING['md'])
 
-        # Scroll areas pour les tables
+        # Création des sélecteurs
+        self.selector1 = QComboBox()
+        self.selector2 = QComboBox()
+        
+        # Style des sélecteurs
+        selector_style = f"""
+            QComboBox {{
+                background-color: {color_system.colors['container']['background'].name()};
+                border: 1px solid {color_system.colors['container']['border'].name()};
+                border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
+                padding: {StyleConstants.SPACING['xs']}px;
+                min-width: 200px;
+                min-height: {StyleConstants.SPACING['xl']}px;
+            }}
+            QComboBox:hover {{
+                border-color: {color_system.colors['primary'].name()};
+            }}
+        """
+        self.selector1.setStyleSheet(selector_style)
+        self.selector2.setStyleSheet(selector_style)
+        
+        selectors_layout.addWidget(self.selector1)
+        selectors_layout.addWidget(self.selector2)
+        layout.addLayout(selectors_layout)
+
+        # Zone des tableaux
+        tables_layout = QHBoxLayout()
+        tables_layout.setSpacing(StyleConstants.SPACING['md'])
+
+        # Création des zones de défilement
         scroll_area1 = QScrollArea()
         scroll_area2 = QScrollArea()
         scroll_area1.setWidgetResizable(True)
         scroll_area2.setWidgetResizable(True)
 
+        # Création et configuration des tableaux
         self.table1 = FullPlanningTable(self)
         self.table2 = FullPlanningTable(self)
+        
         scroll_area1.setWidget(self.table1)
         scroll_area2.setWidget(self.table2)
 
         tables_layout.addWidget(scroll_area1)
         tables_layout.addWidget(scroll_area2)
-        
-        layout.addLayout(tables_layout, 1)  # Donner plus d'importance aux tableaux
+        layout.addLayout(tables_layout, 1)  # Le 1 donne plus d'importance à la zone des tableaux
 
-        # Nouvelle section du bas avec menus déroulants
+        # Section du bas
         self.bottom_section = ComparisonBottomSection(self)
         layout.addWidget(self.bottom_section)
 
-        # Initialiser les attributs pour le suivi des dates/périodes sélectionnées
+        # Initialisation des attributs de suivi
         self.selected_date = None
         self.selected_period = None
 
-        # Connecter les signaux
+        # Connexion des signaux
         self.selector1.currentIndexChanged.connect(self.on_selector_changed)
         self.selector2.currentIndexChanged.connect(self.on_selector_changed)
 
-        # Synchroniser les barres de défilement
+        # Mise à jour initiale des sélecteurs
+        self.update_selectors()
+
+        # Synchronisation des barres de défilement
         self.synchronize_scrollbars()
 
-        # Initialiser l'affichage
-        self.update_comparison()
+
+    def update_table_style(self, table):
+        """Applique un style cohérent à une table."""
+        table.setAlternatingRowColors(True)
+        table.verticalHeader().setVisible(False)
+        table.horizontalHeader().setMinimumHeight(StyleConstants.SPACING['xl'])
+        
+        # Style des en-têtes
+        header_font = QFont(StyleConstants.FONT['family']['primary'])
+        header_font.setPointSize(int(StyleConstants.FONT['size']['md'].replace('px', '')))
+        header_font.setWeight(StyleConstants.FONT['weight']['medium'])
+        table.horizontalHeader().setFont(header_font)
+        
+        # Hauteur des lignes
+        table.verticalHeader().setDefaultSectionSize(StyleConstants.SPACING['xl'])
+        
+        # Ajustement des colonnes
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        table.horizontalHeader().setStretchLastSection(True)
 
     def synchronize_scrollbars(self):
         """
@@ -273,10 +249,6 @@ class PlanningComparisonView(QWidget):
             # Reconnectez les signaux pour permettre de nouvelles sélections
             self.selector1.currentIndexChanged.connect(self.on_selector_changed)
             self.selector2.currentIndexChanged.connect(self.on_selector_changed)
-
-        # Mettre à jour les labels d'information
-        self.update_info_label1()
-        self.update_info_label2()
                 
         # Colorer les CAT
         for i in range(self.selector1.count()):
@@ -296,38 +268,6 @@ class PlanningComparisonView(QWidget):
         elif sender == self.selector2:
             self.current_selection2 = sender.currentText()
             self.table2.populate_table(self.current_selection2)
-        
-        self.update_info_label1()
-        self.update_info_label2()
-
-
-    def update_info_label1(self):
-        selected = self.selector1.currentText()
-        if selected in [d.name for d in self.doctors]:
-            # Appel à la méthode pour récupérer le nombre de parts
-            parts = self.get_doctor_parts(selected)
-            if parts == 2:
-                self.info_label1.setText("Médecin à plein temps")
-            else:
-                self.info_label1.setText("Médecin à mi-temps")
-        elif selected in [c.name for c in self.cats]:
-            self.info_label1.setText("CAT")
-        else:
-            self.info_label1.setText("")
-
-    def update_info_label2(self):
-        selected = self.selector2.currentText()
-        if selected in [d.name for d in self.doctors]:
-            # Appel à la méthode pour récupérer le nombre de parts
-            parts = self.get_doctor_parts(selected)
-            if parts == 2:
-                self.info_label2.setText("Médecin à plein temps")
-            else:
-                self.info_label2.setText("Médecin à mi-temps")
-        elif selected in [c.name for c in self.cats]:
-            self.info_label2.setText("CAT")
-        else:
-            self.info_label2.setText("")
 
     def update_comparison(self, preserve_selection=False):
         if preserve_selection and hasattr(self, 'current_selection1') and hasattr(self, 'current_selection2'):
@@ -339,9 +279,6 @@ class PlanningComparisonView(QWidget):
         
         self.table1.populate_table(selected1)
         self.table2.populate_table(selected2)
-        
-        self.update_info_label1()
-        self.update_info_label2()
         
         if preserve_selection:
             self.selector1.setCurrentText(selected1)
@@ -371,10 +308,6 @@ class PlanningComparisonView(QWidget):
         # Mettre à jour les tables
         self.table1.populate_table(self.current_selection1)
         self.table2.populate_table(self.current_selection2)
-        
-        # Mettre à jour les informations
-        self.update_info_label1()
-        self.update_info_label2()
         
         # Ajouter à l'historique des échanges
         self.add_exchange_to_history(old_assignee, new_assignee, post_type)

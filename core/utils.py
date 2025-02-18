@@ -21,10 +21,10 @@ def resource_path(relative_path: str) -> str:
         # Try to get the PyInstaller bundle path
         base_path = sys._MEIPASS
     except AttributeError:
-        # Fallback to current directory in development
-        base_path = os.path.abspath(".")
+        # Fallback to PLanning directory in development
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
-    full_path = os.path.join(base_path, relative_path)
+    full_path = os.path.normpath(os.path.join(base_path, relative_path))
     
     if not os.path.exists(full_path):
         raise FileNotFoundError(f"Resource not found: {full_path}")

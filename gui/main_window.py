@@ -73,9 +73,9 @@ class MainWindow(QMainWindow):
         """)
 
         # Initialisation des onglets
-        self._init_planning_tab()
         self._init_personnel_tab()
         self._init_desiderata_tab()
+        self._init_planning_tab()
         self._init_doctor_planning_tab()
         self._init_stats_tab()
         self._init_comparison_tab()
@@ -179,11 +179,15 @@ class MainWindow(QMainWindow):
 
     def _init_desiderata_tab(self):
         """Initialise l'onglet Gestion des desiderata"""
+        # Use default dates since planning tab isn't initialized yet
+        default_start = QDate.currentDate()
+        default_end = default_start.addMonths(6)
+        
         self.desiderata_tab = DesiderataManagementWidget(
             self.doctors, 
             self.cats, 
-            self.planning_tab.start_date.date().toPyDate(),
-            self.planning_tab.end_date.date().toPyDate(),
+            default_start.toPyDate(),
+            default_end.toPyDate(),
             self
         )
         self.tab_widget.addTab(
