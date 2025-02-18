@@ -18,7 +18,7 @@ import logging
 import csv
 import codecs
 from datetime import datetime
-from gui.styles import color_system
+from gui.styles import color_system, ACTION_BUTTON_STYLE, ADD_BUTTON_STYLE, EDIT_DELETE_BUTTON_STYLE, GLOBAL_STYLE
 from PyQt6.QtWidgets import QFileDialog
 
 logger = logging.getLogger(__name__)
@@ -82,7 +82,8 @@ class DesiderataCalendarWidget(QTableWidget):
             is_weekend = current_date.weekday() >= 5
             is_holiday = self.cal.is_holiday(current_date)
             is_bridge = self.is_bridge_day(current_date)
-            background_color = color_system.get_color('weekend') if is_weekend or is_holiday or is_bridge else color_system.get_color('weekday')
+            # Utiliser les mêmes couleurs que dans toggle_cell et reset_to_initial_state
+            background_color = QColor(220, 220, 220) if (is_weekend or is_holiday or is_bridge) else QColor(255, 255, 255)
 
             # Colonne de jour pour chaque mois
             day_item = QTableWidgetItem(str(current_date.day))
@@ -121,14 +122,17 @@ class DesiderataCalendarWidget(QTableWidget):
         self.restore_selections()
 
     def store_selections(self):
+        """Stocke les sélections actuelles avant une mise à jour"""
         self.selections.clear()
         for row in range(self.rowCount()):
             for col in range(1, self.columnCount()):
                 item = self.item(row, col)
-                if item and item.background().color() in [QColor(255, 150, 150), QColor(255, 200, 200)]:
-                    date = self.get_date_from_cell(row, col)
-                    if date:
-                        self.selections[date] = col - (((col - 1) // 4) * 4)
+                if item:
+                    priority = self.get_cell_priority(item)
+                    if priority:  # Si la cellule a une priorité (primary ou secondary)
+                        date = self.get_date_from_cell(row, col)
+                        if date:
+                            self.selections[date] = col - (((col - 1) // 4) * 4)
 
     def restore_selections(self):
         for date, period in self.selections.items():
@@ -153,39 +157,40 @@ class DesiderataCalendarWidget(QTableWidget):
 
     def toggle_cell(self, item, force_select=False, priority="primary"):
         """Toggle une cellule avec la couleur appropriée selon la priorité"""
-        current_color = item.background().color()
-        
-        # Vérifier si c'est un weekend ou férié en utilisant la date
+        if not item:
+            return
+            
         col = item.column()
         row = item.row()
         date = self.get_date_from_cell(row, col - (col % 5))
-        is_weekend_or_holiday = date and (date.weekday() >= 5 or self.cal.is_holiday(date) or self.is_bridge_day(date))
+        if not date:
+            return
+            
+        is_weekend_or_holiday = date.weekday() >= 5 or self.cal.is_holiday(date) or self.is_bridge_day(date)
+        current_priority = self.get_cell_priority(item)
         
-        # Utiliser les couleurs du système
-        if priority is None:  # Protection contre les valeurs None
-            priority = "primary"
-
+        # Déterminer la nouvelle couleur
         if force_select:
-            new_color = color_system.get_color('desiderata', priority, 'weekend' if is_weekend_or_holiday else 'normal')
+            # Forcer la sélection (utilisé lors du chargement des desiderata)
+            new_color = color_system.colors['desiderata'][priority]['weekend' if is_weekend_or_holiday else 'normal']
         elif self.is_selecting:
             if self.is_deselecting:
-                # Mode désélection : restaurer la couleur de base
-                new_color = color_system.get_color('weekend' if is_weekend_or_holiday else 'weekday')
+                # Mode désélection : retourner à la couleur de base
+                new_color = QColor(220, 220, 220) if is_weekend_or_holiday else QColor(255, 255, 255)
             else:
-                # Mode sélection : appliquer la nouvelle couleur selon le type de jour
-                new_color = color_system.get_color('desiderata', priority, 'weekend' if is_weekend_or_holiday else 'normal')
+                # Mode sélection : appliquer la nouvelle couleur
+                new_color = color_system.colors['desiderata'][priority]['weekend' if is_weekend_or_holiday else 'normal']
         else:
             # Clic simple : inverser l'état
-            current_priority = self.get_cell_priority(item)
             if current_priority == priority:
-                # Si même priorité, restaurer la couleur de base
-                new_color = color_system.get_color('weekend' if is_weekend_or_holiday else 'weekday')
+                # Retourner à la couleur de base
+                new_color = QColor(220, 220, 220) if is_weekend_or_holiday else QColor(255, 255, 255)
             else:
-                # Sinon, appliquer la nouvelle couleur
-                new_color = color_system.get_color('desiderata', priority, 'weekend' if is_weekend_or_holiday else 'normal')
-
-        if new_color:  # Vérifier que la couleur est valide
-            item.setBackground(QBrush(new_color))
+                # Appliquer la nouvelle couleur
+                new_color = color_system.colors['desiderata'][priority]['weekend' if is_weekend_or_holiday else 'normal']
+        
+        # Appliquer la nouvelle couleur
+        item.setBackground(QBrush(new_color))
 
     def mousePressEvent(self, event):
         """Gère les clics de souris pour les deux types de desiderata"""
@@ -198,6 +203,7 @@ class DesiderataCalendarWidget(QTableWidget):
             return
 
         self.is_selecting = True
+        self.current_selection_priority = None
         
         # Détermine la priorité selon le bouton de souris
         if event.button() == Qt.MouseButton.LeftButton:
@@ -205,11 +211,14 @@ class DesiderataCalendarWidget(QTableWidget):
         elif event.button() == Qt.MouseButton.RightButton:
             self.current_selection_priority = "secondary"
             event.accept()
+        else:
+            return
 
         # Vérifie si on doit passer en mode désélection
         current_priority = self.get_cell_priority(item)
         self.is_deselecting = (current_priority == self.current_selection_priority)
 
+        # Appliquer la sélection
         self.toggle_cell(item, priority=self.current_selection_priority)
 
     def mouseMoveEvent(self, event):
@@ -229,15 +238,24 @@ class DesiderataCalendarWidget(QTableWidget):
 
     def get_cell_priority(self, item) -> str:
         """Détermine la priorité d'une cellule selon sa couleur"""
+        if not item:
+            return None
+            
         color = item.background().color()
-        primary_weekend = color_system.get_color('desiderata', 'primary', 'weekend')
-        primary_normal = color_system.get_color('desiderata', 'primary', 'normal')
-        secondary_weekend = color_system.get_color('desiderata', 'secondary', 'weekend')
-        secondary_normal = color_system.get_color('desiderata', 'secondary', 'normal')
         
-        if color in [primary_weekend, primary_normal]:
+        # Obtenir directement les couleurs du système
+        primary_colors = [
+            color_system.colors['desiderata']['primary']['weekend'],
+            color_system.colors['desiderata']['primary']['normal']
+        ]
+        secondary_colors = [
+            color_system.colors['desiderata']['secondary']['weekend'],
+            color_system.colors['desiderata']['secondary']['normal']
+        ]
+        
+        if color in primary_colors:
             return "primary"
-        elif color in [secondary_weekend, secondary_normal]:
+        elif color in secondary_colors:
             return "secondary"
         return None
 
@@ -324,6 +342,7 @@ class DesiderataCalendarWidget(QTableWidget):
 
     
     def reset_to_initial_state(self):
+        """Réinitialise toutes les cellules à leur couleur de base"""
         for row in range(self.rowCount()):
             for col in range(1, self.columnCount()):
                 item = self.item(row, col)
@@ -333,10 +352,9 @@ class DesiderataCalendarWidget(QTableWidget):
                         is_weekend = date.weekday() >= 5
                         is_holiday = self.cal.is_holiday(date)
                         is_bridge = self.is_bridge_day(date)
-                        if is_weekend or is_holiday or is_bridge:
-                            item.setBackground(QBrush(QColor(220, 220, 220)))
-                        else:
-                            item.setBackground(QBrush(QColor(255, 255, 255)))
+                        # Utiliser les mêmes couleurs que dans toggle_cell
+                        background_color = QColor(220, 220, 220) if (is_weekend or is_holiday or is_bridge) else QColor(255, 255, 255)
+                        item.setBackground(QBrush(background_color))
 
 
     def clear_all_selections(self):
@@ -425,6 +443,7 @@ class DesiderataManagementWidget(QWidget):
 
         self.apply_dates_button = QPushButton("Appliquer les dates")
         self.apply_dates_button.clicked.connect(self.apply_dates)
+        self.apply_dates_button.setStyleSheet(ACTION_BUTTON_STYLE)
 
         date_layout.addWidget(QLabel("Date de début:"))
         date_layout.addWidget(self.start_date)
@@ -454,21 +473,25 @@ class DesiderataManagementWidget(QWidget):
         # Bouton de sauvegarde
         save_button = QPushButton("Enregistrer les desiderata")
         save_button.clicked.connect(self.save_desiderata)
+        save_button.setStyleSheet(ADD_BUTTON_STYLE)
         button_layout.addWidget(save_button)
 
         # Bouton de réinitialisation
         reset_button = QPushButton("Réinitialiser les desiderata")
         reset_button.clicked.connect(self.reset_desiderata)
+        reset_button.setStyleSheet(EDIT_DELETE_BUTTON_STYLE)
         button_layout.addWidget(reset_button)
 
         # Bouton de réinitialisation globale
         reset_all_button = QPushButton("Réinitialiser tous les desiderata")
         reset_all_button.clicked.connect(self.reset_all_desiderata)
+        reset_all_button.setStyleSheet(EDIT_DELETE_BUTTON_STYLE)
         button_layout.addWidget(reset_all_button)
 
         # Ajout du nouveau bouton d'import CSV
         import_button = QPushButton("Importer depuis CSV")
         import_button.clicked.connect(self.import_multiple_desiderata)
+        import_button.setStyleSheet(ACTION_BUTTON_STYLE)
         button_layout.addWidget(import_button)
 
         left_layout.addLayout(button_layout)
@@ -492,6 +515,7 @@ class DesiderataManagementWidget(QWidget):
         # Ajouter le bouton des périodes critiques
         self.show_critical_periods_button = QPushButton("Afficher les périodes critiques")
         self.show_critical_periods_button.clicked.connect(self.show_critical_periods)
+        self.show_critical_periods_button.setStyleSheet(ACTION_BUTTON_STYLE)
         right_layout.addWidget(self.show_critical_periods_button)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -933,6 +957,7 @@ class CriticalPeriodsWindow(QDialog):
         self.start_date = start_date
         self.end_date = end_date
         self.cal = France()
+        self.setStyleSheet(GLOBAL_STYLE)  # Appliquer le style global à la fenêtre
         self.init_ui()
         self.update_critical_periods()
 

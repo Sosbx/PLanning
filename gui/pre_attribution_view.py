@@ -31,9 +31,8 @@ class PreAttributionWidget(QWidget):
             self.main_window.personnel_tab.post_config_tab.custom_posts_updated.connect(self.refresh_custom_posts)
             
         # Initialize display for first person if any
-        current_person = self.get_current_person()
-        if current_person:
-            self.planning_table.update_display(current_person)
+        if len(self.doctors + self.cats) > 0:
+            self.person_selector.setCurrentIndex(0)
 
     def refresh_custom_posts(self):
         """Refresh custom posts and update UI"""
