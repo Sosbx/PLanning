@@ -37,29 +37,22 @@ class StatsView(QWidget):
         self.expanded_group = None
         self.component_columns = {}
         
-        # Récupération des couleurs depuis le système centralisé
-        self.post_groups_colors = color_system.get_post_group_colors() if sys.platform == 'win32' else {
-            'matin': QColor('#E3F2FD'),      # Bleu clair
-            'apresMidi': QColor('#FFF3E0'),  # Orange clair
-            'soirNuit': QColor('#EDE7F6')    # Violet clair
-        }
-
         # Définition des groupes de postes comme attribut de classe
         self.post_groups = {
             'matin': {
                 'label': 'Matin',
                 'posts': ['MM', 'CM', 'HM', 'SM', 'RM', 'ML', 'MC'],
-                'color': self.post_groups_colors['matin']
+                'color': QColor('#E3F2FD')  # Bleu clair
             },
             'apresMidi': {
                 'label': 'Après-midi',
                 'posts': ['CA', 'HA', 'SA', 'RA', 'AL', 'AC'],
-                'color': self.post_groups_colors['apresMidi']
+                'color': QColor('#FFF3E0')  # Orange clair
             },
             'soirNuit': {
                 'label': 'Soir/Nuit',
                 'posts': ['CS', 'HS', 'SS', 'RS', 'NL', 'NM', 'NA', 'NC'],
-                'color': self.post_groups_colors['soirNuit']
+                'color': QColor('#EDE7F6')  # Violet clair
             }
         }
 
@@ -260,25 +253,22 @@ class StatsView(QWidget):
     
     def update_post_groups(self):
         """Met à jour les groupes avec les postes personnalisés"""
-        # Utilisation du système de couleurs centralisé
-        weekend_group_colors = color_system.get_weekend_group_colors()
-
         # Réinitialisation des listes de postes dans les groupes
         self.post_groups = {
             'matin': {
                 'label': 'Matin',
                 'posts': ['MM', 'CM', 'HM', 'SM', 'RM', 'ML', 'MC'],
-                'color': self.post_groups_colors['matin']
+                'color': QColor('#E3F2FD')  # Bleu clair
             },
             'apresMidi': {
                 'label': 'Après-midi',
                 'posts': ['CA', 'HA', 'SA', 'RA', 'AL', 'AC','CT'],
-                'color': self.post_groups_colors['apresMidi']
+                'color': QColor('#FFF3E0')  # Orange clair
             },
             'soirNuit': {
                 'label': 'Soir/Nuit',
                 'posts': ['CS', 'HS', 'SS', 'RS', 'NL', 'NM', 'NA', 'NC'],
-                'color': self.post_groups_colors['soirNuit']
+                'color': QColor('#EDE7F6')  # Violet clair
             }
         }
 
