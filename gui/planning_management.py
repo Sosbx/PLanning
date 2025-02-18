@@ -154,6 +154,7 @@ class PlanningManagementWidget(QWidget):
             "end_date": planning.end_date,
             "pre_analysis_results": convert_dict_keys_to_iso(planning.pre_analysis_results),
             "weekend_validated": planning.weekend_validated,
+            "pre_attributions": self.main_window.planning_tab.pre_attribution_tab.pre_attributions,
             "days": [
                 {
                     "date": day.date,
@@ -217,6 +218,7 @@ class PlanningManagementWidget(QWidget):
             "end_date": planning.end_date,
             "pre_analysis_results": convert_dict_keys_to_iso(planning.pre_analysis_results),
             "weekend_validated": planning.weekend_validated,  # Save weekend validation state
+            "pre_attributions": self.main_window.planning_tab.pre_attribution_tab.pre_attributions,
             "days": [
                 {
                     "date": day.date,
@@ -260,6 +262,10 @@ class PlanningManagementWidget(QWidget):
             filename=filename
         )
         planning.weekend_validated = data.get('weekend_validated', False)  # Load weekend validation state
+        
+        # Restaurer les pré-attributions
+        if 'pre_attributions' in data:
+            self.main_window.planning_tab.pre_attribution_tab.pre_attributions = data['pre_attributions']
 
         for day_data in data['days']:
             day_date = datetime.fromisoformat(day_data['date']).date()

@@ -177,21 +177,37 @@ class StatsView(QWidget):
             table.setHorizontalScrollMode(QTableWidget.ScrollMode.ScrollPerPixel)
             table.setVerticalScrollMode(QTableWidget.ScrollMode.ScrollPerPixel)
             table.horizontalHeader().setFixedHeight(30)
-            table.verticalHeader().setVisible(False)
-            table.setAlternatingRowColors(True)
-            table.setShowGrid(True)
+            table.verticalHeader().setVisible(True)
+            
+            # Configuration de la sélection
+            table.setSelectionMode(QTableWidget.SelectionMode.ExtendedSelection)
+            table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectItems)
+            
+            # Style de la sélection
             table.setStyleSheet("""
-                QTableWidget {
-                    gridline-color: #E0E0E0;
-                    border: none;
+                QTableView::item:selected {
+                    background-color: rgba(0, 120, 215, 0.1);
                 }
-                QHeaderView::section {
-                    background-color: #F5F5F5;
-                    border: 1px solid #E0E0E0;
-                    padding: 5px;
+                QTableView::item:focus {
+                    background-color: rgba(0, 120, 215, 0.2);
+                }
+                QTableView::item:selected:focus {
+                    background-color: rgba(0, 120, 215, 0.3);
                 }
             """)
             
+            # Connecter les signaux de sélection
+            header = table.horizontalHeader()
+            header.sectionClicked.connect(lambda index: table.selectColumn(index))
+            vertical_header = table.verticalHeader()
+            vertical_header.sectionClicked.connect(lambda index: table.selectRow(index))
+            
+            # Configuration de la grille
+            table.setShowGrid(True)
+            table.setGridStyle(Qt.PenStyle.SolidLine)
+            table.setAlternatingRowColors(True)
+            
+
             tab_widget.addTab(container, title)
         
         # Configuration des onglets avec leurs tableaux respectifs
