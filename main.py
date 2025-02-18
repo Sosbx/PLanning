@@ -46,7 +46,7 @@ class LoaderThread(QThread):
     def run(self):
         self.update_signal.emit("Chargement des données...")
         data_persistence = DataPersistence()
-        doctors, cats, post_configuration = data_persistence.load_data()
+        doctors, cats, post_configuration, pre_attributions = data_persistence.load_data()
 
         if not doctors and not cats:
             self.update_signal.emit("Création des données par défaut...")
@@ -65,7 +65,7 @@ class LoaderThread(QThread):
             post_configuration = create_default_post_configuration()
 
         self.update_signal.emit("Initialisation de l'interface...")
-        self.finished_signal.emit((doctors, cats, post_configuration))
+        self.finished_signal.emit((doctors, cats, post_configuration, pre_attributions))
 
 def main():
     logger = setup_logger()
@@ -86,8 +86,8 @@ def main():
     sys.exit(app.exec())
 
 def on_load_finished(data, splash):
-    doctors, cats, post_configuration = data
-    window = MainWindow(doctors, cats, post_configuration)
+    doctors, cats, post_configuration, pre_attributions = data
+    window = MainWindow(doctors, cats, post_configuration, pre_attributions)
     
     def show_main_window():
         splash.finish(window)

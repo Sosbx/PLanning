@@ -73,16 +73,21 @@ class PlanningViewWidget(QWidget):
     """Widget principal pour la vue et la génération du planning."""
     dates_changed = pyqtSignal(date, date)
 
-    def __init__(self, doctors, cats, post_configuration, main_window):
+    def __init__(self, doctors, cats, post_configuration, main_window, pre_attributions=None):
         super().__init__()
         self.doctors = doctors
         self.cats = cats
         self.post_configuration = post_configuration
         self.main_window = main_window
+        self.pre_attributions = pre_attributions or {}
         self.planning_generator = PlanningGenerator(doctors, cats, post_configuration)
         self.planning = None
         self.weekend_validated = False
         self.generation_thread = None
+        self.update_timer = QTimer()
+        self.update_timer.setSingleShot(True)
+        self.update_timer.timeout.connect(self._delayed_update)
+        self.pending_update = None
         self.init_ui()
 
 
@@ -222,11 +227,14 @@ class PlanningViewWidget(QWidget):
         self.start_date.dateChanged.connect(self.on_date_changed)
         self.end_date.dateChanged.connect(self.on_date_changed)
         
-        # Create pre-attribution tab
+        # Create pre-attribution tab with existing pre-attributions
         self.pre_attribution_tab = PreAttributionWidget(self.doctors, self.cats, 
             self.start_date.date().toPyDate(), 
             self.end_date.date().toPyDate(), 
             self.main_window)
+        # Set pre-attributions after widget creation
+        if self.pre_attributions:
+            self.pre_attribution_tab.pre_attributions = self.pre_attributions
         tab_widget.addTab(self.pre_attribution_tab, "Pré-attribution")
         
         # Connect dates_changed signal to pre_attribution_tab after creation
@@ -360,8 +368,13 @@ class PlanningViewWidget(QWidget):
                 QMessageBox.information(self, "Génération réussie", 
                     "Les weekends ont été générés. Vous devez maintenant les valider avant de générer le planning de semaine.")
             
-            # Démarrer la sauvegarde automatique
-            self.main_window.planning_management_tab.start_auto_save()
+            # Démarrer la sauvegarde automatique de manière sécurisée
+            try:
+                if hasattr(self.main_window, 'planning_management_tab'):
+                    self.main_window.planning_management_tab.start_auto_save()
+            except Exception as e:
+                print(f"Erreur lors du démarrage de la sauvegarde automatique: {str(e)}")
+                
             self.main_window.update_data()
         else:
             self._handle_generation_error("La génération n'a pas produit de planning valide")

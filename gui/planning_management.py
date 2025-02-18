@@ -140,14 +140,20 @@ class PlanningManagementWidget(QWidget):
 
         planning = self.main_window.planning_tab.planning
         
-        # Fonction pour convertir les clés dates en chaînes ISO
+        # Fonction pour convertir les clés en format sérialisable
         def convert_dict_keys_to_iso(d):
-            if not isinstance(d, dict):
-                return d
-            return {
-                (k.isoformat() if isinstance(k, (date, datetime)) else k): convert_dict_keys_to_iso(v)
-                for k, v in d.items()
-            }
+            if isinstance(d, dict):
+                return {
+                    (k.isoformat() if isinstance(k, (date, datetime))
+                     else '|'.join(map(str, k)) if isinstance(k, tuple)
+                     else k): convert_dict_keys_to_iso(v)
+                    for k, v in d.items()
+                }
+            elif isinstance(d, list):
+                return [convert_dict_keys_to_iso(item) for item in d]
+            elif isinstance(d, tuple):
+                return '|'.join(map(str, d))
+            return d
 
         data = {
             "start_date": planning.start_date,
@@ -176,10 +182,27 @@ class PlanningManagementWidget(QWidget):
             def default(self, obj):
                 if isinstance(obj, (datetime, date)):
                     return obj.isoformat()
+                elif isinstance(obj, tuple):
+                    return '|'.join(map(str, obj))
                 return super().default(obj)
 
+            def encode(self, obj):
+                if isinstance(obj, dict):
+                    # Convert dictionary with potential tuple keys
+                    new_dict = {}
+                    for k, v in obj.items():
+                        if isinstance(k, tuple):
+                            k = '|'.join(map(str, k))
+                        new_dict[k] = v
+                    return super().encode(new_dict)
+                return super().encode(obj)
+
+        # First convert all nested structures
+        converted_data = convert_dict_keys_to_iso(data)
+        
+        # Then save with the enhanced encoder
         with open(self.auto_save_filename, 'w') as f:
-            json.dump(data, f, cls=DateTimeEncoder)
+            json.dump(converted_data, f, cls=DateTimeEncoder)
 
     def save_planning(self):
         if not self.main_window.planning_tab.planning:
@@ -204,14 +227,20 @@ class PlanningManagementWidget(QWidget):
                 return
             planning.filename = filename
         
-        # Fonction pour convertir les clés dates en chaînes ISO
+        # Fonction pour convertir les clés en format sérialisable
         def convert_dict_keys_to_iso(d):
-            if not isinstance(d, dict):
-                return d
-            return {
-                (k.isoformat() if isinstance(k, (date, datetime)) else k): convert_dict_keys_to_iso(v)
-                for k, v in d.items()
-            }
+            if isinstance(d, dict):
+                return {
+                    (k.isoformat() if isinstance(k, (date, datetime))
+                     else '|'.join(map(str, k)) if isinstance(k, tuple)
+                     else k): convert_dict_keys_to_iso(v)
+                    for k, v in d.items()
+                }
+            elif isinstance(d, list):
+                return [convert_dict_keys_to_iso(item) for item in d]
+            elif isinstance(d, tuple):
+                return '|'.join(map(str, d))
+            return d
 
         data = {
             "start_date": planning.start_date,
@@ -240,10 +269,27 @@ class PlanningManagementWidget(QWidget):
             def default(self, obj):
                 if isinstance(obj, (datetime, date)):
                     return obj.isoformat()
+                elif isinstance(obj, tuple):
+                    return '|'.join(map(str, obj))
                 return super().default(obj)
 
+            def encode(self, obj):
+                if isinstance(obj, dict):
+                    # Convert dictionary with potential tuple keys
+                    new_dict = {}
+                    for k, v in obj.items():
+                        if isinstance(k, tuple):
+                            k = '|'.join(map(str, k))
+                        new_dict[k] = v
+                    return super().encode(new_dict)
+                return super().encode(obj)
+
+        # First convert all nested structures
+        converted_data = convert_dict_keys_to_iso(data)
+        
+        # Then save with the enhanced encoder
         with open(planning.filename, 'w') as f:
-            json.dump(data, f, cls=DateTimeEncoder)
+            json.dump(converted_data, f, cls=DateTimeEncoder)
 
         self.update_planning_list()
         QMessageBox.information(self, "Succès", f"Planning sauvegardé sous {planning.filename}")
@@ -293,9 +339,19 @@ class PlanningManagementWidget(QWidget):
             new_dict = {}
             for k, v in d.items():
                 try:
-                    key = datetime.fromisoformat(k).date() if isinstance(k, str) else k
+                    # Try to convert to date first
+                    key = datetime.fromisoformat(k).date()
                 except (ValueError, TypeError):
-                    key = k
+                    # If not a date, check if it's a serialized tuple
+                    if isinstance(k, str) and '|' in k:
+                        try:
+                            parts = k.split('|')
+                            # Attempt to convert parts to int if possible
+                            key = tuple(int(p) if p.isdigit() else p for p in parts)
+                        except (ValueError, TypeError):
+                            key = k
+                    else:
+                        key = k
                 
                 if isinstance(v, dict):
                     value = convert_dict_from_iso(v)

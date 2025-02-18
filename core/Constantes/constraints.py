@@ -15,10 +15,28 @@ class PlanningConstraints:
         self.late_posts = ['SS', 'RS', 'HS', 'NC', 'NM', 'NL', 'NA']
 
     def can_assign_to_assignee(self, assignee: Union[Doctor, CAT], date: date, slot: TimeSlot, 
-                             planning: Planning, respect_secondary: bool = True) -> bool:
+                             planning: Planning, respect_secondary: bool = True, 
+                             is_pre_attribution: bool = False) -> bool:
         """
-        Vérifie si une assignation est possible en respectant toutes les contraintes.
+        Vérifie si une assignation est possible en respectant les contraintes.
+        Pour les pré-attributions, seul le chevauchement horaire est vérifié.
+        
+        Args:
+            assignee: Le médecin ou CAT à qui on veut attribuer le poste
+            date: La date du poste
+            slot: Le poste à attribuer
+            planning: Le planning en cours
+            respect_secondary: Si False, ignore les desideratas secondaires
+            is_pre_attribution: Si True, ne vérifie que le chevauchement horaire
+            
+        Returns:
+            bool: True si l'attribution est possible, False sinon
         """
+        # Pour les pré-attributions, vérifier uniquement le chevauchement horaire
+        if is_pre_attribution:
+            return self.check_time_overlap(assignee, date, slot, planning)
+            
+        # Pour les attributions normales, vérifier toutes les contraintes
         return all([
             self.check_nl_constraint(assignee, date, slot, planning),
             self.check_nm_constraint(assignee, date, slot, planning),
@@ -26,10 +44,27 @@ class PlanningConstraints:
             self.check_time_overlap(assignee, date, slot, planning),
             self.check_max_posts_per_day(assignee, date, slot, planning),
             self.check_desiderata_constraint(assignee, date, slot, planning, respect_secondary),
-            self.check_morning_after_night_shifts(assignee, date, slot, planning),  # Nouvelle contrainte unifiée
+            self.check_morning_after_night_shifts(assignee, date, slot, planning),
             self.check_consecutive_night_shifts(assignee, date, slot, planning),
             self.check_consecutive_working_days(assignee, date, slot, planning)
         ])
+
+    def can_pre_attribute(self, assignee: Union[Doctor, CAT], date: date, 
+                         slot: TimeSlot, planning: Planning) -> bool:
+        """
+        Méthode spécifique pour vérifier si une pré-attribution est possible.
+        Ne vérifie que le chevauchement horaire.
+        
+        Args:
+            assignee: Le médecin ou CAT
+            date: La date de la pré-attribution
+            slot: Le poste à pré-attribuer
+            planning: Le planning en cours
+            
+        Returns:
+            bool: True si la pré-attribution est possible, False sinon
+        """
+        return self.check_time_overlap(assignee, date, slot, planning)
 
     def check_morning_after_night_shifts(self, assignee: Union[Doctor, CAT], date: date, 
                                        slot: TimeSlot, planning: Planning) -> bool:
@@ -179,6 +214,10 @@ class PlanningConstraints:
             
         return True  # On autorise si ce n'est pas un poste de soir/nuit
 
+    def can_pre_attribute(self, assignee: Union[Doctor, CAT], date: date, slot: TimeSlot, planning: Planning) -> bool:
+        """Vérifie uniquement le chevauchement horaire pour les pré-attributions"""
+        return self.check_time_overlap(assignee, date, slot, planning)
+
     def check_consecutive_working_days(self, assignee: Union[Doctor, CAT], date: date, slot: TimeSlot, planning: Planning) -> bool:
         count = 0
         for i in range(6):  # Vérifier les 6 jours précédents
@@ -314,5 +353,3 @@ class PlanningConstraints:
                 return False
 
         return True
-    
-   

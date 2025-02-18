@@ -17,8 +17,21 @@ class DataPersistence:
 
     def save_data(self, doctors, cats, post_configuration):
         logger.info("Starting save_data process")
+        
+        # Charger les pré-attributions existantes
+        existing_pre_attributions = {}
+        try:
+            if os.path.exists(self.filename):
+                with open(self.filename, 'rb') as file:
+                    existing_data = pickle.load(file)
+                    if 'pre_attributions' in existing_data:
+                        existing_pre_attributions = existing_data['pre_attributions']
+        except Exception as e:
+            logger.error(f"Error loading existing pre-attributions: {e}")
+        
         data = {
             'version': 1,
+            'pre_attributions': existing_pre_attributions,  # Préserver les pré-attributions
             'doctors': [{
                 'name': d.name,
                 'half_parts': d.half_parts,
@@ -158,8 +171,14 @@ class DataPersistence:
 
                     post_configuration.specific_configs = specific_configs
 
+                # Chargement des pré-attributions
+                pre_attributions = {}
+                if 'pre_attributions' in data:
+                    pre_attributions = self.load_pre_attributions()
+                    logger.info("Pre-attributions loaded successfully")
+
                 logger.info("Data loaded successfully")
-                return doctors, cats, post_configuration
+                return doctors, cats, post_configuration, pre_attributions
 
             except Exception as e:
                 logger.error(f"Erreur lors du chargement des données : {e}")
@@ -167,7 +186,7 @@ class DataPersistence:
                 return [], [], create_default_post_configuration()
 
         logger.warning("No data file found, returning default values")
-        return [], [], create_default_post_configuration()
+        return [], [], create_default_post_configuration(), {}
 
     def parse_date(self, date_input):
         if isinstance(date_input, datetime.date):
@@ -266,6 +285,61 @@ class DataPersistence:
     def _deserialize_post_config(self, data):
         """Désérialise une configuration de poste simple"""
         return {post_type: PostConfig(total=total) for post_type, total in data.items()}
+
+    def save_pre_attributions(self, pre_attributions):
+        """Sauvegarde les pré-attributions dans le fichier de données"""
+        try:
+            # Charger les données existantes
+            with open(self.filename, 'rb') as file:
+                data = pickle.load(file)
+            
+            # Convertir les dates en format ISO pour la sérialisation
+            serialized_pre_attributions = {}
+            for person_name, attributions in pre_attributions.items():
+                serialized_attributions = {}
+                for (d, period), post in attributions.items():
+                    # Convertir la date en string ISO
+                    date_str = d.isoformat()
+                    serialized_attributions[(date_str, period)] = post
+                serialized_pre_attributions[person_name] = serialized_attributions
+            
+            # Ajouter ou mettre à jour les pré-attributions
+            data['pre_attributions'] = serialized_pre_attributions
+            
+            # Sauvegarder les données mises à jour
+            with open(self.filename, 'wb') as file:
+                pickle.dump(data, file)
+            
+            logger.info("Pre-attributions saved successfully")
+        except Exception as e:
+            logger.error(f"Error saving pre-attributions: {e}")
+            raise
+    
+    def load_pre_attributions(self):
+        """Charge les pré-attributions depuis le fichier de données"""
+        try:
+            if os.path.exists(self.filename):
+                with open(self.filename, 'rb') as file:
+                    data = pickle.load(file)
+                
+                # Récupérer les pré-attributions
+                serialized_pre_attributions = data.get('pre_attributions', {})
+                
+                # Convertir les dates string en objets date
+                pre_attributions = {}
+                for person_name, attributions in serialized_pre_attributions.items():
+                    person_attributions = {}
+                    for (date_str, period), post in attributions.items():
+                        # Convertir la string ISO en objet date
+                        d = datetime.date.fromisoformat(date_str)
+                        person_attributions[(d, period)] = post
+                    pre_attributions[person_name] = person_attributions
+                
+                return pre_attributions
+            return {}
+        except Exception as e:
+            logger.error(f"Error loading pre-attributions: {e}")
+            return {}
 
     def debug_dates(self, doctors, cats):
         print("Debugging dates:")

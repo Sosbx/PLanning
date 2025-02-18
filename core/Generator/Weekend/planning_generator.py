@@ -415,11 +415,6 @@ class PlanningGenerator:
     def _handle_zero_quota_posts(self, config: Dict, day: DayPlanning, day_type: str) -> None:
         """
         Gère la création et l'attribution des slots pour les postes ayant un quota de 0.
-        
-        Args:
-            config: Configuration des postes pour le type de jour
-            day: Jour du planning à traiter
-            day_type: Type de jour (weekday, saturday, sunday_holiday)
         """
         # Identifier les postes à quota zéro
         zero_quota_posts = {
@@ -427,7 +422,7 @@ class PlanningGenerator:
             if self._get_config_value(config_value) == 0
         }
         
-        if not zero_quota_posts:
+        if not zero_quota_posts: 
             return
 
         # Vérifier les pré-attributions pour cette date
@@ -440,9 +435,7 @@ class PlanningGenerator:
                     new_slot = None
                     if post_type in self.custom_posts:
                         custom_post = self.custom_posts[post_type]
-                        if not custom_post.preserve_in_planning:
-                            continue
-                            
+                        # Créer le slot même si preserve_in_planning est False
                         new_slot = TimeSlot(
                             start_time=datetime.combine(day.date, custom_post.start_time),
                             end_time=datetime.combine(
@@ -452,7 +445,7 @@ class PlanningGenerator:
                             site="Personnalisé",
                             slot_type=custom_post.statistic_group.strip() if custom_post.statistic_group else "Personnalisé",
                             abbreviation=post_type,
-                            assignee=person_name  # Attribution directe à la personne
+                            assignee=person_name
                         )
                     else:
                         # Création d'un slot standard
@@ -467,7 +460,7 @@ class PlanningGenerator:
                                 site=post_details['site'],
                                 slot_type="Consultation" if "Visite" not in post_details['site'] else "Visite",
                                 abbreviation=post_type,
-                                assignee=person_name  # Attribution directe à la personne
+                                assignee=person_name
                             )
                         else:
                             logger.warning(f"Pas de détails trouvés pour le poste {post_type}")

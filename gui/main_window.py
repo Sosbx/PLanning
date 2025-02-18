@@ -15,15 +15,21 @@ from .detached_stats_window import DetachedStatsWindow
 from .planning_management import PlanningManagementWidget
 from core.utils import resource_path
 from .styles import color_system, GLOBAL_STYLE, ACTION_BUTTON_STYLE, StyleConstants
+from core.Constantes.constraints import PlanningConstraints
+import logging
+logger = logging.getLogger(__name__)
 
 class MainWindow(QMainWindow):
-    def __init__(self, doctors, cats, post_configuration):
+    def __init__(self, doctors, cats, post_configuration, pre_attributions=None):
         super().__init__()
         self.doctors = doctors
         self.cats = cats
         self.post_configuration = post_configuration
+        self.pre_attributions = pre_attributions or {}
         self.data_persistence = DataPersistence()
         self.detached_stats_window = None
+        self.planning_constraints = PlanningConstraints()
+        self.planning = None  # Sera initialisé lors de la création du planning
         
         # Application du style global
         self.setStyleSheet(GLOBAL_STYLE)
@@ -84,7 +90,9 @@ class MainWindow(QMainWindow):
     def _init_planning_tab(self):
         """Initialise l'onglet Planning"""
         self.planning_tab = PlanningViewWidget(self.doctors, self.cats, 
-                                             self.post_configuration, self)
+                                             self.post_configuration, self,
+                                             pre_attributions=self.pre_attributions)
+        self.planning = self.planning_tab.planning  # Récupérer l'instance de Planning
         self.tab_widget.addTab(self.planning_tab, 
                              self.create_tab_icon("icons/planning.png"), "Planning")
 
@@ -147,8 +155,9 @@ class MainWindow(QMainWindow):
                                     self.post_configuration)
         
         if hasattr(self.planning_tab, 'planning') and self.planning_tab.planning:
-            start_date = self.planning_tab.planning.start_date
-            end_date = self.planning_tab.planning.end_date
+            self.planning = self.planning_tab.planning  # Mettre à jour l'instance de Planning
+            start_date = self.planning.start_date
+            end_date = self.planning.end_date
             
             # Mettre à jour les dates dans PlanningViewWidget
             self.planning_tab.start_date.setDate(QDate(start_date))
@@ -256,7 +265,17 @@ class MainWindow(QMainWindow):
         self.desiderata_tab.sync_dates_from_planning(start_date, end_date)
 
     def closeEvent(self, event):
+        # Sauvegarder les données principales
         self.data_persistence.save_data(self.doctors, self.cats, self.post_configuration)
+        
+        # Sauvegarder les pré-attributions si elles existent
+        if hasattr(self.planning_tab, 'pre_attribution_widget'):
+            pre_attributions = self.planning_tab.pre_attribution_widget.pre_attributions
+            try:
+                self.data_persistence.save_pre_attributions(pre_attributions)
+            except Exception as e:
+                logger.error(f"Erreur lors de la sauvegarde des pré-attributions: {e}")
+        
         event.accept()
 
     def save_post_configuration(self, new_post_configuration):
@@ -294,6 +313,12 @@ class MainWindow(QMainWindow):
         
         # Réinitialiser la vue du planning par médecin
         self.doctor_planning_view.clear_view()
+        
+        # Créer un planning vide
+        from core.Constantes.models import Planning
+        from datetime import date
+        today = date.today()
+        self.planning = Planning(today, today)
         
         # Mettre à jour les autres vues si nécessaire
         self.update_data()

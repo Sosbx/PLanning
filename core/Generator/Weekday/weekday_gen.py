@@ -639,94 +639,123 @@ class WeekdayGenerator:
         )
 
     def distribute_weekday_nl(self) -> bool:
+        """
+        Distribution des NL de semaine avec priorité aux CAT et gestion des pré-attributions.
+        """
         try:
             logger.info("\nDISTRIBUTION DES NL SEMAINE")
             logger.info("=" * 80)
 
-            # 1. Get quotas from pre-analysis
+            # 1. Vérification de la pré-analyse
             pre_analysis = self.planning.pre_analysis_results
             if not pre_analysis:
                 logger.error("Pré-analyse manquante")
                 return False
 
-            # 2. Calculate adjusted quotas for each doctor
+            # 2. Collecte des slots NL disponibles
+            nl_slots = self._collect_weekday_nl_slots()
+            if not nl_slots:
+                logger.info("Aucun slot NL disponible")
+                return True
+
+            # 3. Calcul des quotas CAT en tenant compte des pré-attributions
+            cat_quotas = {}
+            total_pre_attributed_cat = 0
+
+            for cat in self.cats:
+                # Compter les NL déjà pré-attribués
+                pre_attributed = 0
+                if cat.name in self.pre_attributions:
+                    for (date, period), post_type in self.pre_attributions[cat.name].items():
+                        if post_type == "NL":
+                            day = self.planning.get_day(date)
+                            if day and not (day.is_weekend or day.is_holiday_or_bridge or date.weekday() == 4):
+                                pre_attributed += 1
+
+                cat_quotas[cat.name] = {
+                    'pre_attributed': pre_attributed,
+                    'remaining': max(0, 3 - pre_attributed)  # Base de 3 NL par CAT
+                }
+                total_pre_attributed_cat += pre_attributed
+
+            total_cat_quota = sum(quota['remaining'] for quota in cat_quotas.values())
+            logger.info("\nQuotas CAT:")
+            for cat_name, quota in cat_quotas.items():
+                logger.info(f"{cat_name}: {quota['pre_attributed']} pré-attribués, "
+                        f"{quota['remaining']} restants à attribuer")
+
+            # 4. Distribution aux CAT jusqu'à atteindre leurs quotas
+            if not self._distribute_nl_to_cats(nl_slots, cat_quotas):
+                logger.error("Échec de la distribution CAT - arrêt de la distribution")
+                return False
+
+            # 5. Calcul des quotas médecins avec les slots restants
             doctor_nl_quotas = {}
             for doctor in self.doctors:
-                # Get intervals from pre-analysis
                 intervals = pre_analysis['ideal_distribution'].get(doctor.name, {})
                 nl_interval = intervals.get('weekday_posts', {}).get('NL', {})
                 
-                # Count pre-attributed NLs
+                # Compter les pré-attributions
                 pre_attributed = self.weekday_counts[doctor.name]['posts'].get('NL', 0)
                 
-                # Calculate remaining quota
-                min_required = nl_interval.get('min', 0)
+                # Vérification du maximum
                 max_allowed = nl_interval.get('max', float('inf'))
-                
-                # Important: Check if pre-attributions already exceed maximum
                 if pre_attributed > max_allowed:
                     logger.error(f"{doctor.name}: Pré-attributions ({pre_attributed}) "
                             f"dépassent le maximum autorisé ({max_allowed})")
                     return False
                 
                 doctor_nl_quotas[doctor.name] = {
-                    'min': max(0, min_required - pre_attributed),
+                    'min': max(0, nl_interval.get('min', 0) - pre_attributed),
                     'max': max(0, max_allowed - pre_attributed),
                     'current': pre_attributed,
-                    'absolute_max': max_allowed  # Store absolute maximum for verification
+                    'absolute_max': max_allowed
                 }
-                
-                logger.info(f"\n{doctor.name}:")
-                logger.info(f"NL pré-attribuées: {pre_attributed}")
-                logger.info(f"Maximum absolu: {max_allowed}")
-                logger.info(f"Quota restant: [{doctor_nl_quotas[doctor.name]['min']}-"
-                        f"{doctor_nl_quotas[doctor.name]['max']}]")
 
-            # 3. Collect available NL slots
-            nl_slots = []
-            for day in self.planning.days:
-                if day.is_weekend or day.is_holiday_or_bridge or day.date.weekday() == 4:
-                    continue
-                    
-                for slot in day.slots:
-                    if slot.abbreviation == "NL" and not slot.assignee:
-                        nl_slots.append((day.date, slot))
+            # 6. Distribution aux médecins uniquement si tous les CAT ont atteint leurs quotas
+            total_cat_attributed = sum(
+                sum(1 for slot in day.slots 
+                    if slot.abbreviation == "NL" and 
+                    any(cat.name == slot.assignee for cat in self.cats))
+                for day in self.planning.days
+                if not (day.is_weekend or day.is_holiday_or_bridge or day.date.weekday() == 4)
+            )
 
-            logger.info(f"\nSlots NL disponibles: {len(nl_slots)}")
+            if total_cat_attributed + total_pre_attributed_cat < total_cat_quota:
+                logger.error("Distribution CAT incomplète - arrêt de la distribution")
+                self._log_cat_attribution_status(cat_quotas)
+                return False
 
-            # 4. Priority distribution to doctors under minimum
+            # 7. Distribution aux médecins
             for doctor in sorted(self.doctors, 
                             key=lambda d: (doctor_nl_quotas[d.name]['min'], -d.half_parts),
                             reverse=True):
                 quotas = doctor_nl_quotas[doctor.name]
                 
-                if quotas['min'] <= 0:  # Minimum already reached
+                if quotas['min'] <= 0:
                     continue
                     
-                logger.info(f"\nDistribution minimum pour {doctor.name}")
                 nl_needed = quotas['min']
-                
                 slots_tried = 0
+                
                 while nl_needed > 0 and slots_tried < len(nl_slots):
                     date, slot = nl_slots[slots_tried]
                     
-                    # Strict maximum check
                     if quotas['current'] >= quotas['absolute_max']:
-                        logger.warning(f"{doctor.name}: Maximum absolu atteint ({quotas['absolute_max']})")
                         break
                     
                     if self.constraints.can_assign_to_assignee(doctor, date, slot, self.planning):
-                        # Attribution and counter update
                         slot.assignee = doctor.name
                         self.weekday_counts[doctor.name]['posts']['NL'] += 1
                         quotas['current'] += 1
                         nl_needed -= 1
                         nl_slots.pop(slots_tried)
-                        logger.info(f"NL attribuée le {date} ({quotas['current']}/{quotas['absolute_max']})")
+                        logger.info(f"NL attribuée à {doctor.name} le {date} "
+                                f"({quotas['current']}/{quotas['absolute_max']})")
                     else:
                         slots_tried += 1
 
-            # 5. Balanced distribution of remaining slots
+            # 8. Distribution équilibrée des slots restants
             while nl_slots:
                 random.shuffle(self.doctors)
                 assigned = False
@@ -734,7 +763,6 @@ class WeekdayGenerator:
                 for doctor in self.doctors:
                     quotas = doctor_nl_quotas[doctor.name]
                     
-                    # Strict maximum check
                     if quotas['current'] >= quotas['absolute_max']:
                         continue
                         
@@ -745,26 +773,38 @@ class WeekdayGenerator:
                         quotas['current'] += 1
                         nl_slots.pop(0)
                         assigned = True
-                        logger.info(f"{doctor.name}: NL attribuée le {date} "
+                        logger.info(f"NL supplémentaire attribuée à {doctor.name} le {date} "
                                 f"(total: {quotas['current']}/{quotas['absolute_max']})")
                         break
                         
                 if not assigned:
-                    logger.warning("Plus d'attribution possible")
                     break
-
-            # 6. Final verification
-            for doctor_name, quotas in doctor_nl_quotas.items():
-                if quotas['current'] > quotas['absolute_max']:
-                    logger.error(f"{doctor_name}: Maximum dépassé "
-                            f"({quotas['current']}/{quotas['absolute_max']})")
-                    return False
 
             return True
 
         except Exception as e:
             logger.error(f"Erreur distribution NL semaine: {e}", exc_info=True)
             return False
+
+    def _log_cat_attribution_status(self, cat_quotas: Dict) -> None:
+        """Log détaillé du statut des attributions CAT."""
+        logger.error("\nStatut des attributions CAT:")
+        for cat_name, quota in cat_quotas.items():
+            # Compter les attributions effectives
+            attributed = 0
+            for day in self.planning.days:
+                if day.is_weekend or day.is_holiday_or_bridge or day.date.weekday() == 4:
+                    continue
+                for slot in day.slots:
+                    if slot.abbreviation == "NL" and slot.assignee == cat_name:
+                        attributed += 1
+
+            logger.error(f"{cat_name}:")
+            logger.error(f"  Pré-attribués: {quota['pre_attributed']}")
+            logger.error(f"  Nouvellement attribués: {attributed}")
+            logger.error(f"  Total: {attributed + quota['pre_attributed']}/{quota['pre_attributed'] + quota['remaining']}")
+            if attributed + quota['pre_attributed'] < quota['pre_attributed'] + quota['remaining']:
+                logger.error(f"  MANQUANT: {quota['remaining'] - attributed}")
 
     def _collect_weekday_nl_slots(self) -> List[Tuple[date, TimeSlot]]:
         """Collecte tous les slots NL de semaine disponibles."""
@@ -783,48 +823,189 @@ class WeekdayGenerator:
         logger.info(f"\nSlots NL semaine disponibles: {len(nl_slots)}")
         return nl_slots
 
-    def _distribute_nl_to_cats(self, nl_slots: List[Tuple[date, TimeSlot]], 
-                             total_quota: int) -> bool:
-        """Distribution des NL de semaine aux CAT."""
+    def _distribute_nl_to_cats(self, nl_slots: List[Tuple[date, TimeSlot]], cat_quotas: Dict) -> bool:
+        """
+        Distribution des NL de semaine aux CAT avec minimum mensuel garanti si possible.
+        
+        Args:
+            nl_slots: Liste des slots NL disponibles
+            cat_quotas: Dictionnaire des quotas par CAT avec pré-attributions
+            
+        Returns:
+            bool: True si la distribution est réussie
+        """
         try:
             logger.info("\nDISTRIBUTION NL SEMAINE AUX CAT")
-            quota_per_cat = total_quota // len(self.cats)
-            available_slots = nl_slots.copy()
             
-            # Distribution par CAT
+            # Initialisation de la matrice de disponibilité
+            availability_matrix = AvailabilityMatrix(
+                self.planning.start_date,
+                self.planning.end_date,
+                self.doctors,
+                self.cats
+            )
+
+            # Analyse des mois disponibles
+            available_months = set()
+            for date, _ in nl_slots:
+                available_months.add((date.year, date.month))
+            available_months = sorted(available_months)
+            
+            logger.info(f"Mois disponibles: {len(available_months)}")
+
+            # Organisation des slots par mois et criticité
+            slots_by_month = self._organize_nl_slots_by_month_and_criticality(
+                nl_slots, availability_matrix
+            )
+
+            # Distribution pour chaque CAT
             for cat in self.cats:
-                slots_assigned = 0
-                
-                while slots_assigned < quota_per_cat and available_slots:
-                    random.shuffle(available_slots)
-                    assigned = False
+                if cat.name not in cat_quotas:
+                    logger.warning(f"Pas de quota défini pour {cat.name}")
+                    continue
                     
-                    for slot_index in range(len(available_slots)):
-                        date, slot = available_slots[slot_index]
-                        
-                        if self.constraints.can_assign_to_assignee(cat, date, slot, 
-                                                                 self.planning):
-                            slot.assignee = cat.name
-                            available_slots.pop(slot_index)
-                            slots_assigned += 1
-                            assigned = True
-                            logger.info(f"CAT {cat.name}: NL attribué le {date} "
-                                      f"({slots_assigned}/{quota_per_cat})")
-                            break
-                            
-                    if not assigned:
-                        logger.warning(f"Impossible d'attribuer plus de NL à {cat.name}")
+                quota = cat_quotas[cat.name]
+                slots_to_assign = quota['remaining']
+                
+                logger.info(f"\nDistribution pour {cat.name}:")
+                logger.info(f"Déjà pré-attribués: {quota['pre_attributed']}")
+                logger.info(f"À attribuer: {slots_to_assign}")
+
+                slots_assigned = 0
+                monthly_assignments = defaultdict(int)
+
+                # Phase 1: Assurer au moins un NL par mois si possible
+                for year, month in available_months:
+                    if slots_assigned >= slots_to_assign:
                         break
                         
-                if slots_assigned < quota_per_cat:
-                    logger.warning(f"CAT {cat.name}: quota non atteint "
-                                 f"({slots_assigned}/{quota_per_cat})")
+                    month_key = (year, month)
+                    monthly_slots = slots_by_month[month_key]
                     
+                    # Essayer d'abord les slots critiques, puis standards
+                    assigned = False
+                    for criticality in ['critical', 'standard']:
+                        if assigned:
+                            break
+                            
+                        available_slots = monthly_slots[criticality].copy()
+                        random.shuffle(available_slots)
+
+                        for date, slot in available_slots:
+                            if slot.assignee:  # Déjà attribué
+                                continue
+                                
+                            if self.constraints.can_assign_to_assignee(cat, date, slot, self.planning):
+                                slot.assignee = cat.name
+                                slots_assigned += 1
+                                monthly_assignments[month_key] += 1
+                                
+                                # Retirer le slot des listes disponibles
+                                monthly_slots[criticality].remove((date, slot))
+                                if (date, slot) in nl_slots:
+                                    nl_slots.remove((date, slot))
+                                    
+                                availability = availability_matrix.get_period_availability(
+                                    None, date, "all"
+                                )
+                                logger.info(
+                                    f"NL attribué le {date} "
+                                    f"(disponibilité médecins: {availability:.1f}%, "
+                                    f"mois: {year}-{month})"
+                                )
+                                assigned = True
+                                break
+
+                # Phase 2: Distribution des slots restants
+                while slots_assigned < slots_to_assign:
+                    best_slot = None
+                    best_criticality = None
+                    best_month = None
+                    
+                    # Chercher le meilleur slot restant
+                    for month_key in available_months:
+                        monthly_slots = slots_by_month[month_key]
+                        for criticality in ['critical', 'standard']:
+                            for date, slot in monthly_slots[criticality]:
+                                if slot.assignee:  # Déjà attribué
+                                    continue
+                                    
+                                if self.constraints.can_assign_to_assignee(cat, date, slot, self.planning):
+                                    best_slot = (date, slot)
+                                    best_criticality = criticality
+                                    best_month = month_key
+                                    break
+                            if best_slot:
+                                break
+                        if best_slot:
+                            break
+
+                    if not best_slot:
+                        logger.warning(f"Plus de slots disponibles pour {cat.name}")
+                        break
+
+                    # Attribution du meilleur slot trouvé
+                    date, slot = best_slot
+                    slot.assignee = cat.name
+                    slots_assigned += 1
+                    monthly_assignments[best_month] += 1
+                    
+                    # Retirer le slot des listes
+                    slots_by_month[best_month][best_criticality].remove((date, slot))
+                    if (date, slot) in nl_slots:
+                        nl_slots.remove((date, slot))
+                    
+                    availability = availability_matrix.get_period_availability(None, date, "all")
+                    logger.info(
+                        f"NL supplémentaire attribué le {date} "
+                        f"(disponibilité médecins: {availability:.1f}%, "
+                        f"mois: {best_month[0]}-{best_month[1]})"
+                    )
+
+                # Log du résultat pour ce CAT
+                logger.info(f"\nRésultat pour {cat.name}:")
+                logger.info(f"Total attribué: {slots_assigned}/{slots_to_assign}")
+                for (year, month), count in sorted(monthly_assignments.items()):
+                    logger.info(f"Mois {year}-{month}: {count} NL")
+                    
+                if slots_assigned < slots_to_assign:
+                    return False
+
             return True
-            
+
         except Exception as e:
-            logger.error(f"Erreur distribution NL CAT: {e}")
+            logger.error(f"Erreur distribution NL CAT: {e}", exc_info=True)
             return False
+
+
+
+    def _organize_nl_slots_by_month_and_criticality(
+        self, 
+        nl_slots: List[Tuple[date, TimeSlot]], 
+        availability_matrix: AvailabilityMatrix
+    ) -> Dict[Tuple[int, int], Dict[str, List[Tuple[date, TimeSlot]]]]:
+        """
+        Organise les slots NL par mois et par niveau de criticité.
+        """
+        organized_slots = defaultdict(lambda: {'critical': [], 'standard': []})
+
+        for date, slot in nl_slots:
+            month_key = (date.year, date.month)
+            availability = availability_matrix.get_period_availability(None, date, "all")
+            
+            if availability < 40:  # Période critique
+                organized_slots[month_key]['critical'].append((date, slot))
+            else:
+                organized_slots[month_key]['standard'].append((date, slot))
+
+        # Log de la répartition
+        logger.info("\nRépartition des slots NL par mois:")
+        for (year, month), slots in sorted(organized_slots.items()):
+            logger.info(f"Mois {year}-{month}:")
+            logger.info(f"  Périodes critiques: {len(slots['critical'])}")
+            logger.info(f"  Périodes standard: {len(slots['standard'])}")
+
+        return organized_slots
 
     def _distribute_nl_to_doctors(self, nl_slots: List[Tuple[date, TimeSlot]], 
                                 total_quota: int) -> bool:

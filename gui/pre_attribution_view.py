@@ -3,12 +3,12 @@
 
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox, 
                            QTableWidget, QTableWidgetItem, QLabel, QSplitter,
-                           QHeaderView, QMenu)
+                           QHeaderView, QMenu, QPushButton, QMessageBox)
 from PyQt6.QtCore import Qt, QDate, pyqtSignal
 from PyQt6.QtGui import QColor, QBrush, QFont
 from datetime import date, datetime, timedelta
 from workalendar.europe import France
-from core.Constantes.models import PostManager, Doctor
+from core.Constantes.models import PostManager, Doctor, PostConfig, TimeSlot, Planning
 from .styles import color_system
 
 class PreAttributionWidget(QWidget):
@@ -22,7 +22,8 @@ class PreAttributionWidget(QWidget):
         self.end_date = end_date
         self.main_window = main_window
         self.cal = France()
-        self.pre_attributions = {}  # Stockage des pré-attributions
+        # Charger les pré-attributions existantes
+        self.pre_attributions = self.main_window.data_persistence.load_pre_attributions() or {}
         self.custom_posts = self.main_window.data_persistence.load_custom_posts()
         self.init_ui()
         
@@ -73,6 +74,19 @@ class PreAttributionWidget(QWidget):
         main_splitter.addWidget(right_container)
         main_splitter.setSizes([700, 300])
         layout.addWidget(main_splitter)
+        
+        # Boutons de contrôle
+        button_layout = QHBoxLayout()
+        
+        self.save_button = QPushButton("Sauvegarder")
+        self.save_button.clicked.connect(self.save_pre_attributions)
+        button_layout.addWidget(self.save_button)
+        
+        self.reset_button = QPushButton("Réinitialiser")
+        self.reset_button.clicked.connect(self.reset_pre_attributions)
+        button_layout.addWidget(self.reset_button)
+        
+        layout.addLayout(button_layout)
 
         # Connecter le signal de clic sur cellule
         self.planning_table.cell_clicked.connect(self.on_cell_clicked)
@@ -129,6 +143,33 @@ class PreAttributionWidget(QWidget):
         name = self.person_selector.currentText()
         return next((p for p in self.doctors + self.cats if p.name == name), None)
         
+    def save_pre_attributions(self):
+        """Sauvegarde les pré-attributions actuelles"""
+        try:
+            self.main_window.data_persistence.save_pre_attributions(self.pre_attributions)
+            QMessageBox.information(self, "Succès", "Les pré-attributions ont été sauvegardées avec succès.")
+        except Exception as e:
+            QMessageBox.critical(self, "Erreur", f"Erreur lors de la sauvegarde des pré-attributions : {str(e)}")
+    
+    def reset_pre_attributions(self):
+        """Réinitialise toutes les pré-attributions"""
+        reply = QMessageBox.question(
+            self,
+            "Confirmation",
+            "Êtes-vous sûr de vouloir effacer toutes les pré-attributions ?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            self.pre_attributions.clear()
+            current_person = self.get_current_person()
+            if current_person:
+                self.planning_table.update_display(current_person)
+                self.post_list.update_for_person(current_person)
+            self.history_widget.clear_history()
+            QMessageBox.information(self, "Succès", "Toutes les pré-attributions ont été effacées.")
+    
     def update_dates(self, start_date, end_date):
         """Met à jour les dates et rafraîchit l'affichage"""
         self.start_date = start_date
@@ -147,6 +188,38 @@ class AvailablePostList(QTableWidget):
         super().__init__()
         self.pre_attribution_widget = pre_attribution_widget
         self.init_ui()
+
+    def get_post_config(self, date, post_type):
+        """Obtient la configuration d'un poste pour une date donnée"""
+        # Déterminer le type de jour
+        cal = France()
+        is_weekend = date.weekday() >= 5
+        is_holiday = cal.is_holiday(date)
+        is_bridge = False
+        if not (is_weekend or is_holiday):
+            prev_day = date - timedelta(days=1)
+            next_day = date + timedelta(days=1)
+            prev_is_off = prev_day.weekday() >= 5 or cal.is_holiday(prev_day)
+            next_is_off = next_day.weekday() >= 5 or cal.is_holiday(next_day)
+            is_bridge = prev_is_off and next_is_off
+
+        if date.weekday() == 5:  # Samedi
+            day_type = "saturday"
+        elif date.weekday() == 6 or is_holiday or is_bridge:  # Dimanche, férié ou pont
+            day_type = "sunday_holiday"
+        else:
+            day_type = "weekday"
+
+        # Toujours utiliser la configuration des médecins
+        post_configuration = self.pre_attribution_widget.main_window.post_configuration
+        if day_type == "weekday":
+            config = post_configuration.weekday
+        elif day_type == "saturday":
+            config = post_configuration.saturday
+        else:
+            config = post_configuration.sunday_holiday
+
+        return config.get(post_type, PostConfig())
 
     def init_ui(self):
         """Initialise l'interface de la liste des postes"""
@@ -178,20 +251,104 @@ class AvailablePostList(QTableWidget):
         self.setRowCount(0)
 
         available_posts = self.get_available_posts(date, period, person)
-        for post, is_attributed in available_posts.items():
-            row = self.rowCount()
-            self.insertRow(row)
+        
+        # Pour chaque type de poste, obtenir le quota et les attributions
+        for post_type, is_attributed in available_posts.items():
+            # Obtenir le quota configuré
+            post_config = self.get_post_config(date, post_type)
+            max_count = post_config.total if post_config else 0
             
-            post_item = QTableWidgetItem(post)
-            post_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.setItem(row, 0, post_item)
+            # Vérifier si c'est un poste personnalisé
+            if post_type in self.pre_attribution_widget.custom_posts:
+                custom_post = self.pre_attribution_widget.custom_posts[post_type]
+                if custom_post.preserve_in_planning:
+                    # Si le poste doit être préservé, permettre l'attribution illimitée
+                    max_count = 1
+                elif custom_post.force_zero_count:
+                    # Si le poste force un quota de 0, utiliser ce quota
+                    max_count = 1
+                else:
+                    # Sinon utiliser le quota configuré
+                    if max_count == 0:
+                        max_count = 1
+            else:
+                # Pour les postes standard, si le quota est 0, afficher une seule ligne
+                if max_count == 0:
+                    max_count = 1
             
-            status = "Attribué" if is_attributed else "Disponible"
-            status_item = QTableWidgetItem(status)
-            status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            color = QColor('#C28E8E') if is_attributed else QColor('#D1E6D6')
-            status_item.setBackground(QBrush(color))
-            self.setItem(row, 1, status_item)
+            # Obtenir les attributions existantes pour ce poste
+            attributions = []
+            for person_name, person_attributions in self.pre_attribution_widget.pre_attributions.items():
+                if (date, period) in person_attributions and person_attributions[(date, period)] == post_type:
+                    attributions.append(person_name)
+            
+            # Vérifier si c'est un poste personnalisé
+            is_custom_post = post_type in self.pre_attribution_widget.custom_posts
+            is_force_zero = is_custom_post and self.pre_attribution_widget.custom_posts[post_type].force_zero_count
+
+            if is_custom_post:
+                # Pour les postes personnalisés, afficher les attributions existantes
+                row = self.rowCount()
+                self.insertRow(row)
+                
+                # Colonne du type de poste
+                post_item = QTableWidgetItem(post_type)
+                post_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.setItem(row, 0, post_item)
+                
+                # Colonne du statut
+                if attributions:
+                    # Poste attribué à un ou plusieurs médecins
+                    status = "Attribué à : " + ", ".join(attributions)
+                    color = QColor('#E6D4B8')  # Couleur différente pour les attributions multiples
+                else:
+                    # Poste disponible
+                    status = "Disponible"
+                    color = QColor('#D1E6D6')
+                
+                status_item = QTableWidgetItem(status)
+                status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                status_item.setBackground(QBrush(color))
+                self.setItem(row, 1, status_item)
+
+                # Si c'est un poste avec force_zero_count, toujours ajouter une ligne disponible
+                if is_force_zero and not is_attributed:
+                    row = self.rowCount()
+                    self.insertRow(row)
+                    
+                    post_item = QTableWidgetItem(post_type)
+                    post_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                    self.setItem(row, 0, post_item)
+                    
+                    status_item = QTableWidgetItem("Disponible")
+                    status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                    status_item.setBackground(QBrush(QColor('#D1E6D6')))
+                    self.setItem(row, 1, status_item)
+            else:
+                # Pour les postes standards, afficher une ligne par quota
+                for i in range(max_count):
+                    row = self.rowCount()
+                    self.insertRow(row)
+                    
+                    # Colonne du type de poste
+                    post_item = QTableWidgetItem(post_type)
+                    post_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                    self.setItem(row, 0, post_item)
+                    
+                    # Colonne du statut
+                    if i < len(attributions):
+                        # Poste attribué
+                        status = f"Attribué à {attributions[i]}"
+                        color = QColor('#C28E8E')
+                    else:
+                        # Poste disponible
+                        status = "Disponible"
+                        color = QColor('#D1E6D6')
+                    
+                    status_item = QTableWidgetItem(status)
+                    status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                    status_item.setBackground(QBrush(color))
+                    self.setItem(row, 1, status_item)
 
     def get_available_posts(self, date, period, person):
         """Retourne les postes disponibles pour une période donnée"""
@@ -219,18 +376,9 @@ class AvailablePostList(QTableWidget):
         else:
             day_type = "weekday"
             
-        # Récupérer la configuration des postes pour ce type de jour
+        # Toujours utiliser la configuration des médecins pour l'affichage
         post_configuration = self.pre_attribution_widget.main_window.post_configuration
-        
-        if person and hasattr(person, 'half_parts'):  # Si c'est un médecin
-            post_config = post_configuration.get_config_for_day_type(day_type)
-        else:  # Si c'est un CAT
-            if day_type == "weekday":
-                post_config = post_configuration.cat_weekday
-            elif day_type == "saturday":
-                post_config = post_configuration.cat_saturday
-            else:
-                post_config = post_configuration.cat_sunday_holiday
+        post_config = post_configuration.get_config_for_day_type(day_type)
 
         # Filtrer les postes selon la période
         post_manager = PostManager()
@@ -257,7 +405,7 @@ class AvailablePostList(QTableWidget):
         # Add all custom posts from custom_posts
         if self.pre_attribution_widget.custom_posts:
             for name, custom_post in self.pre_attribution_widget.custom_posts.items():
-                # Check if the post is compatible with the person type
+                # Check if the post is compatible with the person type and has a valid count
                 is_compatible = False
                 if hasattr(person, 'half_parts'):  # Doctor
                     if custom_post.assignment_type in ['doctors', 'both']:
@@ -265,7 +413,7 @@ class AvailablePostList(QTableWidget):
                 else:  # CAT
                     if custom_post.assignment_type in ['cats', 'both']:
                         is_compatible = True
-                
+
                 # Check if the post is compatible with the day type
                 if is_compatible and day_type in custom_post.day_types:
                     post_start_hour = custom_post.start_time.hour
@@ -282,12 +430,63 @@ class AvailablePostList(QTableWidget):
         return available_posts
     
     def is_post_attributed(self, date, period, post_type):
-        """Vérifie si un poste est déjà attribué"""
+        """Vérifie si un poste est déjà attribué en tenant compte du nombre maximum d'attributions"""
+        # Compter le nombre d'attributions existantes pour ce poste
+        attribution_count = 0
         for person_attributions in self.pre_attribution_widget.pre_attributions.values():
             if (date, period) in person_attributions:
                 if person_attributions[(date, period)] == post_type:
-                    return True
-        return False
+                    attribution_count += 1
+
+        # Déterminer le type de jour
+        cal = France()
+        is_weekend = date.weekday() >= 5
+        is_holiday = cal.is_holiday(date)
+        is_bridge = False
+        if not (is_weekend or is_holiday):
+            prev_day = date - timedelta(days=1)
+            next_day = date + timedelta(days=1)
+            prev_is_off = prev_day.weekday() >= 5 or cal.is_holiday(prev_day)
+            next_is_off = next_day.weekday() >= 5 or cal.is_holiday(next_day)
+            is_bridge = prev_is_off and next_is_off
+
+        if date.weekday() == 5:  # Samedi
+            day_type = "saturday"
+        elif date.weekday() == 6 or is_holiday or is_bridge:  # Dimanche, férié ou pont
+            day_type = "sunday_holiday"
+        else:
+            day_type = "weekday"
+
+        # Vérifier si c'est un poste personnalisé
+        if post_type in self.pre_attribution_widget.custom_posts:
+            custom_post = self.pre_attribution_widget.custom_posts[post_type]
+            
+            # Si le poste doit être préservé ou a un quota forcé à 0, permettre l'attribution
+            if custom_post.preserve_in_planning or custom_post.force_zero_count:
+                return False
+            
+            # Pour les autres postes personnalisés, utiliser la configuration des médecins
+            post_configuration = self.pre_attribution_widget.main_window.post_configuration
+            if day_type == "weekday":
+                config = post_configuration.weekday
+            elif day_type == "saturday":
+                config = post_configuration.saturday
+            else:
+                config = post_configuration.sunday_holiday
+            
+            max_count = config.get(post_type, PostConfig()).total
+        else:
+            # Pour les postes standards, utiliser la configuration des médecins
+            post_configuration = self.pre_attribution_widget.main_window.post_configuration
+            post_config = post_configuration.get_config_for_day_type(day_type)
+            max_count = post_config.get(post_type, PostConfig()).total
+
+        # Si le quota est 0, permettre des attributions illimitées
+        if max_count == 0:
+            return False
+        
+        # Sinon, vérifier si le nombre d'attributions a atteint le quota
+        return attribution_count >= max_count
 
     def update_for_person(self, person):
         """Met à jour la liste en fonction de la personne sélectionnée"""
@@ -351,16 +550,60 @@ class PreAttributionTable(QTableWidget):
             if date and self.can_attribute(date, period):
                 self.show_attribution_menu(date, period, row, col)
 
+    def check_constraints(self, date, period, slot):
+        """Vérifie les contraintes et retourne une liste des violations"""
+        current_person = self.pre_attribution_widget.get_current_person()
+        if not current_person:
+            return []
+
+        constraints = self.pre_attribution_widget.main_window.planning_constraints
+        planning = self.pre_attribution_widget.main_window.planning
+
+        violations = []
+        
+        # Vérifier les desiderata
+        for des in current_person.desiderata:
+            if des.start_date <= date <= des.end_date and des.period == period:
+                violations.append("Un desiderata existe pour cette période")
+                break
+
+        # Vérifier le nombre maximum de postes par jour (peut fonctionner sans planning)
+        if not constraints.check_max_posts_per_day(current_person, date, slot, planning or Planning(date, date)):
+            violations.append("Dépasse le maximum de 2 postes par jour")
+
+        # Si nous avons un planning valide, vérifier les autres contraintes
+        if planning:
+            # Vérifier les contraintes de nuit consécutives
+            if not constraints.check_consecutive_night_shifts(current_person, date, slot, planning):
+                violations.append("Dépasse la limite de 4 nuits consécutives")
+
+            # Vérifier les contraintes de jours consécutifs
+            if not constraints.check_consecutive_working_days(current_person, date, slot, planning):
+                violations.append("Dépasse la limite de 6 jours consécutifs")
+
+            # Vérifier les contraintes de matin après nuit
+            if not constraints.check_morning_after_night_shifts(current_person, date, slot, planning):
+                violations.append("Poste du matin après un poste de nuit")
+
+            # Vérifier les contraintes NL
+            if not constraints.check_nl_constraint(current_person, date, slot, planning):
+                violations.append("Violation des règles NL (pas de poste le même jour/lendemain)")
+
+            # Vérifier les contraintes NM
+            if not constraints.check_nm_constraint(current_person, date, slot, planning):
+                violations.append("Violation des règles NM")
+
+            # Vérifier les contraintes NM/NA
+            if not constraints.check_nm_na_constraint(current_person, date, slot, planning):
+                violations.append("Violation des règles NM/NA")
+
+        return violations
+
     def can_attribute(self, date, period):
         """Vérifie si on peut attribuer un poste à cette date et période"""
         current_person = self.pre_attribution_widget.get_current_person()
         if not current_person:
             return False
-            
-        # Vérifier les desiderata
-        for des in current_person.desiderata:
-            if des.start_date <= date <= des.end_date and des.period == period:
-                return False
                 
         return True
 
@@ -378,13 +621,88 @@ class PreAttributionTable(QTableWidget):
                 action = menu.addAction(post)
                 action.triggered.connect(
                     lambda checked, d=date, p=period, post_type=post: 
-                    self.assign_post(d, p, post_type)
+                    self.confirm_and_assign_post(d, p, post_type)
                 )
         
         if menu.actions():
             menu.exec(self.mapToGlobal(self.viewport().mapToParent(
                 self.visualRect(self.model().index(row, col)).center()
             )))
+
+    def confirm_and_assign_post(self, date, period, post_type):
+        """Vérifie uniquement le chevauchement horaire pour les pré-attributions"""
+        current_person = self.pre_attribution_widget.get_current_person()
+        if not current_person:
+            return
+
+        # Créer un TimeSlot temporaire pour la vérification
+        post_manager = PostManager()
+        day_type = "weekday"  # Par défaut
+        
+        # Déterminer le type de jour
+        if date.weekday() == 5:  # Samedi
+            day_type = "saturday"
+        elif date.weekday() == 6 or self.cal.is_holiday(date):  # Dimanche ou férié
+            day_type = "sunday_holiday"
+        elif self.is_bridge_day(date):  # Jour de pont
+            day_type = "sunday_holiday"
+            
+        # Vérifier si c'est un poste personnalisé
+        if post_type in self.pre_attribution_widget.custom_posts:
+            custom_post = self.pre_attribution_widget.custom_posts[post_type]
+            # Créer le TimeSlot avec les détails du poste personnalisé
+            slot = TimeSlot(
+                start_time=datetime.combine(date, custom_post.start_time),
+                end_time=datetime.combine(date, custom_post.end_time),
+                site="Custom",  # Les postes personnalisés n'ont pas de site spécifique
+                slot_type="Custom",
+                abbreviation=post_type
+            )
+        else:
+            # Obtenir les détails du poste standard
+            post_details = post_manager.get_post_details(post_type, day_type)
+            if not post_details:
+                QMessageBox.warning(
+                    self,
+                    "Erreur",
+                    f"Configuration introuvable pour le poste {post_type}"
+                )
+                return
+                
+            # Créer le TimeSlot avec tous les paramètres requis
+            slot = TimeSlot(
+                start_time=datetime.combine(date, post_details['start_time']),
+                end_time=datetime.combine(date, post_details['end_time']),
+                site=post_details['site'],
+                slot_type="Standard",
+                abbreviation=post_type
+            )
+        
+        constraints = self.pre_attribution_widget.main_window.planning_constraints
+        planning = self.pre_attribution_widget.main_window.planning or Planning(date, date)
+        
+        # Vérifier uniquement le chevauchement horaire
+        if not constraints.can_pre_attribute(current_person, date, slot, planning):
+            QMessageBox.warning(
+                self,
+                "Attribution impossible",
+                "Ce poste chevauche un autre poste déjà attribué."
+            )
+            return
+
+        # Procéder à l'attribution
+        self.assign_post(date, period, post_type)
+    def is_bridge_day(self, date):
+        """Vérifie si une date est un jour de pont"""
+        if date.weekday() >= 5 or self.cal.is_holiday(date):
+            return False
+            
+        prev_day = date - timedelta(days=1)
+        next_day = date + timedelta(days=1)
+        prev_is_off = prev_day.weekday() >= 5 or self.cal.is_holiday(prev_day)
+        next_is_off = next_day.weekday() >= 5 or self.cal.is_holiday(next_day)
+        
+        return prev_is_off and next_is_off
 
     def show_context_menu(self, position):
         """Affiche le menu contextuel pour la suppression d'une attribution"""
@@ -676,8 +994,16 @@ class AttributionHistoryWidget(QTableWidget):
         
         # Type d'action avec code couleur
         action_item = QTableWidgetItem(action_type)
-        color = color_system.get_color('error') if action_type == "Suppression" else color_system.get_color('available')
-        action_item.setBackground(QBrush(color))
+        if action_type == "Suppression":
+            color = color_system.colors['danger']
+        else:
+            color = color_system.colors['available']
+        
+        if isinstance(color, QColor):
+            action_item.setBackground(QBrush(color))
+        else:
+            # Fallback sur une couleur par défaut
+            action_item.setBackground(QBrush(QColor('#C28E8E' if action_type == "Suppression" else '#D1E6D6')))
         self.setItem(row, 1, action_item)
         
         # Détails de l'action
