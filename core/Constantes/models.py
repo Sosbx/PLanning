@@ -70,6 +70,7 @@ class TimeSlot:
     slot_type: str
     abbreviation: str
     assignee: str = None
+    is_pre_attributed: bool = False  # Nouveau champ avec valeur par défaut False
 
 class DesiderataPeriod(Enum):
     MORNING = 1
@@ -303,14 +304,6 @@ class Site(Enum):
     CREON = "Créon"
     VISITES = "Visites"
 
-@dataclass
-class TimeSlot:
-    start_time: datetime
-    end_time: datetime
-    site: str
-    slot_type: str
-    abbreviation: str
-    assignee: str = None
 
 @dataclass
 class DayPlanning:

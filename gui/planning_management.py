@@ -311,7 +311,21 @@ class PlanningManagementWidget(QWidget):
         
         # Restaurer les pré-attributions
         if 'pre_attributions' in data:
-            self.main_window.planning_tab.pre_attribution_tab.pre_attributions = data['pre_attributions']
+            converted_pre_attributions = {}
+            for person_name, attributions in data['pre_attributions'].items():
+                person_attributions = {}
+                for key, post in attributions.items():
+                    # La clé est au format "date|période"
+                    date_str, period_str = key.split('|')
+                    # Convertir la date string en objet date
+                    date_obj = datetime.fromisoformat(date_str).date()
+                    # Convertir la période en entier
+                    period = int(period_str)
+                    # Créer le tuple et stocker l'attribution
+                    person_attributions[(date_obj, period)] = post
+                converted_pre_attributions[person_name] = person_attributions
+            
+            self.main_window.planning_tab.pre_attribution_tab.pre_attributions = converted_pre_attributions
 
         for day_data in data['days']:
             day_date = datetime.fromisoformat(day_data['date']).date()

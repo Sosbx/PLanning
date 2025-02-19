@@ -15,28 +15,18 @@ class PlanningConstraints:
         self.late_posts = ['SS', 'RS', 'HS', 'NC', 'NM', 'NL', 'NA']
 
     def can_assign_to_assignee(self, assignee: Union[Doctor, CAT], date: date, slot: TimeSlot, 
-                             planning: Planning, respect_secondary: bool = True, 
-                             is_pre_attribution: bool = False) -> bool:
+                            planning: Planning, respect_secondary: bool = True) -> bool:
         """
         Vérifie si une assignation est possible en respectant les contraintes.
-        Pour les pré-attributions, seul le chevauchement horaire est vérifié.
-        
-        Args:
-            assignee: Le médecin ou CAT à qui on veut attribuer le poste
-            date: La date du poste
-            slot: Le poste à attribuer
-            planning: Le planning en cours
-            respect_secondary: Si False, ignore les desideratas secondaires
-            is_pre_attribution: Si True, ne vérifie que le chevauchement horaire
-            
-        Returns:
-            bool: True si l'attribution est possible, False sinon
+        Les pré-attributions sont considérées comme fixes et ne sont pas comptées
+        dans les vérifications de contraintes.
         """
-        # Pour les pré-attributions, vérifier uniquement le chevauchement horaire
-        if is_pre_attribution:
-            return self.check_time_overlap(assignee, date, slot, planning)
-            
-        # Pour les attributions normales, vérifier toutes les contraintes
+        # Ne pas vérifier les contraintes pour les slots déjà pré-attribués
+        if hasattr(slot, 'is_pre_attributed') and slot.is_pre_attributed:
+            return True
+        
+        # Pour les nouveaux slots, vérifier toutes les contraintes normales
+        # en excluant les slots pré-attribués des vérifications
         return all([
             self.check_nl_constraint(assignee, date, slot, planning),
             self.check_nm_constraint(assignee, date, slot, planning),
@@ -48,6 +38,10 @@ class PlanningConstraints:
             self.check_consecutive_night_shifts(assignee, date, slot, planning),
             self.check_consecutive_working_days(assignee, date, slot, planning)
         ])
+
+    def _is_pre_attributed_slot(self, slot: TimeSlot) -> bool:
+        """Vérifie si un slot est pré-attribué"""
+        return hasattr(slot, 'is_pre_attributed') and slot.is_pre_attributed
 
     def can_pre_attribute(self, assignee: Union[Doctor, CAT], date: date, 
                          slot: TimeSlot, planning: Planning) -> bool:
@@ -317,7 +311,12 @@ class PlanningConstraints:
         return True
 
     def check_desiderata_constraint(self, assignee: Union[Doctor, CAT], date: date, slot: TimeSlot, 
-                                    planning: Planning, respect_secondary: bool = True) -> bool:
+                                    planning: Planning, respect_secondary: bool = True,
+                                    is_pre_attribution: bool = False) -> bool:
+        
+        
+            
+
         """
         Vérifie les contraintes de desiderata.
         Args:
@@ -329,6 +328,11 @@ class PlanningConstraints:
         Returns:
             bool: True si l'attribution est possible
         """
+        
+        #Vérifie les contraintes de desiderata, ignorées pour les pré-attributions.
+    
+        if is_pre_attribution:
+            return True
         # Vérification des desideratas primaires (toujours stricts)
         for desiderata in assignee.desiderata:
             if not hasattr(desiderata, 'priority'):  # Rétrocompatibilité

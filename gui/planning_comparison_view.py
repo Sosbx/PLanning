@@ -52,7 +52,17 @@ class PlanningComparisonView(QWidget):
             "Après-midi": ["CA", "HA", "SA", "RA", "AL", "AC", "CT"],
             "Soir": ["CS", "HS", "SS", "RS", "NA", "NM", "NC"]
         }
-        
+         # Ajouter les caches pour les horaires comme dans DoctorPlanningView
+        self._start_times = {
+            1: (8, 0),   # Matin: 8h
+            2: (14, 0),  # Après-midi: 14h
+            3: (20, 0)   # Soir: 20h
+        }
+        self._end_times = {
+            1: (13, 0),  # Matin: 13h
+            2: (18, 0),  # Après-midi: 18h
+            3: (23, 0)   # Soir: 23h
+        }
         self.init_ui()
 
     def init_ui(self):
@@ -410,6 +420,7 @@ class PlanningComparisonView(QWidget):
     def _get_available_doctors(self, date, period):
         """
         Détermine les médecins disponibles pour une date et une période données.
+        Suit la même logique que DoctorPlanningView.
         
         Args:
             date (date): Date à vérifier
@@ -427,38 +438,34 @@ class PlanningComparisonView(QWidget):
         if not day_planning:
             return available_personnel
 
-        # Déterminer le type de jour
-        from core.Constantes.day_type import DayType
-        day_type = DayType.get_day_type(date, self._calendar)
-
         # Déterminer les périodes à vérifier
         periods_to_check = [1, 2, 3] if period is None else [period]
 
+        # Déterminer le type de jour
+        if self._calendar.is_holiday(date) or date.weekday() == 6:
+            day_type = "sunday_holiday"
+        elif date.weekday() == 5:
+            day_type = "saturday"
+        else:
+            day_type = "weekday"
+
         # Pour chaque personne (médecin ou CAT)
         for person in self.doctors + self.cats:
-            can_take_any_post = False
-            
             # Pour chaque période à vérifier
             for check_period in periods_to_check:
                 # Vérifier si la personne a déjà un poste dans cette période
-                has_slot_in_period = any(
-                    slot.assignee == person.name and get_post_period(slot) == check_period - 1
-                    for slot in day_planning.slots
-                )
+                has_slot_in_period = False
+                for slot in day_planning.slots:
+                    if (slot.assignee == person.name and
+                        get_post_period(slot) == check_period - 1):
+                        has_slot_in_period = True
+                        break
                 
                 if has_slot_in_period:
-                    continue
-
-                # Vérifier les desiderata primaires
-                has_primary_desiderata = any(
-                    desiderata.start_date <= date <= desiderata.end_date and
-                    desiderata.period == check_period and
-                    getattr(desiderata, 'priority', 'primary') == 'primary'
-                    for desiderata in person.desiderata
-                )
-                
-                if has_primary_desiderata:
-                    continue
+                    if period is not None:  # Si on vérifie une période spécifique
+                        continue  # Passer à la personne suivante
+                    else:
+                        break  # Pour la vue jour complet, passer à la personne suivante
 
                 # Récupérer les types de postes possibles pour cette période
                 possible_posts = self._period_to_post[check_period]
@@ -515,31 +522,11 @@ class PlanningComparisonView(QWidget):
                         
                         # Vérifier si la personne peut prendre ce poste selon les contraintes
                         if self._constraints.can_assign_to_assignee(person, date, test_slot, self.planning):
-                            can_take_any_post = True
-                            break
+                            available_personnel.add(person.name)
+                            break  # Si disponible pour un poste, passer à la période suivante
+                            
                     except Exception as e:
                         continue
-
-                if can_take_any_post:
-                    break
-
-
-            if can_take_any_post:
-                # Vérifier si la personne a des desiderata secondaires pour cette période
-                has_secondary_desiderata = False
-                for check_period in periods_to_check:
-                    if any(
-                        desiderata.start_date <= date <= desiderata.end_date and
-                        desiderata.period == check_period and
-                        getattr(desiderata, 'priority', 'primary') == 'secondary'
-                        for desiderata in person.desiderata
-                    ):
-                        has_secondary_desiderata = True
-                        break
-                
-                # N'ajouter que si la personne n'a pas de desiderata secondaires
-                if not has_secondary_desiderata:
-                    available_personnel.add(person.name)
 
         return available_personnel
 
@@ -636,24 +623,17 @@ class PlanningComparisonView(QWidget):
     def update_selected_cell(self, row, col):
         """
         Met à jour la cellule sélectionnée et rafraîchit les informations associées.
-        
-        Args:
-            row (int): Index de la ligne
-            col (int): Index de la colonne
         """
         # Mettre à jour la date et la période sélectionnées
         self.selected_date = self._get_date_from_row_col(row, col)
         self.selected_period = self._get_period_from_column(col)
         
-        # Rafraîchir les sections du bas
-        self.bottom_section.update_content(
-            self.bottom_section.left_selector, 
-            self.bottom_section.left_content
-        )
-        self.bottom_section.update_content(
-            self.bottom_section.right_selector, 
-            self.bottom_section.right_content
-        )
+        # Rafraîchir les sections du bas avec la nouvelle logique
+        if self.selected_date:
+            self.bottom_section.selected_date = self.selected_date
+            self.bottom_section.selected_period = self.selected_period
+            self.bottom_section.update_all_views()
+            
 class ComparisonBottomSection(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -776,7 +756,7 @@ class ComparisonBottomSection(QWidget):
         self.update_content(self.right_selector, self.right_content)
 
     def show_available_doctors(self, widget):
-        """Affiche les médecins disponibles."""
+        """Affiche les médecins disponibles avec la nouvelle logique."""
         if not self.selected_date:
             widget.setText("Sélectionnez une cellule pour voir les médecins disponibles")
             return

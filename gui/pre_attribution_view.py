@@ -8,8 +8,8 @@ from PyQt6.QtCore import Qt, QDate, pyqtSignal
 from PyQt6.QtGui import QColor, QBrush, QFont
 from datetime import date, datetime, timedelta
 from workalendar.europe import France
-from core.Constantes.models import PostManager, Doctor, PostConfig, TimeSlot, Planning
-from .styles import color_system
+from core.Constantes.models import PostManager, Doctor, PostConfig, TimeSlot, Planning, DayPlanning
+from .styles import color_system, ADD_BUTTON_STYLE, EDIT_DELETE_BUTTON_STYLE
 
 class PreAttributionWidget(QWidget):
     """Widget principal pour la vue de pré-attribution"""
@@ -30,6 +30,10 @@ class PreAttributionWidget(QWidget):
         # Refresh custom posts when they change
         if hasattr(self.main_window, 'personnel_tab'):
             self.main_window.personnel_tab.post_config_tab.custom_posts_updated.connect(self.refresh_custom_posts)
+            
+        # Connect desiderata updates
+        if hasattr(self.main_window, 'desiderata_tab'):
+            self.main_window.desiderata_tab.desiderata_updated.connect(self.update_display_for_current_person)
             
         # Initialize display for first person if any
         if len(self.doctors + self.cats) > 0:
@@ -80,10 +84,12 @@ class PreAttributionWidget(QWidget):
         
         self.save_button = QPushButton("Sauvegarder")
         self.save_button.clicked.connect(self.save_pre_attributions)
+        self.save_button.setStyleSheet(ADD_BUTTON_STYLE)
         button_layout.addWidget(self.save_button)
         
         self.reset_button = QPushButton("Réinitialiser")
         self.reset_button.clicked.connect(self.reset_pre_attributions)
+        self.reset_button.setStyleSheet(EDIT_DELETE_BUTTON_STYLE)
         button_layout.addWidget(self.reset_button)
         
         layout.addLayout(button_layout)
@@ -103,6 +109,12 @@ class PreAttributionWidget(QWidget):
         if current_person:
             self.post_list.update_for_period(date, period, current_person)
 
+    def update_display_for_current_person(self):
+        """Update the display when desiderata are modified"""
+        current_person = self.get_current_person()
+        if current_person:
+            self.planning_table.update_display(current_person)
+            
     def update_person_selector(self):
         """Met à jour la liste des personnes dans le sélecteur"""
         # Stocker la personne actuellement sélectionnée
@@ -629,69 +641,175 @@ class PreAttributionTable(QTableWidget):
                 self.visualRect(self.model().index(row, col)).center()
             )))
 
+    
+    def _check_all_constraints(self, current_person, date, new_slot, temp_planning):
+        """
+        Vérifie toutes les contraintes et retourne la liste des violations.
+        Utilise les méthodes existantes de constraints.py
+        """
+        warnings = []
+        constraints = self.pre_attribution_widget.main_window.planning_constraints
+        
+        # 1. Vérification des desiderata
+        for des in current_person.desiderata:
+            if des.start_date <= date <= des.end_date:
+                priority = getattr(des, 'priority', 'primary')
+                warnings.append(f"- Violation d'un desiderata {priority}")
+        
+        # 2. Utilisation directe des méthodes de constraints.py
+        if not constraints.check_nl_constraint(current_person, date, new_slot, temp_planning):
+            warnings.append("- Violation des règles NL")
+            
+        if not constraints.check_nm_constraint(current_person, date, new_slot, temp_planning):
+            warnings.append("- Violation des règles NM")
+            
+        if not constraints.check_nm_na_constraint(current_person, date, new_slot, temp_planning):
+            warnings.append("- Violation des règles NM/NA")
+            
+        if not constraints.check_morning_after_night_shifts(current_person, date, new_slot, temp_planning):
+            warnings.append("- Violation des règles de repos après poste de nuit")
+            
+        if not constraints.check_consecutive_night_shifts(current_person, date, new_slot, temp_planning):
+            warnings.append("- Violation des règles de nuits consécutives")
+            
+        if not constraints.check_consecutive_working_days(current_person, date, new_slot, temp_planning):
+            warnings.append("- Violation des règles de jours consécutifs")
+            
+        return warnings
+
     def confirm_and_assign_post(self, date, period, post_type):
-        """Vérifie uniquement le chevauchement horaire pour les pré-attributions"""
+        """Vérifie les contraintes et confirme la pré-attribution si nécessaire"""
         current_person = self.pre_attribution_widget.get_current_person()
         if not current_person:
             return
 
-        # Créer un TimeSlot temporaire pour la vérification
-        post_manager = PostManager()
-        day_type = "weekday"  # Par défaut
-        
-        # Déterminer le type de jour
-        if date.weekday() == 5:  # Samedi
-            day_type = "saturday"
-        elif date.weekday() == 6 or self.cal.is_holiday(date):  # Dimanche ou férié
-            day_type = "sunday_holiday"
-        elif self.is_bridge_day(date):  # Jour de pont
-            day_type = "sunday_holiday"
+        # Créer le TimeSlot pour la nouvelle pré-attribution
+        new_slot = self._create_timeslot_for_post(post_type, date)
+        if not new_slot:
+            QMessageBox.warning(
+                self,
+                "Erreur",
+                f"Configuration introuvable pour le poste {post_type}"
+            )
+            return
+
+        # Vérifier uniquement les chevauchements avec les pré-attributions existantes
+        if not self._check_pre_attribution_overlap(date, new_slot, current_person):
+            QMessageBox.warning(
+                self,
+                "Attribution impossible",
+                "Ce poste chevauche une autre pré-attribution existante."
+            )
+            return
+
+        # Créer un planning temporaire incluant toutes les pré-attributions
+        temp_planning = self._create_temp_planning_with_pre_attributions(date)
+        warnings = self._check_all_constraints(current_person, date, new_slot, temp_planning)
+
+        # Si des violations sont détectées, demander confirmation
+        if warnings:
+            warning_text = "Cette pré-attribution viole les contraintes suivantes :\n\n"
+            warning_text += "\n".join(warnings)
+            warning_text += "\n\nVoulez-vous continuer quand même ?"
             
-        # Vérifier si c'est un poste personnalisé
+            reply = QMessageBox.question(
+                self,
+                "Confirmation de violation de contraintes",
+                warning_text,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+            
+            if reply == QMessageBox.StandardButton.No:
+                return
+
+        # Procéder à l'attribution
+        self.assign_post(date, period, post_type)
+
+    def _has_pre_attributed_nl(self, person, date):
+        """Vérifie si une NL est pré-attribuée pour une date donnée"""
+        attributions = self.pre_attribution_widget.pre_attributions.get(person.name, {})
+        for (attr_date, _), post_type in attributions.items():
+            if attr_date == date and post_type == "NL":
+                return True
+        return False
+
+    def _create_temp_planning_with_pre_attributions(self, current_date):
+        """Crée un planning temporaire incluant toutes les pré-attributions"""
+        # Créer un planning qui couvre une semaine avant et après
+        start_date = current_date - timedelta(days=7)
+        end_date = current_date + timedelta(days=7)
+        temp_planning = Planning(start_date, end_date)
+        
+        # Initialiser les jours
+        current = start_date
+        while current <= end_date:
+            day = DayPlanning(date=current, slots=[])
+            temp_planning.days.append(day)
+            current += timedelta(days=1)
+        
+        # Ajouter toutes les pré-attributions existantes
+        for person_name, attributions in self.pre_attribution_widget.pre_attributions.items():
+            for (date, period), post_type in attributions.items():
+                if start_date <= date <= end_date:
+                    slot = self._create_timeslot_for_post(post_type, date)
+                    if slot:
+                        slot.assignee = person_name
+                        day = temp_planning.get_day(date)
+                        if day:
+                            day.slots.append(slot)
+        
+        return temp_planning
+
+    def _check_pre_attribution_overlap(self, date, new_slot, current_person):
+        """Vérifie uniquement les chevauchements avec d'autres pré-attributions"""
+        attributions = self.pre_attribution_widget.pre_attributions.get(current_person.name, {})
+        
+        for (other_date, other_period), other_post in attributions.items():
+            if other_date == date:  # Ne vérifier que le même jour
+                other_slot = self._create_timeslot_for_post(other_post, other_date)
+                if other_slot and self._slots_overlap(new_slot, other_slot):
+                    return False
+        return True
+
+    def _create_timeslot_for_post(self, post_type, date):
+        """Crée un TimeSlot pour un type de poste donné"""
+        day_type = "weekday"
+        if date.weekday() == 5:
+            day_type = "saturday"
+        elif date.weekday() == 6 or self.cal.is_holiday(date):
+            day_type = "sunday_holiday"
+        elif self.is_bridge_day(date):
+            day_type = "sunday_holiday"
+
         if post_type in self.pre_attribution_widget.custom_posts:
             custom_post = self.pre_attribution_widget.custom_posts[post_type]
-            # Créer le TimeSlot avec les détails du poste personnalisé
-            slot = TimeSlot(
+            return TimeSlot(
                 start_time=datetime.combine(date, custom_post.start_time),
                 end_time=datetime.combine(date, custom_post.end_time),
-                site="Custom",  # Les postes personnalisés n'ont pas de site spécifique
+                site="Custom",
                 slot_type="Custom",
                 abbreviation=post_type
             )
         else:
-            # Obtenir les détails du poste standard
+            post_manager = PostManager()
             post_details = post_manager.get_post_details(post_type, day_type)
-            if not post_details:
-                QMessageBox.warning(
-                    self,
-                    "Erreur",
-                    f"Configuration introuvable pour le poste {post_type}"
+            if post_details:
+                return TimeSlot(
+                    start_time=datetime.combine(date, post_details['start_time']),
+                    end_time=datetime.combine(date, post_details['end_time']),
+                    site=post_details['site'],
+                    slot_type="Standard",
+                    abbreviation=post_type
                 )
-                return
-                
-            # Créer le TimeSlot avec tous les paramètres requis
-            slot = TimeSlot(
-                start_time=datetime.combine(date, post_details['start_time']),
-                end_time=datetime.combine(date, post_details['end_time']),
-                site=post_details['site'],
-                slot_type="Standard",
-                abbreviation=post_type
-            )
-        
-        constraints = self.pre_attribution_widget.main_window.planning_constraints
-        planning = self.pre_attribution_widget.main_window.planning or Planning(date, date)
-        
-        # Vérifier uniquement le chevauchement horaire
-        if not constraints.can_pre_attribute(current_person, date, slot, planning):
-            QMessageBox.warning(
-                self,
-                "Attribution impossible",
-                "Ce poste chevauche un autre poste déjà attribué."
-            )
-            return
+        return None
 
-        # Procéder à l'attribution
-        self.assign_post(date, period, post_type)
+    def _slots_overlap(self, slot1, slot2):
+        """Vérifie si deux slots se chevauchent"""
+        return (slot1.start_time < slot2.end_time and 
+                slot1.end_time > slot2.start_time)
+        
+        
     def is_bridge_day(self, date):
         """Vérifie si une date est un jour de pont"""
         if date.weekday() >= 5 or self.cal.is_holiday(date):
@@ -933,13 +1051,22 @@ class PreAttributionTable(QTableWidget):
             item = self.item(row, col)
             if item:
                 item.setText(post)
-                # Utiliser directement la couleur du système
-                available_color = color_system.colors['available']
-                if isinstance(available_color, QColor):
+                # Utiliser la méthode get_color du système de couleurs
+                available_color = color_system.get_color('available')
+                text_color = color_system.get_color('text', 'primary')
+                if available_color:
                     item.setBackground(QBrush(available_color))
+                    if text_color:
+                        item.setForeground(QBrush(text_color))
+                    item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                    # Utiliser une police en gras pour les pré-attributions
+                    font = item.font()
+                    font.setBold(True)
+                    item.setFont(font)
                 else:
-                    # Fallback sur une couleur par défaut
+                    # Fallback sur des couleurs par défaut
                     item.setBackground(QBrush(QColor('#D1E6D6')))
+                    item.setForeground(QBrush(QColor('#2D3748')))
 
 
 class AttributionHistoryWidget(QTableWidget):

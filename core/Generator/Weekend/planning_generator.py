@@ -645,46 +645,17 @@ class PlanningGenerator:
 
     def _apply_pre_attributions(self, pre_attributions: Dict, planning: Planning) -> bool:
         """
-        Applique et stocke les pré-attributions.
-        
-        Args:
-            pre_attributions: Dictionnaire des pré-attributions {person_name: {(date, period): post_type}}
-            planning: Planning initial
-            
-        Returns:
-            bool: True si toutes les pré-attributions ont été appliquées avec succès
+        Applique les pré-attributions sans vérification de contraintes.
+        Les pré-attributions sont appliquées telles quelles, servant ensuite de base fixe
+        pour la génération du reste du planning.
         """
         try:
             logger.info("\nAPPLICATION DES PRÉ-ATTRIBUTIONS")
             logger.info("=" * 80)
             
-            # Stockage des pré-attributions
             self.pre_attributions = pre_attributions.copy()
-            
             success = True
-            period_mapping = {1: "matin", 2: "après-midi", 3: "soir"}
-
-            # Initialisation des compteurs de distribution
-            self.current_distribution = {
-                "weekend": {person.name: {
-                    "NLv": 0, "NLs": 0, "NLd": 0,  # NL weekend
-                    "NAs": 0, "NAd": 0,  # NA weekend
-                    "NMs": 0, "NMd": 0,  # NM weekend
-                    "weekend_groups": {}  # Groupes weekend
-                } for person in self.doctors + self.cats},
-                "weekday": {person.name: {
-                    "NL": 0,      # NL semaine
-                    "weekday_groups": {}  # Groupes semaine
-                } for person in self.doctors + self.cats}
-            }
-
-            # Log des pré-attributions stockées
-            logger.info("\nPré-attributions à appliquer:")
-            for person_name, attributions in self.pre_attributions.items():
-                logger.info(f"\n{person_name}:")
-                for (date, period), post_type in attributions.items():
-                    logger.info(f"  - {post_type} le {date} (période {period_mapping.get(period, 'inconnu')})")
-
+            
             # Trier les pré-attributions par date
             all_attributions = []
             for person_name, attributions in self.pre_attributions.items():
@@ -701,9 +672,6 @@ class PlanningGenerator:
             
             # Traiter chaque pré-attribution
             for date, period, post_type, person in all_attributions:
-                period_str = period_mapping.get(period, "inconnu")
-                logger.info(f"\nTraitement pré-attribution: {person.name} - {post_type} - {date} ({period_str})")
-                
                 # 1. Vérifier le jour
                 day = planning.get_day(date)
                 if not day:
@@ -719,60 +687,29 @@ class PlanningGenerator:
                 ]
                 
                 if not matching_slots:
-                    logger.error(f"Pas de slot disponible pour {post_type} ({period_str}) le {date}")
+                    logger.error(f"Pas de slot disponible pour {post_type} le {date}")
                     success = False
                     continue
                 
                 slot = matching_slots[0]
                 
-                # 3. Vérifier les contraintes
-                if not self.constraints.can_assign_to_assignee(person, date, slot, planning):
-                    logger.error(f"Contraintes non respectées pour {person.name} - {post_type} le {date}")
-                    success = False
-                    continue
-                
-                # 4. Mettre à jour les compteurs spécifiques pour NL
-                if isinstance(person, Doctor) and post_type == "NL":
-                    if date.weekday() == 4:  # Vendredi
-                        self.current_distribution['weekend'][person.name]['NLv'] += 1
-                        logger.info(f"Compteur NLv incrémenté pour {person.name}")
-                    elif date.weekday() == 5 and not self.is_bridge_day(date):  # Samedi normal
-                        self.current_distribution['weekend'][person.name]['NLs'] += 1
-                        logger.info(f"Compteur NLs incrémenté pour {person.name}")
-                    else:  # Dimanche/Férié/Pont
-                        self.current_distribution['weekend'][person.name]['NLd'] += 1
-                        logger.info(f"Compteur NLd incrémenté pour {person.name}")
-
-                # 5. Mettre à jour les compteurs NA/NM
-                elif isinstance(person, Doctor) and post_type in ["NA", "NM"]:
-                    if date.weekday() == 5 and not self.is_bridge_day(date):  # Samedi
-                        counter_key = f"{post_type}s"
-                        self.current_distribution['weekend'][person.name][counter_key] += 1
-                        logger.info(f"Compteur {counter_key} incrémenté pour {person.name}")
-                    else:  # Dimanche/Férié
-                        counter_key = f"{post_type}d"
-                        self.current_distribution['weekend'][person.name][counter_key] += 1
-                        logger.info(f"Compteur {counter_key} incrémenté pour {person.name}")
-
-                # 6. Mettre à jour les groupes
-                group = self._get_post_group(post_type, date)
-                if group and isinstance(person, Doctor):
-                    doctor_state = self.current_distribution['weekend'][person.name]
-                    doctor_state['weekend_groups'][group] = doctor_state['weekend_groups'].get(group, 0) + 1
-                    logger.info(f"Groupe {group} incrémenté pour {person.name}")
-
-                # 7. Appliquer la pré-attribution
+                # 3. Appliquer la pré-attribution sans vérification
                 slot.assignee = person.name
-                logger.info(f"Pré-attribution appliquée : {person.name} - {post_type} - {date} ({period_str})")
+                slot.is_pre_attributed = True  # Marquer le slot comme pré-attribué
+                
+                logger.info(f"Pré-attribution appliquée : {person.name} - {post_type} - {date}")
+                
+                # 4. Mettre à jour les compteurs de distribution appropriés
+                self._update_distribution_counters(person, date, post_type)
 
-            # Log des résultats
+            # Log du résultat final
             if success:
                 self._log_pre_attribution_results()
             else:
                 logger.warning("Certaines pré-attributions n'ont pas pu être appliquées")
 
             return success
-
+                
         except Exception as e:
             logger.error(f"Erreur dans l'application des pré-attributions: {e}")
             return False

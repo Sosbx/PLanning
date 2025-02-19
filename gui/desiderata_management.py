@@ -4,7 +4,7 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea, QGridLayout, QAbstractScrollArea,
                              QTableWidget, QTableWidgetItem, QComboBox, QMessageBox, QLabel, QDateEdit, QMessageBox,
                              QSplitter, QHeaderView,QDialog)
-from PyQt6.QtCore import Qt, QDate, QEvent
+from PyQt6.QtCore import Qt, QDate, QEvent, pyqtSignal
 from PyQt6.QtGui import QColor, QBrush, QFont
 from core.Constantes.models import Desiderata, Doctor, CAT
 from datetime import date, timedelta
@@ -388,6 +388,8 @@ class DesiderataCalendarWidget(QTableWidget):
 
     
 class DesiderataManagementWidget(QWidget):
+    desiderata_updated = pyqtSignal()  # Signal for desiderata updates
+    
     def __init__(self, doctors, cats, planning_start_date, planning_end_date, main_window):
         super().__init__()
         self.doctors = doctors
@@ -629,6 +631,7 @@ class DesiderataManagementWidget(QWidget):
             
             self.update_stats()
             self.main_window.save_data()
+            self.desiderata_updated.emit()  # Emit signal after successful save
             QMessageBox.information(self, "Succès", f"Les desiderata de {person.name} ont été enregistrés avec succès.")
             
     def reset_desiderata(self):
