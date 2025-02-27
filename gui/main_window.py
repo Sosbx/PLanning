@@ -16,6 +16,9 @@ from .planning_management import PlanningManagementWidget
 from core.utils import resource_path
 from .styles import color_system, GLOBAL_STYLE, ACTION_BUTTON_STYLE, StyleConstants
 from core.Constantes.constraints import PlanningConstraints
+from core.post_attribution_handler import PostAttributionHandler
+from gui.Attributions.post_attribution_history_dialog import PostAttributionHistoryDialog
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -31,6 +34,9 @@ class MainWindow(QMainWindow):
         self.planning_constraints = PlanningConstraints()
         self.planning = None  # Sera initialisé lors de la création du planning
         
+        # Initialiser le gestionnaire de post-attribution
+        self.post_attribution_handler = PostAttributionHandler(self)
+        
         # Application du style global
         self.setStyleSheet(GLOBAL_STYLE)
         
@@ -44,6 +50,9 @@ class MainWindow(QMainWindow):
         self.tab_widget = QTabWidget()
         self.tab_widget.setIconSize(QSize(32, 32))
         self.setCentralWidget(self.tab_widget)
+        
+         # Initialiser le gestionnaire de post-attribution
+        self.post_attribution_handler = PostAttributionHandler(self)
 
         # Style des onglets avec les nouvelles constantes
         self.tab_widget.setStyleSheet(f"""
@@ -83,6 +92,7 @@ class MainWindow(QMainWindow):
         self._init_desiderata_tab()
         self._init_planning_tab()
         self._init_doctor_planning_tab()
+        self.create_menu_bar()
         self._init_stats_tab()
         self._init_comparison_tab()
         self._init_export_tab()
@@ -90,11 +100,12 @@ class MainWindow(QMainWindow):
     def _init_planning_tab(self):
         """Initialise l'onglet Planning"""
         self.planning_tab = PlanningViewWidget(self.doctors, self.cats, 
-                                             self.post_configuration, self,
-                                             pre_attributions=self.pre_attributions)
+                                            self.post_configuration, self,
+                                            pre_attributions=self.pre_attributions)
         self.planning = self.planning_tab.planning  # Récupérer l'instance de Planning
+        
         self.tab_widget.addTab(self.planning_tab, 
-                             self.create_tab_icon("icons/planning.png"), "Planning")
+                            self.create_tab_icon("icons/planning.png"), "Planning")
 
     def _init_personnel_tab(self):
         """Initialise l'onglet Gestion du personnel"""
@@ -169,6 +180,8 @@ class MainWindow(QMainWindow):
             self.update_stats_view()
             self.comparison_view.planning = self.planning_tab.planning
             self.comparison_view.update_comparison(preserve_selection=True)
+            
+            self.doctor_planning_view.main_window = self  # Assurer que main_window est défini
             self.doctor_planning_view.planning = self.planning_tab.planning
             self.doctor_planning_view.update_table()
         else:
@@ -208,11 +221,20 @@ class MainWindow(QMainWindow):
     def _init_doctor_planning_tab(self):
         """Initialise l'onglet Planning par médecin"""
         self.doctor_planning_view = DoctorPlanningView(None, self.doctors, self.cats)
+        
+        # Ajouter cette ligne pour définir la référence vers main_window
+        self.doctor_planning_view.main_window = self
+        
         self.tab_widget.addTab(
             self.doctor_planning_view,
             self.create_tab_icon("icons/doctor_planning.png"),
             "Planning par médecin"
         )
+        
+    def load_post_attributions(self):
+        """Charge les post-attributions après la génération du planning."""
+        if self.planning and hasattr(self, 'post_attribution_handler'):
+            self.post_attribution_handler.load_post_attributions()
 
     def _init_stats_tab(self):
         """Initialise l'onglet Statistiques"""
@@ -276,7 +298,31 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 logger.error(f"Erreur lors de la sauvegarde des pré-attributions: {e}")
         
+        # Sauvegarder les post-attributions
+        if hasattr(self, 'post_attribution_handler'):
+            try:
+                self.post_attribution_handler.load_post_attributions()
+            except Exception as e:
+                logger.error(f"Erreur lors de la sauvegarde des post-attributions: {e}")
+        
         event.accept()
+        
+    def create_menu_bar(self):
+        """Crée la barre de menu de l'application"""
+        self.menu_bar = self.menuBar()
+        
+        # Menu Planning
+        self.planning_menu = self.menu_bar.addMenu("Planning")
+        
+        # Action pour l'historique des post-attributions
+        post_attr_history_action = self.planning_menu.addAction("Historique des Post-Attributions")
+        post_attr_history_action.triggered.connect(self.show_post_attribution_history)
+        
+    def show_post_attribution_history(self):
+        """Affiche l'historique des post-attributions"""
+        dialog = PostAttributionHistoryDialog(self.post_attribution_handler, self)
+        dialog.exec()
+
 
     def save_post_configuration(self, new_post_configuration):
         """Sauvegarde la configuration des postes sans mettre à jour le planning"""

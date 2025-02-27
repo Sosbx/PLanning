@@ -8,7 +8,7 @@ from core.Generator.Weekend.planning_generator import PlanningGenerator
 from core.Constantes.models import ALL_POST_TYPES, WEEKDAY_COMBINATIONS, WEEKEND_COMBINATIONS
 from datetime import date, timedelta
 from PyQt6.QtCore import pyqtSignal
-from .pre_attribution_view import PreAttributionWidget
+from .Attributions.pre_attribution_view import PreAttributionWidget
 from .styles import color_system, EDIT_DELETE_BUTTON_STYLE, ACTION_BUTTON_STYLE, ADD_BUTTON_STYLE, StyleConstants
 
 
@@ -374,10 +374,15 @@ class PlanningViewWidget(QWidget):
                     self.main_window.planning_management_tab.start_auto_save()
             except Exception as e:
                 print(f"Erreur lors du démarrage de la sauvegarde automatique: {str(e)}")
+            
+            # Charger les post-attributions après que le planning a été généré avec succès
+            if hasattr(self.main_window, 'load_post_attributions'):
+                self.main_window.load_post_attributions()
                 
             self.main_window.update_data()
         else:
             self._handle_generation_error("La génération n'a pas produit de planning valide")
+
 
 
     def _handle_generation_error(self, error_message: str):
@@ -440,6 +445,10 @@ class PlanningViewWidget(QWidget):
                 # Sauvegarder l'état
                 self.main_window.planning_management_tab.save_planning()
                 
+                # Charger les post-attributions après la validation des weekends
+                if hasattr(self.main_window, 'load_post_attributions'):
+                    self.main_window.load_post_attributions()
+                
                 # Notify user
                 QMessageBox.information(
                     self, 
@@ -452,6 +461,7 @@ class PlanningViewWidget(QWidget):
                 "Erreur",
                 "Aucun planning n'a été généré. Veuillez d'abord générer un planning.")
 
+
     def generate_weekday_planning(self):
         if self.weekend_validated:
             # Appeler la méthode pour générer le planning de la semaine
@@ -461,6 +471,11 @@ class PlanningViewWidget(QWidget):
                 new_planning.weekend_validated = True
                 self.planning = new_planning
                 self.update_table()
+                
+                # Charger les post-attributions après la génération du planning de semaine
+                if hasattr(self.main_window, 'load_post_attributions'):
+                    self.main_window.load_post_attributions()
+                    
                 self.main_window.update_data()
                 QMessageBox.information(self, "Génération terminée", "Le planning de la semaine a été généré avec succès.")
             else:

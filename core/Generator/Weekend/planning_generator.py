@@ -364,7 +364,8 @@ class PlanningGenerator:
 
     def _create_custom_slots(self, day: DayPlanning, config: Dict, day_type: str):
         """
-        Version mise à jour qui intègre la gestion des postes personnalisés à quota zéro
+        Version mise à jour qui intègre la gestion des postes personnalisés.
+        Ne crée pas de slots pour les postes à quota zéro, qui seront traités par _handle_zero_quota_posts.
         """
         if not self.custom_posts:
             return
@@ -389,9 +390,8 @@ class PlanningGenerator:
             # Extraire la valeur configurée
             configured_count = self._get_config_value(config.get(post_name, PostConfig(total=0)))
             
-            # Si quota zéro, utiliser le gestionnaire spécial
-            if configured_count == 0:
-                self._handle_zero_quota_posts(config, day, day_type)
+            # Si quota zéro ou force_zero_count, ne pas créer de slots ici
+            if configured_count == 0 or custom_post.force_zero_count:
                 continue
                 
             effective_count = custom_post.get_effective_quota(configured_count)
@@ -415,6 +415,7 @@ class PlanningGenerator:
     def _handle_zero_quota_posts(self, config: Dict, day: DayPlanning, day_type: str) -> None:
         """
         Gère la création et l'attribution des slots pour les postes ayant un quota de 0.
+        Optimisé pour éviter toute redondance et garantir l'unicité des slots.
         """
         # Identifier les postes à quota zéro
         zero_quota_posts = {
@@ -425,61 +426,97 @@ class PlanningGenerator:
         if not zero_quota_posts: 
             return
 
-        # Vérifier les pré-attributions pour cette date
+        # Regrouper les pré-attributions par poste et par personne pour éviter les doublons
+        attributions_by_post_person = {}
+        
         for person_name, attributions in self.pre_attributions.items():
-            for (date, period), post_type in attributions.items():
-                if date == day.date and post_type in zero_quota_posts:
-                    logger.info(f"Traitement pré-attribution quota zéro: {person_name} - {post_type} le {date}")
+            for (attr_date, period), post_type in attributions.items():
+                # Ne traiter que les pré-attributions pour cette date et pour les postes à quota zéro
+                if attr_date != day.date or post_type not in zero_quota_posts:
+                    continue
                     
-                    # Création du slot
-                    new_slot = None
-                    if post_type in self.custom_posts:
-                        custom_post = self.custom_posts[post_type]
-                        # Créer le slot même si preserve_in_planning est False
-                        new_slot = TimeSlot(
-                            start_time=datetime.combine(day.date, custom_post.start_time),
-                            end_time=datetime.combine(
-                                day.date + timedelta(days=1 if custom_post.end_time < custom_post.start_time else 0),
-                                custom_post.end_time
-                            ),
-                            site="Personnalisé",
-                            slot_type=custom_post.statistic_group.strip() if custom_post.statistic_group else "Personnalisé",
-                            abbreviation=post_type,
-                            assignee=person_name
-                        )
-                    else:
-                        # Création d'un slot standard
-                        post_details = self.post_manager.get_post_details(post_type, day_type)
-                        if post_details:
-                            new_slot = TimeSlot(
-                                start_time=datetime.combine(day.date, post_details['start_time']),
-                                end_time=datetime.combine(
-                                    day.date + timedelta(days=1 if post_details['end_time'] < post_details['start_time'] else 0),
-                                    post_details['end_time']
-                                ),
-                                site=post_details['site'],
-                                slot_type="Consultation" if "Visite" not in post_details['site'] else "Visite",
-                                abbreviation=post_type,
-                                assignee=person_name
-                            )
-                        else:
-                            logger.warning(f"Pas de détails trouvés pour le poste {post_type}")
-                            continue
-
-                    # Vérifier si un slot similaire existe déjà
-                    existing_slot = next(
-                        (s for s in day.slots if s.abbreviation == post_type),
-                        None
+                # Utiliser une clé unique (poste, personne) pour éviter les doublons
+                key = (post_type, person_name)
+                if key not in attributions_by_post_person:
+                    attributions_by_post_person[key] = (post_type, person_name)
+        
+        # Créer un seul slot par combinaison unique (poste, personne)
+        for post_type, person_name in attributions_by_post_person.values():
+            logger.info(f"Traitement pré-attribution quota zéro: {person_name} - {post_type} le {day.date}")
+            
+            # Vérifier si un slot identique existe déjà
+            has_identical_slot = False
+            for slot in day.slots:
+                if (slot.abbreviation == post_type and slot.assignee == person_name):
+                    has_identical_slot = True
+                    logger.info(f"Slot identique déjà existant pour {post_type} le {day.date} - Assigné à {person_name}")
+                    break
+                    
+            # Créer un nouveau slot uniquement si nécessaire
+            if not has_identical_slot:
+                # Création du slot selon le type de poste
+                if post_type in self.custom_posts:
+                    custom_post = self.custom_posts[post_type]
+                    new_slot = TimeSlot(
+                        start_time=datetime.combine(day.date, custom_post.start_time),
+                        end_time=datetime.combine(
+                            day.date + timedelta(days=1 if custom_post.end_time < custom_post.start_time else 0),
+                            custom_post.end_time
+                        ),
+                        site="Personnalisé",
+                        slot_type=custom_post.statistic_group.strip() if custom_post.statistic_group else "Personnalisé",
+                        abbreviation=post_type,
+                        assignee=person_name,
+                        is_pre_attributed=True
                     )
-
-                    if existing_slot:
-                        # Si le slot existe déjà, mettre à jour l'assignation
-                        existing_slot.assignee = person_name
-                        logger.info(f"Slot existant mis à jour pour {post_type} le {date} - Assigné à {person_name}")
-                    elif new_slot:
-                        # Ajouter le nouveau slot
+                    day.slots.append(new_slot)
+                    logger.info(f"Nouveau slot créé pour {post_type} le {day.date} - Assigné à {person_name}")
+                else:
+                    # Pour les postes standards sans détails, créer un slot avec horaires par défaut
+                    post_details = self.post_manager.get_post_details(post_type, day_type)
+                    if post_details:
+                        new_slot = TimeSlot(
+                            start_time=datetime.combine(day.date, post_details['start_time']),
+                            end_time=datetime.combine(
+                                day.date + timedelta(days=1 if post_details['end_time'] < post_details['start_time'] else 0),
+                                post_details['end_time']
+                            ),
+                            site=post_details['site'],
+                            slot_type="Consultation" if "Visite" not in post_details['site'] else "Visite",
+                            abbreviation=post_type,
+                            assignee=person_name,
+                            is_pre_attributed=True
+                        )
                         day.slots.append(new_slot)
-                        logger.info(f"Nouveau slot créé pour {post_type} le {date} - Assigné à {person_name}")
+                        logger.info(f"Nouveau slot créé pour {post_type} le {day.date} - Assigné à {person_name}")
+                    else:
+                        # Créer un slot avec des horaires par défaut pour les postes sans détails
+                        default_start = time(12, 0)  # Midi par défaut
+                        default_end = time(17, 0)    # 17h par défaut
+                        
+                        # Utiliser des horaires spécifiques selon la première lettre du poste
+                        if post_type.startswith('N'):  # Postes de nuit
+                            default_start = time(20, 0)
+                            default_end = time(8, 0)
+                        elif post_type.startswith('C'):  # Postes de consultation
+                            default_start = time(9, 0)
+                            default_end = time(13, 0)
+                        
+                        new_slot = TimeSlot(
+                            start_time=datetime.combine(day.date, default_start),
+                            end_time=datetime.combine(
+                                day.date + timedelta(days=1 if default_end < default_start else 0),
+                                default_end
+                            ),
+                            site="Personnalisé (auto)",
+                            slot_type="Personnalisé",
+                            abbreviation=post_type,
+                            assignee=person_name,
+                            is_pre_attributed=True
+                        )
+                        day.slots.append(new_slot)
+                        logger.info(f"Nouveau slot créé avec horaires par défaut pour {post_type} le {day.date} - Assigné à {person_name}")
+
 
     def _verify_zero_quota_assignments(self, planning: Planning) -> bool:
         """
@@ -489,25 +526,48 @@ class PlanningGenerator:
             bool: True si toutes les pré-attributions sont correctes
         """
         all_correct = True
+        
+        # Créer un index détaillé de tous les slots existants dans le planning
+        # Format: {(date, abbreviation, assignee): [slot1, slot2, ...]}
+        slots_index = {}
+        for day in planning.days:
+            for slot in day.slots:
+                if slot.assignee:
+                    key = (day.date, slot.abbreviation, slot.assignee)
+                    if key not in slots_index:
+                        slots_index[key] = []
+                    slots_index[key].append(slot)
+        
+        # Vérifier chaque pré-attribution
         for person_name, attributions in self.pre_attributions.items():
-            for (date, period), post_type in attributions.items():
-                day = planning.get_day(date)
-                if not day:
-                    continue
-                    
-                matching_slots = [s for s in day.slots if s.abbreviation == post_type]
-                if not matching_slots:
-                    logger.error(f"Slot manquant pour {post_type} le {date} (assigné à {person_name})")
+            for (attr_date, period), post_type in attributions.items():
+                key = (attr_date, post_type, person_name)
+                
+                # Vérifier si le slot existe pour cette combinaison (date, type, personne)
+                if key not in slots_index or not slots_index[key]:
+                    logger.error(f"Slot manquant pour {post_type} le {attr_date} (assigné à {person_name})")
                     all_correct = False
                     continue
+                
+                # Pour les postes standards (non personnalisés et non à quota zéro), vérifier aussi la période
+                day_type = "weekday"
+                if attr_date.weekday() == 5 and not DayType.is_bridge_day(attr_date, self.cal):
+                    day_type = "saturday"
+                elif attr_date.weekday() == 6 or self.cal.is_holiday(attr_date) or DayType.is_bridge_day(attr_date, self.cal):
+                    day_type = "sunday_holiday"
                     
-                matching_slot = matching_slots[0]
-                if matching_slot.assignee != person_name:
-                    logger.error(f"Mauvaise attribution pour {post_type} le {date} "
-                            f"(attendu: {person_name}, actuel: {matching_slot.assignee})")
-                    all_correct = False
+                is_zero_quota = self._is_zero_quota_post(post_type, attr_date, day_type)
+                if not is_zero_quota and post_type not in self.custom_posts:
+                    slot = slots_index[key][0]
+                    slot_period = self._get_slot_period(slot)
                     
+                    if slot_period != period:
+                        logger.error(f"Période incorrecte pour {post_type} le {attr_date} "
+                                    f"(assigné à {person_name}, attendu: période {period}, actuel: période {slot_period})")
+                        all_correct = False
+                        
         return all_correct
+
 
     def _log_custom_slots_creation(self, day: DayPlanning, post_name: str,
                                 effective_count: int, configured_count: int) -> None:
@@ -656,6 +716,20 @@ class PlanningGenerator:
             self.pre_attributions = pre_attributions.copy()
             success = True
             
+            # Obtenir la liste de tous les jours pour indexation rapide
+            days_by_date = {day.date: day for day in planning.days}
+            
+            # Construire un index des slots existants pour une recherche rapide
+            # Format: {(date, post_type, assignee): [slot1, slot2, ...]}
+            existing_slots = {}
+            for day in planning.days:
+                for slot in day.slots:
+                    if slot.assignee:
+                        key = (day.date, slot.abbreviation, slot.assignee)
+                        if key not in existing_slots:
+                            existing_slots[key] = []
+                        existing_slots[key].append(slot)
+            
             # Trier les pré-attributions par date
             all_attributions = []
             for person_name, attributions in self.pre_attributions.items():
@@ -672,34 +746,160 @@ class PlanningGenerator:
             
             # Traiter chaque pré-attribution
             for date, period, post_type, person in all_attributions:
-                # 1. Vérifier le jour
-                day = planning.get_day(date)
+                # Récupérer le jour
+                day = days_by_date.get(date)
                 if not day:
                     logger.error(f"Jour non trouvé : {date}")
                     success = False
                     continue
                 
-                # 2. Trouver les slots correspondants
-                matching_slots = [
-                    slot for slot in day.slots
-                    if slot.abbreviation == post_type and not slot.assignee
-                    and self._get_slot_period(slot) == period
-                ]
+                # Déterminer le type de jour pour les logs
+                day_type = "weekday"
+                if date.weekday() == 5 and not DayType.is_bridge_day(date, self.cal):
+                    day_type = "saturday"
+                elif date.weekday() == 6 or self.cal.is_holiday(date) or DayType.is_bridge_day(date, self.cal):
+                    day_type = "sunday_holiday"
+                    
+                # Log du type de jour
+                logger.debug(f"{date} : {day_type}")
                 
-                if not matching_slots:
-                    logger.error(f"Pas de slot disponible pour {post_type} le {date}")
-                    success = False
-                    continue
+                # Vérifier si le slot existe déjà (créé lors de l'initialisation)
+                key = (date, post_type, person.name)
+                slot_already_exists = key in existing_slots and existing_slots[key]
                 
-                slot = matching_slots[0]
+                if slot_already_exists:
+                    # Le slot existe déjà, vérifier s'il a la bonne période
+                    existing_slot = existing_slots[key][0]
+                    existing_period = self._get_slot_period(existing_slot)
+                    
+                    # Pour les postes personnalisés à quota zéro, la période n'est pas vérifiée
+                    is_custom_zero_quota = (post_type in self.custom_posts and 
+                                        self._is_zero_quota_post(post_type, date, day_type))
+                                        
+                    if is_custom_zero_quota or existing_period == period:
+                        logger.info(f"Pré-attribution déjà appliquée: {person.name} - {post_type} - {date}")
+                    else:
+                        logger.warning(f"Pré-attribution existante avec mauvaise période: {person.name} - {post_type} - {date}")
+                        if not is_custom_zero_quota:
+                            # Pour les postes normaux, on peut réattribuer avec la bonne période
+                            existing_slot.assignee = None  # Libérer le slot existant
+                            
+                            # Chercher un slot avec la bonne période
+                            matching_slots = [
+                                slot for slot in day.slots
+                                if slot.abbreviation == post_type and not slot.assignee
+                                and self._get_slot_period(slot) == period
+                            ]
+                            
+                            if matching_slots:
+                                matching_slots[0].assignee = person.name
+                                matching_slots[0].is_pre_attributed = True
+                                logger.info(f"Pré-attribution corrigée: {person.name} - {post_type} - {date}")
+                            else:
+                                logger.error(f"Pas de slot disponible pour {post_type} le {date} avec période {period}")
+                                success = False
+                else:
+                    # Vérifier si c'est un poste à quota zéro
+                    is_zero_quota = self._is_zero_quota_post(post_type, date, day_type)
+                    
+                    # Création d'un nouveau slot si nécessaire
+                    if is_zero_quota or post_type in self.custom_posts:
+                        # Pour les postes personnalisés ou à quota zéro
+                        if post_type in self.custom_posts:
+                            # Utiliser les horaires du poste personnalisé
+                            custom_post = self.custom_posts[post_type]
+                            new_slot = TimeSlot(
+                                start_time=datetime.combine(date, custom_post.start_time),
+                                end_time=datetime.combine(
+                                    date + timedelta(days=1 if custom_post.end_time < custom_post.start_time else 0),
+                                    custom_post.end_time
+                                ),
+                                site="Personnalisé",
+                                slot_type=custom_post.statistic_group.strip() if custom_post.statistic_group else "Personnalisé",
+                                abbreviation=post_type,
+                                assignee=person.name,
+                                is_pre_attributed=True
+                            )
+                        else:
+                            # Pour les postes standards à quota zéro, chercher les détails ou créer avec des horaires par défaut
+                            post_details = self.post_manager.get_post_details(post_type, day_type)
+                            if post_details:
+                                new_slot = TimeSlot(
+                                    start_time=datetime.combine(date, post_details['start_time']),
+                                    end_time=datetime.combine(
+                                        date + timedelta(days=1 if post_details['end_time'] < post_details['start_time'] else 0),
+                                        post_details['end_time']
+                                    ),
+                                    site=post_details['site'],
+                                    slot_type="Consultation" if "Visite" not in post_details['site'] else "Visite",
+                                    abbreviation=post_type,
+                                    assignee=person.name,
+                                    is_pre_attributed=True
+                                )
+                            else:
+                                # Créer un slot avec des horaires par défaut pour les postes sans détails
+                                default_start = time(12, 0)  # Midi par défaut
+                                default_end = time(17, 0)    # 17h par défaut
+                                
+                                # Utiliser des horaires spécifiques selon la première lettre du poste
+                                if post_type.startswith('N'):  # Postes de nuit
+                                    default_start = time(20, 0)
+                                    default_end = time(8, 0)
+                                elif post_type.startswith('C'):  # Postes de consultation
+                                    default_start = time(9, 0)
+                                    default_end = time(13, 0)
+                                
+                                new_slot = TimeSlot(
+                                    start_time=datetime.combine(date, default_start),
+                                    end_time=datetime.combine(
+                                        date + timedelta(days=1 if default_end < default_start else 0),
+                                        default_end
+                                    ),
+                                    site="Personnalisé (auto)",
+                                    slot_type="Personnalisé",
+                                    abbreviation=post_type,
+                                    assignee=person.name,
+                                    is_pre_attributed=True
+                                )
+                        
+                        # Ajouter le slot au planning
+                        day.slots.append(new_slot)
+                        
+                        # Mettre à jour l'index des slots existants
+                        key = (date, post_type, person.name)
+                        if key not in existing_slots:
+                            existing_slots[key] = []
+                        existing_slots[key].append(new_slot)
+                        
+                        logger.info(f"Pré-attribution appliquée (quota zéro): {person.name} - {post_type} - {date}")
+                    else:
+                        # Pour les postes standards ou non à quota zéro, chercher un slot disponible
+                        matching_slots = [
+                            slot for slot in day.slots
+                            if slot.abbreviation == post_type and not slot.assignee
+                            and self._get_slot_period(slot) == period
+                        ]
+                        
+                        if not matching_slots:
+                            logger.error(f"Pas de slot disponible pour {post_type} le {date}")
+                            success = False
+                            continue
+                        
+                        slot = matching_slots[0]
+                        
+                        # Appliquer la pré-attribution
+                        slot.assignee = person.name
+                        slot.is_pre_attributed = True
+                        
+                        # Mettre à jour l'index des slots existants
+                        key = (date, post_type, person.name)
+                        if key not in existing_slots:
+                            existing_slots[key] = []
+                        existing_slots[key].append(slot)
+                        
+                        logger.info(f"Pré-attribution appliquée : {person.name} - {post_type} - {date}")
                 
-                # 3. Appliquer la pré-attribution sans vérification
-                slot.assignee = person.name
-                slot.is_pre_attributed = True  # Marquer le slot comme pré-attribué
-                
-                logger.info(f"Pré-attribution appliquée : {person.name} - {post_type} - {date}")
-                
-                # 4. Mettre à jour les compteurs de distribution appropriés
+                # Mettre à jour les compteurs de distribution
                 self._update_distribution_counters(person, date, post_type)
 
             # Log du résultat final
@@ -713,6 +913,36 @@ class PlanningGenerator:
         except Exception as e:
             logger.error(f"Erreur dans l'application des pré-attributions: {e}")
             return False
+
+
+    def _is_zero_quota_post(self, post_type: str, date: date, day_type: str) -> bool:
+        """
+        Vérifie si un poste a un quota de zéro pour une date et un type de jour donnés.
+        Gère également les postes personnalisés qui ont force_zero_count=True.
+        
+        Args:
+            post_type: Type de poste
+            date: Date à vérifier
+            day_type: Type de jour (weekday, saturday, sunday_holiday)
+            
+        Returns:
+            bool: True si le poste a un quota de zéro
+        """
+        # Vérifier d'abord si c'est un poste personnalisé avec force_zero_count
+        if post_type in self.custom_posts and getattr(self.custom_posts[post_type], 'force_zero_count', False):
+            return True
+        
+        # Obtenir la configuration pour ce jour
+        config = self._get_config_from_analysis(date, day_type)
+        
+        # Vérifier si le poste est dans la configuration et a un quota de zéro
+        if post_type in config:
+            quota = self._get_config_value(config[post_type])
+            return quota == 0
+        
+        # Pour les postes qui ne sont pas dans la configuration, on suppose qu'ils ont un quota de zéro
+        return True
+
 
     def _log_pre_attribution_results(self):
         """Log détaillé des résultats des pré-attributions."""

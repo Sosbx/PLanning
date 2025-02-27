@@ -32,13 +32,13 @@ WEEKDAY_COMBINATIONS = [
     "CMCA", "MMCA", "CACS", "HMHA", "HAHS", "SMSA", "SASS", "RMRA", "RARS",
     "CMAC", "MMAC", "CMAL", "MMAL", "HMAL", "HMAC", "RMAL", "RMAC", "SMAL", "SMAC", 
     "MCAL", "CMRS", "CMSS", "CMHS", "CMNC", "SMCS", "SMHS",
-    "MLCS", "MLRS", "MLSS", "MLHS", "MMCS", "MLCT",
+    "MLCS", "MLRS", "MLSS", "MLHS", "MMCS",
     "MCCS", "MCRS", "MCSS", 'MCHS'
 ]
 
 WEEKDAY_PRIORITY_GROUPS = {
     'high_priority': [
-        "MLCT", "MCCA",  "MLCA",  
+        "MCCA",  "MLCA",  
         "MMCA", "CMCA", "CACS", "HMHA", "HAHS", "RMRA", "RARS", "SMSA", "SASS"
     ],
     'medium_priority': [

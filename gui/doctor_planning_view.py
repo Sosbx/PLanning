@@ -3,8 +3,8 @@
 # © 2024 HILAL Arkane. Tous droits réservés.
 # .gui/doctor_planning_view
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QComboBox, QScrollArea, 
-                             QLabel, QScrollArea, QSplitter, QPushButton, QFrame)
-from PyQt6.QtCore import Qt, QTimer, QSize
+                             QLabel, QScrollArea, QSplitter, QPushButton, QFrame,QMenu, QMessageBox)
+from PyQt6.QtCore import Qt, QTimer, QSize, pyqtSignal, QPoint
 from PyQt6.QtGui import QColor, QBrush, QFont, QIcon
 from datetime import date, timedelta, datetime, time
 from typing import Union, Optional, Dict, List, Tuple
@@ -96,10 +96,11 @@ class DoctorPlanningView(QWidget):
         self._calendar = France()
         
         # Mapping des périodes vers les abréviations de postes (cache)
+        # Aligné avec les périodes dans post_attribution_handler._get_available_posts
         self._period_to_post = {
-            1: ["ML", "MC", "MM", "CM", "HM", "SM", "RM"],  # Matin
+            1: ["MM", "CM", "HM", "ML", "MC", "SM", "RM"],  # Matin
             2: ["CA", "HA", "SA", "RA", "AL", "AC", "CT"],  # Après-midi
-            3: ["CS", "HS", "SS", "RS", "NA", "NM", "NC"]   # Soir
+            3: ["CS", "HS", "SS", "RS", "NC", "NM", "NL", "NA"]   # Soir
         }
         
         # Cache des horaires
@@ -114,7 +115,11 @@ class DoctorPlanningView(QWidget):
             3: (23, 0)   # Soir: 23h
         }
         
+        # Initialiser l'interface utilisateur (appel obligatoire avant d'utiliser table)
         self.init_ui()
+        
+        # Seulement après init_ui, on peut connecter le signal double-clic
+        self.table.cellDoubleClicked.connect(self.on_cell_double_clicked)
 
     def init_ui(self):
         # Layout principal
@@ -225,7 +230,7 @@ class DoctorPlanningView(QWidget):
                         slots_by_type[slot.abbreviation].append(slot)
                     else:
                         slot_period = get_post_period(slot)
-                        if slot_period == period - 1:  # -1 car period commence à 1
+                        if slot_period == period:  # Les périodes sont maintenant alignées
                             slots_by_type[slot.abbreviation].append(slot)
 
             # Préparer la liste d'affichage
@@ -320,7 +325,7 @@ class DoctorPlanningView(QWidget):
                 has_slot_in_period = False
                 for slot in day_planning.slots:
                     if (slot.assignee == person.name and
-                        get_post_period(slot) == check_period - 1):
+                        get_post_period(slot) == check_period):  # Les périodes sont maintenant alignées
                         has_slot_in_period = True
                         break
                 
@@ -616,6 +621,84 @@ class DoctorPlanningView(QWidget):
             return
             
         self._schedule_update()
+    
+    def on_cell_double_clicked(self, row, col):
+        """Gère le double-clic sur une cellule."""
+        # Vérifier que main_window est disponible
+        if not hasattr(self, 'main_window') or not self.main_window:
+            print("Erreur: main_window n'est pas défini dans DoctorPlanningView")
+            return
+            
+        if not hasattr(self.main_window, 'post_attribution_handler'):
+            print("Erreur: post_attribution_handler n'est pas disponible dans main_window")
+            return
+        
+        # Récupérer la date correspondant à la cellule
+        date = self._get_date_from_row_col(row, col)
+        if not date:
+            print(f"Impossible de déterminer la date pour la cellule ({row}, {col})")
+            return
+        
+        # Calculer la base de la colonne et la période
+        # La première colonne contient le numéro de jour (0)
+        # Ensuite, chaque mois a 4 colonnes: J (jour), M (matin), AM (après-midi), S (soir)
+        # On s'assure que col > 0 pour éviter les erreurs
+        if col <= 0:
+            return
+            
+        # Calculer correctement la colonne de base (première colonne du groupe)
+        base_col = (col - 1) // 4 * 4 + 1
+        
+        # Vérifier que la colonne correspond à une période (M, AM, S)
+        if col not in [base_col + 1, base_col + 2, base_col + 3]:
+            print(f"La colonne {col} n'est pas une colonne de période")
+            return
+        
+        # Calculer la période (1: Matin, 2: Après-midi, 3: Soir)
+        period = col - base_col + 1
+        
+        # Récupérer la personne sélectionnée
+        current_person = self.get_current_person()
+        if not current_person:
+            print("Aucune personne sélectionnée")
+            return
+        
+        print(f"Double-clic détecté pour: {current_person.name}, date={date}, période={period}")
+        
+        # Déterminer le type de jour pour obtenir les postes disponibles
+        day_type = self._get_day_type(date)
+        available_posts = self.main_window.post_attribution_handler._get_available_posts(
+            date, period, day_type, current_person.name
+        )
+        
+        if not available_posts:
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.information(
+                self,
+                "Information",
+                "Aucun poste disponible pour cette période."
+            )
+            return
+        
+        # Afficher le menu de sélection de poste
+        from PyQt6.QtWidgets import QMenu
+        menu = QMenu(self)
+        menu.setTitle("Ajouter un poste post-attribué")
+        
+        for post_type in available_posts:
+            action = menu.addAction(post_type)
+            action.triggered.connect(
+                lambda checked=False, pt=post_type: self.main_window.post_attribution_handler.add_post_attribution(
+                    date, period, current_person.name, pt, self.table
+                )
+            )
+        
+        # Positionner le menu au centre de la cellule cliquée
+        cell_rect = self.table.visualItemRect(self.table.item(row, col))
+        global_pos = self.table.viewport().mapToGlobal(cell_rect.center())
+        menu.exec(global_pos)
+
+
 
     def update_view(self, planning, doctors, cats):
         """Mise à jour complète de la vue avec vérification des données"""
@@ -626,6 +709,10 @@ class DoctorPlanningView(QWidget):
         self.planning = planning
         self.doctors = sorted(doctors, key=lambda d: d.name.lower())
         self.cats = sorted(cats, key=lambda c: c.name.lower())
+        
+        # S'assurer que main_window est toujours défini (ajoutez cette ligne)
+        if hasattr(self, 'main_window') and not self.main_window and hasattr(planning, 'main_window'):
+            self.main_window = planning.main_window
         
         # Mise à jour immédiate
         self._safe_process_update()
@@ -766,6 +853,67 @@ class DoctorPlanningView(QWidget):
             self._schedule_update()
         super().showEvent(event)
                 
+   
+    
+    def show_context_menu(self, position):
+        """Affiche le menu contextuel pour ajouter/supprimer des post-attributions."""
+        if not hasattr(self, 'main_window') or not self.main_window:
+            print("Erreur: main_window n'est pas défini dans DoctorPlanningView")
+            return
+            
+        if not hasattr(self.main_window, 'post_attribution_handler'):
+            print("Erreur: post_attribution_handler n'est pas disponible dans main_window")
+            return
+        
+        # Forcer la redirection vers la table
+        if not hasattr(self, 'table') or not self.table:
+            print("Erreur: table n'est pas définie dans DoctorPlanningView")
+            return
+        
+        item = self.table.itemAt(position)
+        if not item:
+            print("Aucun élément trouvé à cette position")
+            return
+        
+        row = self.table.row(item)
+        col = self.table.column(item)
+        
+        date = self._get_date_from_row_col(row, col)
+        if not date:
+            print(f"Impossible de déterminer la date pour la cellule ({row}, {col})")
+            return
+        
+        base_col = (col - 1) // 4 * 4 + 1  # Calcul corrigé pour obtenir la première colonne du groupe
+        if col not in [base_col + 1, base_col + 2, base_col + 3]:
+            print(f"La colonne {col} n'est pas une colonne de période")
+            return
+        
+        period = col - base_col + 1  # +1 car période commence à 1
+        
+        current_person = self.get_current_person()
+        if not current_person:
+            print("Aucune personne sélectionnée")
+            return
+        
+        print(f"Affichage du menu contextuel pour: {current_person.name}, date={date}, période={period}")
+        
+        # Transmettre le contrôle au gestionnaire de post-attribution
+        global_pos = self.table.mapToGlobal(position)
+        self.main_window.post_attribution_handler.show_post_attribution_menu(
+            event=global_pos,
+            table=self.table,
+            row=row,
+            col=col,
+            date=date,
+            period=period,
+            assignee=current_person.name
+        )
+
+    # 4. Ajouter la méthode get_current_person
+    def get_current_person(self):
+        """Retourne la personne actuellement sélectionnée."""
+        name = self.selector.currentText()
+        return next((p for p in self.doctors + self.cats if p.name == name), None)
     def _populate_day_row(self, current_date, selected_name, colors):
         """Remplit une ligne du tableau pour un jour donné"""
         day_row = current_date.day - 1
@@ -787,8 +935,8 @@ class DoctorPlanningView(QWidget):
             
             for slot in slots:
                 period_index = get_post_period(slot)  # Utilise la fonction existante
-                if 0 <= period_index < 3:  # Vérifie que l'index est valide
-                    periods[period_index].append(slot)
+                if 1 <= period_index <= 3:  # Vérifie que l'index est valide (1-3)
+                    periods[period_index - 1].append(slot)  # -1 car periods est indexé de 0 à 2
 
             # Obtention de la personne sélectionnée
             selected_person = next((p for p in self.doctors + self.cats if p.name == selected_name), None)
@@ -808,12 +956,27 @@ class DoctorPlanningView(QWidget):
                 if selected_person:
                     for desiderata in selected_person.desiderata:
                         if (desiderata.start_date <= current_date <= desiderata.end_date and 
-                            desiderata.period == i + 1):  # +1 car les périodes de desiderata commencent à 1
+                            desiderata.period == i + 1):  # Périodes alignées avec PostPeriod
                             priority = getattr(desiderata, 'priority', 'primary')
                             current_color = colors[priority]["weekend" if is_weekend_or_holiday else "normal"]
                             break
                 
                 item.setBackground(QBrush(current_color))
+                
+                # Vérification pour les post-attributions
+                has_post_attribution = False
+                for slot in post_list:
+                    if hasattr(slot, 'is_post_attribution') and slot.is_post_attribution:
+                        has_post_attribution = True
+                        break
+                
+                # Appliquer le style pour les post-attributions
+                if has_post_attribution and hasattr(self, 'main_window') and hasattr(self.main_window, 'post_attribution_handler'):
+                    post_attr_color = self.main_window.post_attribution_handler.get_post_color()
+                    post_attr_font = self.main_window.post_attribution_handler.get_post_font()
+                    item.setForeground(QBrush(post_attr_color))
+                    item.setFont(post_attr_font)
+                
                 self.table.setItem(day_row, col_offset + i + 1, item)
 
     def _set_basic_row_items(self, day_row, col_offset, current_date):

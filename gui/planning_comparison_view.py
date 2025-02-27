@@ -980,6 +980,20 @@ class FullPlanningTable(QTableWidget):
                                     color = default_colors[priority]["weekend" if is_weekend_or_holiday else "normal"]
                                     item.setBackground(QBrush(color))
                     
+                    # Vérification pour les post-attributions
+                    has_post_attribution = False
+                    for slot in post_list:
+                        if hasattr(slot, 'is_post_attribution') and slot.is_post_attribution:
+                            has_post_attribution = True
+                            break
+                    
+                    # Appliquer le style pour les post-attributions
+                    if has_post_attribution and hasattr(self.parent.main_window, 'post_attribution_handler'):
+                        post_attr_color = self.parent.main_window.post_attribution_handler.get_post_color()
+                        post_attr_font = self.parent.main_window.post_attribution_handler.get_post_font()
+                        item.setForeground(QBrush(post_attr_color))
+                        item.setFont(post_attr_font)
+                    
                     self.setItem(day_row, col_offset + i + 1, item)
 
             current_date += timedelta(days=1)

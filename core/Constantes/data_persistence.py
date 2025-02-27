@@ -2,6 +2,7 @@
 # # core/Constantes/data_persistence.py
 import logging
 import datetime
+from datetime import date
 import pickle
 import os
 from core.Constantes.models import Doctor, CAT, DailyPostConfiguration, PostConfig, create_default_post_configuration, Desiderata, SpecificPostConfig
@@ -349,3 +350,69 @@ class DataPersistence:
         for cat in cats:
             for des in cat.desiderata:
                 print(f"{cat.name}: {des}")
+
+
+    def save_post_attributions(self, post_attributions):
+        """
+        Sauvegarde les post-attributions dans un fichier.
+        
+        Args:
+            post_attributions (dict): Dictionnaire des post-attributions {date: {assignee: {period: post_type}}}
+        """
+        try:
+            # Charger les données existantes
+            if os.path.exists(self.filename):
+                with open(self.filename, 'rb') as file:
+                    data = pickle.load(file)
+            else:
+                # Créer un nouveau dictionnaire si le fichier n'existe pas
+                data = {'version': 1, 'doctors': [], 'cats': [], 'post_configuration': {}}
+            
+            # Conversion des dates (objets) en chaînes
+            serializable_data = {}
+            for date_obj, assignees in post_attributions.items():
+                date_str = date_obj.isoformat()
+                serializable_data[date_str] = {}
+                for assignee, periods in assignees.items():
+                    serializable_data[date_str][assignee] = {str(p): pt for p, pt in periods.items()}
+            
+            # Ajouter ou mettre à jour les post-attributions
+            data['post_attributions'] = serializable_data
+            
+            # Sauvegarder les données mises à jour
+            with open(self.filename, 'wb') as file:
+                pickle.dump(data, file)
+            
+            logger.info("Post-attributions sauvegardées avec succès")
+        except Exception as e:
+            logger.error(f"Erreur lors de la sauvegarde des post-attributions: {e}")
+            raise
+
+    def load_post_attributions(self):
+        """
+        Charge les post-attributions depuis un fichier.
+        
+        Returns:
+            dict: Dictionnaire des post-attributions {date: {assignee: {period: post_type}}}
+        """
+        try:
+            if os.path.exists(self.filename):
+                with open(self.filename, 'rb') as file:
+                    data = pickle.load(file)
+                
+                # Récupérer les post-attributions
+                serialized_data = data.get('post_attributions', {})
+                
+                # Conversion des chaînes en dates (objets)
+                post_attributions = {}
+                for date_str, assignees in serialized_data.items():
+                    date_obj = datetime.date.fromisoformat(date_str)
+                    post_attributions[date_obj] = {}
+                    for assignee, periods in assignees.items():
+                        post_attributions[date_obj][assignee] = {int(p): pt for p, pt in periods.items()}
+                
+                return post_attributions
+            return {}
+        except Exception as e:
+            logger.error(f"Erreur lors du chargement des post-attributions: {e}")
+            return {}

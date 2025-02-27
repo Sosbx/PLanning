@@ -29,7 +29,6 @@ class PlanningConstraints:
         # en excluant les slots pré-attribués des vérifications
         return all([
             self.check_nl_constraint(assignee, date, slot, planning),
-            self.check_nm_constraint(assignee, date, slot, planning),
             self.check_nm_na_constraint(assignee, date, slot, planning),
             self.check_time_overlap(assignee, date, slot, planning),
             self.check_max_posts_per_day(assignee, date, slot, planning),
@@ -61,34 +60,114 @@ class PlanningConstraints:
         return self.check_time_overlap(assignee, date, slot, planning)
 
     def check_morning_after_night_shifts(self, assignee: Union[Doctor, CAT], date: date, 
-                                       slot: TimeSlot, planning: Planning) -> bool:
+                                    slot: TimeSlot, planning: Planning) -> bool:
         """
-        Vérifie les contraintes entre postes de nuit et postes du matin.
+        Vérifie les contraintes entre postes de nuit et postes du matin avec
+        une exception pour les postes du matin commençant à 9h attribués via les
+        combinaisons du générateur de planning.
+        
         Règles :
-        1. Pas de poste du matin après un NM ou autre poste tardif
-        2. Pas de NM ou poste tardif si poste du matin le lendemain
+        1. Pas de poste du matin après un poste tardif ou de nuit, SAUF
+        si le poste du matin commence à 9h et fait partie d'une combinaison reconnue
+        2. Pas de poste tardif si un poste du matin est prévu le lendemain
+        
+        Args:
+            assignee: Le médecin ou CAT à vérifier
+            date: Date du slot à attribuer
+            slot: Slot à vérifier
+            planning: Planning en cours
+            
+        Returns:
+            bool: True si l'attribution est possible, False sinon
         """
         yesterday = planning.get_day(date - timedelta(days=1))
         tomorrow = planning.get_day(date + timedelta(days=1))
-
+        
+        # Liste des postes du matin commençant à 9h (peuvent être exceptionnellement attribués)
+        nine_am_posts = ['CM', 'HM']  # Uniquement ces postes commencent à 9h
+        
+        # Liste des combinaisons reconnues par le générateur
+        weekday_combinations = ['CMCA', 'HMHA', 'CMCS', 'HMHS']  # Uniquement les combinaisons avec postes à 9h
+        weekend_combinations = ['CMCA', 'HMHA', 'CMCS', 'HMHS','SMSA','RMRA']  # Uniquement les combinaisons avec postes à 9h
+        
         # CAS 1: On veut attribuer un poste du matin
         if slot.abbreviation in self.morning_posts:
             if yesterday:
                 # Vérifier si la personne avait un poste tardif la veille
+                had_late_post = False
                 for prev_slot in yesterday.slots:
                     if prev_slot.assignee == assignee.name:
                         if (prev_slot.abbreviation in self.late_posts or 
                             prev_slot.end_time.hour >= 23):
-                            return False
+                            had_late_post = True
+                            break
+                
+                if had_late_post:
+                    # Exception 1: Si c'est un poste commençant à 9h
+                    if slot.abbreviation in nine_am_posts:
+                        # Vérifier si le slot a un attribut indiquant qu'il fait partie d'une combinaison
+                        if hasattr(slot, 'is_part_of_combination') and slot.is_part_of_combination:
+                            return True
+                        
+                        # Ou vérifier si ce poste fait déjà partie d'une combinaison par déduction
+                        day = planning.get_day(date)
+                        if day:
+                            # Pour chaque combinaison possible
+                            all_combinations = weekday_combinations + weekend_combinations
+                            for combo in all_combinations:
+                                # Si le poste actuel est la première partie de la combinaison
+                                if combo.startswith(slot.abbreviation):
+                                    second_post = combo[2:4]  # Extraire le code du deuxième poste
+                                    # Vérifier si le deuxième poste est déjà attribué ou va être attribué
+                                    if any(s.abbreviation == second_post and s.assignee == assignee.name 
+                                        for s in day.slots):
+                                        return True
+                                # Si le poste actuel est la deuxième partie de la combinaison
+                                elif combo[2:4] == slot.abbreviation:
+                                    first_post = combo[0:2]  # Extraire le code du premier poste
+                                    # Vérifier si le premier poste est déjà attribué
+                                    if any(s.abbreviation == first_post and s.assignee == assignee.name 
+                                        for s in day.slots):
+                                        return True
+                    
+                    # Si ce n'est pas un poste à 9h ou pas attribué en combinaison, refuser
+                    return False
 
         # CAS 2: On veut attribuer un poste tardif
         elif slot.abbreviation in self.late_posts:
             if tomorrow:
                 # Vérifier si la personne a un poste du matin le lendemain
+                has_morning_post = False
+                morning_post_abbr = None
+                
                 for next_slot in tomorrow.slots:
                     if (next_slot.assignee == assignee.name and 
                         next_slot.abbreviation in self.morning_posts):
-                        return False
+                        has_morning_post = True
+                        morning_post_abbr = next_slot.abbreviation
+                        break
+                
+                if has_morning_post:
+                    # Si le poste du matin commence à 9h et fait partie d'une combinaison,
+                    # on peut autoriser le poste tardif la veille
+                    if morning_post_abbr in nine_am_posts:
+                        if hasattr(next_slot, 'is_part_of_combination') and next_slot.is_part_of_combination:
+                            return True
+                        
+                        # Vérifier si ce poste fait partie d'une combinaison par déduction
+                        tomorrow_day = planning.get_day(date + timedelta(days=1))
+                        if tomorrow_day:
+                            all_combinations = weekday_combinations + weekend_combinations
+                            for combo in all_combinations:
+                                if combo.startswith(morning_post_abbr) or combo[2:4] == morning_post_abbr:
+                                    # Vérifier si l'autre partie de la combinaison est attribuée
+                                    other_post = combo[2:4] if combo.startswith(morning_post_abbr) else combo[0:2]
+                                    if any(s.abbreviation == other_post and s.assignee == assignee.name 
+                                        for s in tomorrow_day.slots):
+                                        return True
+                    
+                    # Sinon, on refuse le poste tardif
+                    return False
 
         return True
 
@@ -136,34 +215,31 @@ class PlanningConstraints:
 
         return True
     
-    def check_nm_constraint(self, assignee: Union[Doctor, CAT], date: date, slot: TimeSlot, planning: Planning) -> bool:
-        today = planning.get_day(date)
-        tomorrow = planning.get_day(date + timedelta(days=1))
-        
-        if today:
-            for other_slot in today.slots:
-                if other_slot.assignee == assignee.name:
-                    if (slot.abbreviation == 'NM' or other_slot.abbreviation == 'NM') and \
-                    (slot.start_time < other_slot.end_time and slot.end_time > other_slot.start_time):
-                        return False
-        
-        if tomorrow and slot.abbreviation == 'NM':
-            for other_slot in tomorrow.slots:
-                if other_slot.assignee == assignee.name:
-                    if slot.end_time > other_slot.start_time:
-                        return False
-        
-        return True
-    
     def check_nm_na_constraint(self, assignee: Union[Doctor, CAT], date: date, slot: TimeSlot, planning: Planning) -> bool:
+        """
+        Vérifie les contraintes pour les NM et NA:
+        - Exclusivité: un NM ou NA ne peut pas être attribué s'il y a déjà un autre poste le même jour
+        - Inversement, aucun autre poste ne peut être attribué si un NM ou NA est déjà présent
+        
+        Note: La vérification de chevauchement temporel est déjà gérée par check_time_overlap
+        
+        Args:
+            assignee: Le médecin ou CAT à vérifier
+            date: Date du slot
+            slot: Slot à vérifier
+            planning: Planning en cours
+            
+        Returns:
+            bool: True si l'attribution est possible, False sinon
+        """
         day = planning.get_day(date)
         if day:
-            # Si le nouveau poste est NM, vérifier qu'aucun autre poste n'est assigné ce jour-là
-            if slot.abbreviation == 'NM':
+            # Si le nouveau poste est NM ou NA, vérifier qu'aucun autre poste n'est assigné ce jour-là
+            if slot.abbreviation in ['NM', 'NA']:
                 return not any(s.assignee == assignee.name for s in day.slots)
             
-            # Si un NM est déjà assigné ce jour-là, aucun autre poste ne peut être ajouté
-            if any(s.abbreviation == 'NM' and s.assignee == assignee.name for s in day.slots):
+            # Si un NM ou NA est déjà assigné ce jour-là, aucun autre poste ne peut être ajouté
+            if any(s.abbreviation in ['NM', 'NA'] and s.assignee == assignee.name for s in day.slots):
                 return False
         
         return True
@@ -311,28 +387,29 @@ class PlanningConstraints:
         return True
 
     def check_desiderata_constraint(self, assignee: Union[Doctor, CAT], date: date, slot: TimeSlot, 
-                                    planning: Planning, respect_secondary: bool = True,
-                                    is_pre_attribution: bool = False) -> bool:
-        
-        
-            
-
+                                planning: Planning, respect_secondary: bool = True,
+                                is_pre_attribution: bool = False) -> bool:
         """
-        Vérifie les contraintes de desiderata.
+        Vérifie les contraintes de desiderata en tenant compte uniquement de la période concernée.
+        
         Args:
             assignee: Médecin ou CAT à vérifier
             date: Date du slot
             slot: Slot à vérifier
             planning: Planning en cours
             respect_secondary: Si False, ignore les desideratas secondaires
+            is_pre_attribution: Si True, ignore toutes les contraintes de desiderata
+            
         Returns:
             bool: True si l'attribution est possible
         """
-        
-        #Vérifie les contraintes de desiderata, ignorées pour les pré-attributions.
-    
+        # Les pré-attributions ignorent les contraintes de desiderata
         if is_pre_attribution:
             return True
+            
+        # Déterminer la période du slot à attribuer (1: matin, 2: après-midi, 3: soir/nuit)
+        slot_period = self._get_slot_period(slot)
+        
         # Vérification des desideratas primaires (toujours stricts)
         for desiderata in assignee.desiderata:
             if not hasattr(desiderata, 'priority'):  # Rétrocompatibilité
@@ -340,20 +417,45 @@ class PlanningConstraints:
             else:
                 priority = desiderata.priority
 
-            if priority == "primary":
-                if (desiderata.start_date <= date <= desiderata.end_date and 
-                    desiderata.overlaps_with_slot(slot)):
-                    return False
+            # Vérifier si le desiderata s'applique à cette date et à cette période précise
+            if (priority == "primary" and 
+                desiderata.start_date <= date <= desiderata.end_date and 
+                desiderata.period == slot_period):
+                return False
 
         # Si respect_secondary est False, on ignore les desideratas secondaires
         if not respect_secondary:
             return True
 
-        # Vérification des desideratas secondaires
+        # Vérification des desideratas secondaires avec la même logique de période
         for desiderata in assignee.desiderata:
             if (getattr(desiderata, 'priority', 'primary') == "secondary" and
                 desiderata.start_date <= date <= desiderata.end_date and 
-                desiderata.overlaps_with_slot(slot)):
+                desiderata.period == slot_period):
                 return False
 
         return True
+        
+    def _get_slot_period(self, slot: TimeSlot) -> int:
+        """
+        Détermine la période d'un slot (1: matin, 2: après-midi, 3: soir/nuit)
+        
+        Args:
+            slot: Le TimeSlot à analyser
+            
+        Returns:
+            int: période (1, 2 ou 3)
+        """
+        # Convertir en time si nécessaire
+        if isinstance(slot.start_time, datetime):
+            start_hour = slot.start_time.hour
+        else:
+            start_hour = slot.start_time.hour
+        
+        # Définition des périodes
+        if 7 <= start_hour < 13:
+            return 1  # Matin
+        elif 13 <= start_hour < 18:
+            return 2  # Après-midi
+        else:
+            return 3  # Soir/nuit

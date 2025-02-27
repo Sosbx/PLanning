@@ -35,13 +35,14 @@ from enum import IntEnum
 from typing import Union
 
 class PostPeriod(IntEnum):
-    MORNING = 0
-    AFTERNOON = 1
-    EVENING = 2
+    MORNING = 1
+    AFTERNOON = 2
+    EVENING = 3
 
 STANDARD_POSTS = {
     PostPeriod.MORNING: {"ML", "MC", "MM", "CM", "HM", "SM", "RM"},
-    PostPeriod.AFTERNOON: {"CA", "HA", "SA", "RA", "AL", "AC"}
+    PostPeriod.AFTERNOON: {"CA", "HA", "SA", "RA", "AL", "AC", "CT"},
+    PostPeriod.EVENING: {"CS", "HS", "SS", "RS", "NC", "NM", "NL", "NA"}
 }
 
 def get_post_period(post_or_slot: Union[str, object]) -> PostPeriod:
@@ -78,11 +79,11 @@ def get_post_period(post_or_slot: Union[str, object]) -> PostPeriod:
     else:
         hours_range = list(range(start_hour, end_hour + 1))
     
-    # Compte des heures dans chaque période
+    # Compte des heures dans chaque période (ajusté pour les nouvelles valeurs)
     period_counts = {
-        PostPeriod.MORNING: sum(1 for h in hours_range if 7 <= (h % 24) < 13),
-        PostPeriod.AFTERNOON: sum(1 for h in hours_range if 13 <= (h % 24) < 18),
-        PostPeriod.EVENING: sum(1 for h in hours_range if (h % 24) >= 18 or (h % 24) < 7)
+        PostPeriod.MORNING: sum(1 for h in hours_range if 7 <= (h % 24) < 13),    # 1: Matin (7h-13h)
+        PostPeriod.AFTERNOON: sum(1 for h in hours_range if 13 <= (h % 24) < 18),  # 2: Après-midi (13h-18h)
+        PostPeriod.EVENING: sum(1 for h in hours_range if (h % 24) >= 18 or (h % 24) < 7)  # 3: Soir/Nuit (18h-7h)
     }
     
     # Retourne la période avec le plus d'heures

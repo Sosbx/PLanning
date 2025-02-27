@@ -2,20 +2,21 @@
 # gui/stats_view.py
 import sys
 import logging
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QTabWidget, QPushButton
-from PyQt6.QtGui import QBrush, QFont, QColor, QIcon
+from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, 
+                            QTableWidgetItem, QHeaderView, QTabWidget, QPushButton,
+                            QMenu, QAbstractItemView)
+from PyQt6.QtGui import QBrush, QFont, QColor, QIcon, QAction, QPainter, QPen, QFontMetrics
+from PyQt6.QtCore import (Qt, QPropertyAnimation, QEasingCurve, QTimer, QSize, QRect,
+                         pyqtSignal, pyqtSlot)
 from gui.styles import color_system, ACTION_BUTTON_STYLE
-from PyQt6.QtCore import Qt
 from core.Constantes.models import ALL_POST_TYPES
 from core.Constantes.data_persistence import DataPersistence
 from gui.post_configuration import PostConfig   
 import numpy as np
 from datetime import datetime, time, date
 from typing import List, Dict, Optional, Tuple, Union
-from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, QTimer, Qt, QSize
-from PyQt6.QtWidgets import QLabel
-from PyQt6.QtGui import QPainter, QFontMetrics
 from workalendar.europe import France
+
 # Initialiser le logger
 logger = logging.getLogger(__name__)
 
@@ -111,8 +112,12 @@ class StatsView(QWidget):
             }
         }
         
+        # Variables pour le tri et la mise en surbrillance
+        self.highlighted_row = -1
+        self.highlighted_col = -1
+        self.sort_order = {}  # {table_id: {column: order}}
+        
         self.init_ui()
-
 
     def set_parent_window(self, window):
         """Définit la fenêtre parente pour le détachement"""
@@ -130,12 +135,24 @@ class StatsView(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setSpacing(10)
         
-        # Création des tableaux de statistiques
-        self.stats_table = QTableWidget()
-        self.weekend_stats_table = QTableWidget()
-        self.detailed_stats_table = QTableWidget()
-        self.weekly_stats_table = QTableWidget()
-        self.weekday_group_stats_table = QTableWidget()
+        # Création des tableaux de statistiques personnalisés
+        self.stats_table = CustomTableWidget()
+        self.weekend_stats_table = CustomTableWidget()
+        self.detailed_stats_table = CustomTableWidget()
+        self.weekly_stats_table = CustomTableWidget()
+        self.weekday_group_stats_table = CustomTableWidget()
+        
+        # Configuration des tables pour le tri et la mise en surbrillance
+        tables = [self.stats_table, self.weekend_stats_table, self.detailed_stats_table, 
+                 self.weekly_stats_table, self.weekday_group_stats_table]
+        
+        for i, table in enumerate(tables):
+            table.horizontalHeader().sectionClicked.connect(lambda col, t=table: self.sort_table(t, col))
+            table.setSelectionMode(QTableWidget.SelectionMode.ExtendedSelection)
+            table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectItems)
+            # Identifiant unique pour chaque table
+            table.setProperty("table_id", i)
+            self.sort_order[i] = {}
         
         # Conteneur des boutons de filtre
         filter_widget = QWidget()
@@ -179,35 +196,27 @@ class StatsView(QWidget):
             table.horizontalHeader().setFixedHeight(30)
             table.verticalHeader().setVisible(True)
             
-            # Configuration de la sélection
-            table.setSelectionMode(QTableWidget.SelectionMode.ExtendedSelection)
-            table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectItems)
-            
             # Style de la sélection
             table.setStyleSheet("""
                 QTableView::item:selected {
-                    background-color: rgba(0, 120, 215, 0.1);
+                    background-color: rgba(128, 128, 128, 0.1);
+                    color: black;
                 }
                 QTableView::item:focus {
-                    background-color: rgba(0, 120, 215, 0.2);
+                    background-color: rgba(128, 128, 128, 0.2);
+                    color: black;
                 }
                 QTableView::item:selected:focus {
-                    background-color: rgba(0, 120, 215, 0.3);
+                    background-color: rgba(128, 128, 128, 0.3);
+                    color: black;
                 }
             """)
-            
-            # Connecter les signaux de sélection
-            header = table.horizontalHeader()
-            header.sectionClicked.connect(lambda index: table.selectColumn(index))
-            vertical_header = table.verticalHeader()
-            vertical_header.sectionClicked.connect(lambda index: table.selectRow(index))
             
             # Configuration de la grille
             table.setShowGrid(True)
             table.setGridStyle(Qt.PenStyle.SolidLine)
             table.setAlternatingRowColors(True)
             
-
             tab_widget.addTab(container, title)
         
         # Configuration des onglets avec leurs tableaux respectifs
@@ -231,6 +240,7 @@ class StatsView(QWidget):
             self.set_empty_table_message(self.weekly_stats_table)
             self.set_empty_table_message(self.weekend_stats_table)
             self.set_empty_table_message(self.weekday_group_stats_table)
+
     def apply_filter(self, group_key):
         """Applique le filtre à tous les tableaux"""
         # Mise à jour des boutons
@@ -309,14 +319,12 @@ class StatsView(QWidget):
         if self.custom_posts:
             all_posts.update(self.custom_posts.keys())
         return sorted(list(all_posts))
-        
     
     def get_post_group(self, post_type: str, day_info: Union[date, int]) -> str:
         """Détermine le groupe statistique d'un poste, y compris les postes personnalisés"""
         if post_type in self.custom_posts:
             custom_post = self.custom_posts[post_type]
             return custom_post.statistic_group if custom_post.statistic_group else "Other"
-            
             
     def set_empty_table_message(self, table):
         table.setRowCount(1)
@@ -351,71 +359,7 @@ class StatsView(QWidget):
             self.set_empty_table_message(self.weekly_stats_table)
             self.set_empty_table_message(self.weekend_stats_table)
             self.set_empty_table_message(self.weekday_group_stats_table)
-
-
-
-
-    def update_stats_table(self, stats, table):
-        sorted_doctors = sorted([d.name for d in self.doctors], key=str.lower)
-        sorted_cats = sorted([c.name for c in self.cats], key=str.lower)
-        sorted_assignees = sorted_doctors + sorted_cats + ["Non attribué"]
-        all_posts = self.get_all_post_types()
-
-        table.setRowCount(len(sorted_assignees) + 1)
-        table.setColumnCount(len(all_posts) + 2)
-
-        headers = ["Assigné à"] + all_posts + ["Total"]
-        table.setHorizontalHeaderLabels(headers)
-
-        total_row = {post_type: 0 for post_type in all_posts}
-        total_row["Total"] = 0
-
-        for row, assignee in enumerate(sorted_assignees):
-            table.setItem(row, 0, QTableWidgetItem(str(assignee)))
-            assignee_stats = stats.get(assignee, {})
-
-            assignee_total = 0
-            for col, post_type in enumerate(all_posts, start=1):
-                count = assignee_stats.get(post_type, 0)
-                item = QTableWidgetItem(str(count))
-                
-                # Appliquer la couleur de fond pour les postes personnalisés en gérant les erreurs
-                if hasattr(self, 'custom_posts') and post_type in self.custom_posts:
-                    custom_post = self.custom_posts[post_type]
-                    if hasattr(custom_post, 'color'):
-                        item.setBackground(QBrush(custom_post.color))
-                    elif isinstance(custom_post, dict) and 'color' in custom_post:
-                        # Si c'est encore un dictionnaire, créer la couleur à partir de la valeur
-                        item.setBackground(QBrush(QColor(custom_post['color'])))
-                    else:
-                        # Couleur par défaut si aucune n'est définie
-                        item.setBackground(QBrush(QColor("#E6F3FF")))
-                
-                table.setItem(row, col, item)
-                assignee_total += count
-                total_row[post_type] += count
-
-            table.setItem(row, len(all_posts) + 1, QTableWidgetItem(str(assignee_total)))
-            total_row["Total"] += assignee_total
-
-            # Griser les lignes des médecins à 1 demi-part
-            doctor = next((d for d in self.doctors if d.name == assignee), None)
-            if doctor and doctor.half_parts == 1:
-                for col in range(table.columnCount()):
-                    item = table.item(row, col)
-                    if item:
-                        item.setBackground(QBrush(QColor(240, 240, 240)))
-
-        self.add_total_row(table, total_row, all_posts)
     
-    def add_total_row(self, table, total_row, all_posts):
-        """Ajoute la ligne des totaux au tableau"""
-        last_row = table.rowCount() - 1
-        table.setItem(last_row, 0, QTableWidgetItem("Total"))
-        for col, post_type in enumerate(all_posts, start=1):
-            table.setItem(last_row, col, QTableWidgetItem(str(total_row[post_type])))
-        table.setItem(last_row, len(all_posts) + 1, QTableWidgetItem(str(total_row["Total"])))
-        
     def _get_combined_intervals(self, doctor_name: str) -> Dict:
         """
         Calcule les intervalles combinés (semaine + weekend) pour tous les types de postes.
@@ -463,14 +407,12 @@ class StatsView(QWidget):
         return combined_intervals
 
     def create_stats_table(self):
-        """Version modifiée de create_stats_table utilisant les intervalles combinés"""
+        """Crée le tableau des statistiques générales avec un style uniformisé"""
         stats = self.calculate_stats()
         self.stats_table.clear()
 
         # Initialisation du tableau avec toutes les colonnes
-        all_posts = []
-        for group in self.post_groups.values():
-            all_posts.extend(group['posts'])
+        all_posts = self.get_all_post_types()
 
         self.stats_table.setColumnCount(len(all_posts) + 2)  # +2 pour nom et total
         headers = ['Assigné à'] + all_posts + ['Total']
@@ -487,13 +429,19 @@ class StatsView(QWidget):
 
         # Remplissage des données
         for row, person in enumerate(all_personnel):
-            # Nom avec badge CAT si nécessaire
+            # Nom avec distinction appropriée
             name_item = QTableWidgetItem(person.name)
-            if not hasattr(person, 'half_parts'):  # C'est un CAT
+            
+            # Style du nom selon le type (médecin plein temps, mi-temps, CAT)
+            is_cat = not hasattr(person, 'half_parts')
+            is_half_time = hasattr(person, 'half_parts') and person.half_parts == 1
+            
+            if is_cat:
                 name_item.setFont(QFont("", -1, QFont.Weight.Bold))
-                name_item.setBackground(QColor('#E8F5E9'))
-            elif person.half_parts == 1:  # Mi-temps
-                name_item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
+                name_item.setBackground(QColor('#E8F5E9'))  # Vert clair pour CAT
+            elif is_half_time:
+                name_item.setBackground(QColor(230, 230, 230, 255))  # Gris pour mi-temps
+                
             self.stats_table.setItem(row, 0, name_item)
 
             # Pour les médecins, récupérer les intervalles combinés
@@ -507,35 +455,43 @@ class StatsView(QWidget):
                 count = stats.get(person.name, {}).get(post_type, 0)
                 item = QTableWidgetItem(str(count))
                 
-                # Gestion de la coloration
-                if hasattr(person, 'half_parts'):
-                    if person.half_parts == 1:
-                        item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
-                        
-                    # Coloration selon les intervalles combinés pour les médecins
-                    if post_type in combined_intervals:
-                        min_val = combined_intervals[post_type]['min']
-                        max_val = combined_intervals[post_type]['max']
-                        if count < min_val:
-                            item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
-                        elif max_val != float('inf') and count > max_val:
-                            item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                # Gestion de la coloration uniformisée
+                if is_cat:
+                    item.setBackground(QColor('#E8F5E9'))  # Vert clair pour CAT
+                elif is_half_time:
+                    item.setBackground(QColor(230, 230, 230, 255))  # Gris pour mi-temps
+                elif post_type in combined_intervals:
+                    # Coloration conditionnelle pour médecins plein temps
+                    min_val = combined_intervals[post_type]['min']
+                    max_val = combined_intervals[post_type]['max']
+                    if count < min_val:
+                        item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
+                    elif max_val != float('inf') and count > max_val:
+                        item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
                     
+                # Poste personnalisé
                 if post_type in self.custom_posts:
-                    item.setBackground(self.custom_posts[post_type].color)
+                    if not is_cat and not is_half_time:  # Ne pas écraser les couleurs CAT/mi-temps
+                        item.setBackground(self.custom_posts[post_type].color)
                     
                 self.stats_table.setItem(row, col, item)
                 row_total += count
 
             # Total de la ligne
             total_item = QTableWidgetItem(str(row_total))
-            if hasattr(person, 'half_parts') and person.half_parts == 1:
-                total_item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
+            if is_cat:
+                total_item.setBackground(QColor('#E8F5E9'))  # Vert clair pour CAT
+            elif is_half_time:
+                total_item.setBackground(QColor(230, 230, 230, 255))  # Gris pour mi-temps
+                
             self.stats_table.setItem(row, len(all_posts) + 1, total_item)
 
         # Ajout des lignes "Non attribué" et "Total"
-        self._add_unassigned_row(len(all_personnel), stats, all_posts)
-        self._add_total_row(len(all_personnel) + 1, stats, all_posts)
+        self.add_unassigned_row(self.stats_table, len(all_personnel), stats, all_posts)
+        self.add_total_row(self.stats_table, len(all_personnel) + 1, stats, all_posts)
+        
+        # Ajout des gestionnaires d'événements pour la mise en surbrillance
+        self.setup_highlighting(self.stats_table)
 
         # Configuration de l'affichage
         self.stats_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -567,29 +523,6 @@ class StatsView(QWidget):
         # Mise à jour des totaux
         self._update_visible_totals(table)
 
-    def _filter_posts(self, group_key):
-        """Filtre les colonnes affichées selon le groupe sélectionné"""
-        # Mise à jour des boutons
-        for key, btn in self.filter_buttons.items():
-            btn.setChecked(key == group_key)
-
-        # Affichage/masquage des colonnes
-        for col in range(1, self.stats_table.columnCount() - 1):  # Exclure la colonne nom et total
-            header_item = self.stats_table.horizontalHeaderItem(col)
-            post = header_item.text()
-            
-            if group_key == 'all':
-                self.stats_table.setColumnHidden(col, False)
-            else:
-                # Vérifier si le poste appartient au groupe sélectionné
-                visible = False
-                if group_key in self.post_groups and post in self.post_groups[group_key]['posts']:
-                    visible = True
-                self.stats_table.setColumnHidden(col, not visible)
-
-        # Recalcul des totaux visibles
-        self._update_visible_totals
-        
     def _update_visible_totals(self, table):
         """Met à jour les totaux en fonction des colonnes visibles"""
         if not table:
@@ -617,10 +550,10 @@ class StatsView(QWidget):
                 font = total_item.font()
                 
                 # Mise à jour du total
-                total_item = QTableWidgetItem(str(visible_total))
-                total_item.setBackground(background)
-                total_item.setFont(font)
-                table.setItem(row, table.columnCount() - 1, total_item)
+                new_total_item = QTableWidgetItem(str(visible_total))
+                new_total_item.setBackground(background)
+                new_total_item.setFont(font)
+                table.setItem(row, table.columnCount() - 1, new_total_item)
 
     def _calculate_row_total(self, table, row):
         """Calcule le total d'une ligne en ne prenant en compte que les colonnes visibles"""
@@ -634,36 +567,36 @@ class StatsView(QWidget):
                     except ValueError:
                         continue
         return total
-    def _add_unassigned_row(self, row_index: int, stats: dict, all_posts: list):
-        """Ajoute la ligne des postes non attribués"""
+    def add_unassigned_row(self, table, row_index: int, stats: dict, all_posts: list):
+        """Ajoute la ligne des postes non attribués avec un style uniformisé"""
         unassigned_stats = stats.get("Non attribué", {})
         unassigned_total = 0
         
         # Cellule du nom
         name_item = QTableWidgetItem("Non attribué")
         name_item.setBackground(QColor('#F5F5F5'))
-        self.stats_table.setItem(row_index, 0, name_item)
+        table.setItem(row_index, 0, name_item)
         
         # Valeurs par poste
         for col, post_type in enumerate(all_posts, start=1):
             count = unassigned_stats.get(post_type, 0)
             item = QTableWidgetItem(str(count))
             item.setBackground(QColor('#F5F5F5'))
-            self.stats_table.setItem(row_index, col, item)
+            table.setItem(row_index, col, item)
             unassigned_total += count
         
         # Total
         total_item = QTableWidgetItem(str(unassigned_total))
         total_item.setBackground(QColor('#F5F5F5'))
-        self.stats_table.setItem(row_index, len(all_posts) + 1, total_item)
+        table.setItem(row_index, len(all_posts) + 1, total_item)
 
-    def _add_total_row(self, row_index: int, stats: dict, all_posts: list):
-        """Ajoute la ligne des totaux"""
+    def add_total_row(self, table, row_index: int, stats: dict, all_posts: list):
+        """Ajoute la ligne des totaux avec un style uniformisé"""
         # Cellule du nom
         name_item = QTableWidgetItem("Total")
         name_item.setBackground(QColor('#EEEEEE'))
         name_item.setFont(QFont("", -1, QFont.Weight.Bold))
-        self.stats_table.setItem(row_index, 0, name_item)
+        table.setItem(row_index, 0, name_item)
         
         # Calcul des totaux par poste
         grand_total = 0
@@ -673,18 +606,17 @@ class StatsView(QWidget):
             item = QTableWidgetItem(str(total))
             item.setBackground(QColor('#EEEEEE'))
             item.setFont(QFont("", -1, QFont.Weight.Bold))
-            self.stats_table.setItem(row_index, col, item)
+            table.setItem(row_index, col, item)
             grand_total += total
         
         # Total général
         final_total = QTableWidgetItem(str(grand_total))
         final_total.setBackground(QColor('#EEEEEE'))
         final_total.setFont(QFont("", -1, QFont.Weight.Bold))
-        self.stats_table.setItem(row_index, len(all_posts) + 1, final_total)
-
+        table.setItem(row_index, len(all_posts) + 1, final_total)
 
     def update_detailed_stats_table(self, detailed_stats):
-        """Mise à jour de l'onglet des groupes weekend avec fonctionnalité d'expansion"""
+        """Mise à jour de l'onglet des groupes weekend avec fonctionnalité d'expansion et style uniformisé"""
         self.detailed_stats_table.clear()
         self.expanded_group = None
         self.component_columns.clear()
@@ -692,19 +624,12 @@ class StatsView(QWidget):
         # Mettre à jour les composants des groupes avec les postes personnalisés
         self._update_group_components()
 
-        # Configuration des couleurs selon le système d'exploitation
-        if sys.platform == 'win32':
-            weekend_group_colors = {
-                'gardes': QColor(180, 220, 255, 255),      # Bleu plus vif
-                'visites': QColor(255, 200, 150, 255),     # Orange plus vif
-                'consultations': QColor(220, 180, 255, 255) # Violet plus vif
-            }
-        else:
-            weekend_group_colors = {
-                'gardes': QColor('#E3F2FD'),
-                'visites': QColor('#FFF3E0'),
-                'consultations': QColor('#EDE7F6')
-            }
+        # Configuration des couleurs des groupes
+        weekend_group_colors = {
+            'gardes': QColor(180, 220, 255, 255),      # Bleu plus vif
+            'visites': QColor(255, 200, 150, 255),     # Orange plus vif
+            'consultations': QColor(220, 180, 255, 255) # Violet plus vif
+        }
 
         # Configuration des données de base
         weekend_groups = {
@@ -825,6 +750,7 @@ class StatsView(QWidget):
         self.detailed_stats_table.setAlternatingRowColors(False)
 
         # Application du filtre actuel
+        self.setup_highlighting(self.detailed_stats_table)
         self._apply_filter_to_table(self.detailed_stats_table)
 
     def get_group_tooltip(self, group):
@@ -1054,55 +980,12 @@ class StatsView(QWidget):
 
     
     def _add_unassigned_row_detailed(self, row_index: int, stats: dict, all_groups: list):
-        """Ajoute la ligne des postes non attribués pour les groupes weekend"""
-        unassigned_stats = stats.get("Non attribué", {})
-        unassigned_total = 0
-        
-        # Cellule du nom
-        name_item = QTableWidgetItem("Non attribué")
-        name_item.setBackground(QColor('#F5F5F5'))
-        self.detailed_stats_table.setItem(row_index, 0, name_item)
-        
-        # Valeurs par groupe
-        for col, group in enumerate(all_groups, start=1):
-            count = unassigned_stats.get(group, 0)
-            item = QTableWidgetItem(str(count))
-            item.setBackground(QColor('#F5F5F5'))
-            self.detailed_stats_table.setItem(row_index, col, item)
-            unassigned_total += count
-        
-        # Total
-        total_item = QTableWidgetItem(str(unassigned_total))
-        total_item.setBackground(QColor('#F5F5F5'))
-        self.detailed_stats_table.setItem(row_index, len(all_groups) + 1, total_item)
+        """Ajoute la ligne des postes non attribués pour les groupes weekend avec style uniformisé"""
+        self.add_unassigned_row(self.detailed_stats_table, row_index, stats, all_groups)
 
     def _add_total_row_detailed(self, row_index: int, stats: dict, all_groups: list):
-        """Ajoute la ligne des totaux pour les groupes weekend"""
-        # Cellule du nom
-        name_item = QTableWidgetItem("Total")
-        name_item.setBackground(QColor('#EEEEEE'))
-        name_item.setFont(QFont("", -1, QFont.Weight.Bold))
-        self.detailed_stats_table.setItem(row_index, 0, name_item)
-        
-        # Calcul des totaux par groupe
-        grand_total = 0
-        for col, group in enumerate(all_groups, start=1):
-            # Exclure "Non attribué" du calcul s'il existe
-            total = sum(person_stats.get(group, 0) 
-                    for name, person_stats in stats.items() 
-                    if name != "Non attribué")
-            
-            item = QTableWidgetItem(str(total))
-            item.setBackground(QColor('#EEEEEE'))
-            item.setFont(QFont("", -1, QFont.Weight.Bold))
-            self.detailed_stats_table.setItem(row_index, col, item)
-            grand_total += total
-        
-        # Total général
-        final_total = QTableWidgetItem(str(grand_total))
-        final_total.setBackground(QColor('#EEEEEE'))
-        final_total.setFont(QFont("", -1, QFont.Weight.Bold))
-        self.detailed_stats_table.setItem(row_index, len(all_groups) + 1, final_total)
+        """Ajoute la ligne des totaux pour les groupes weekend avec style uniformisé"""
+        self.add_total_row(self.detailed_stats_table, row_index, stats, all_groups)
 
     def update_detailed_stats_with_custom_posts(self):
         """Mise à jour des statistiques détaillées pour inclure les postes personnalisés"""
@@ -1218,6 +1101,7 @@ class StatsView(QWidget):
         self._add_total_row_weekday_groups(len(all_personnel) + 1, weekday_group_stats, all_groups)
 
         # Configuration de l'affichage
+        self.setup_highlighting(self.weekday_group_stats_table)
         self.weekday_group_stats_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.weekday_group_stats_table.verticalHeader().setVisible(False)
 
@@ -1247,52 +1131,12 @@ class StatsView(QWidget):
         return "\n\n".join(tooltip_parts)
 
     def _add_unassigned_row_weekday_groups(self, row_index: int, stats: dict, all_groups: list):
-        """Ajoute la ligne des postes non attribués pour les groupes de semaine"""
-        unassigned_stats = stats.get("Non attribué", {})
-        unassigned_total = 0
-        
-        # Cellule du nom
-        name_item = QTableWidgetItem("Non attribué")
-        name_item.setBackground(QColor('#F5F5F5'))
-        self.weekday_group_stats_table.setItem(row_index, 0, name_item)
-        
-        # Valeurs par groupe
-        for col, group in enumerate(all_groups, start=1):
-            count = unassigned_stats.get(group, 0)
-            item = QTableWidgetItem(str(count))
-            item.setBackground(QColor('#F5F5F5'))
-            self.weekday_group_stats_table.setItem(row_index, col, item)
-            unassigned_total += count
-        
-        # Total
-        total_item = QTableWidgetItem(str(unassigned_total))
-        total_item.setBackground(QColor('#F5F5F5'))
-        self.weekday_group_stats_table.setItem(row_index, len(all_groups) + 1, total_item)
+        """Ajoute la ligne des postes non attribués pour les groupes de semaine avec style uniformisé"""
+        self.add_unassigned_row(self.weekday_group_stats_table, row_index, stats, all_groups)
 
     def _add_total_row_weekday_groups(self, row_index: int, stats: dict, all_groups: list):
-        """Ajoute la ligne des totaux pour les groupes de semaine"""
-        # Cellule du nom
-        name_item = QTableWidgetItem("Total")
-        name_item.setBackground(QColor('#EEEEEE'))
-        name_item.setFont(QFont("", -1, QFont.Weight.Bold))
-        self.weekday_group_stats_table.setItem(row_index, 0, name_item)
-        
-        # Calcul des totaux par groupe
-        grand_total = 0
-        for col, group in enumerate(all_groups, start=1):
-            total = sum(person_stats.get(group, 0) 
-                    for person_stats in stats.values())
-            item = QTableWidgetItem(str(total))
-            item.setBackground(QColor('#EEEEEE'))
-            item.setFont(QFont("", -1, QFont.Weight.Bold))
-            self.weekday_group_stats_table.setItem(row_index, col, item)
-            grand_total += total
-        
-        # Total général
-        final_total = QTableWidgetItem(str(grand_total))
-        final_total.setBackground(QColor('#EEEEEE'))
-        final_total.setFont(QFont("", -1, QFont.Weight.Bold))
-        self.weekday_group_stats_table.setItem(row_index, len(all_groups) + 1, final_total)
+        """Ajoute la ligne des totaux pour les groupes de semaine avec style uniformisé"""
+        self.add_total_row(self.weekday_group_stats_table, row_index, stats, all_groups)
 
     def update_weekly_stats_table(self, weekly_stats):
         """Met à jour le tableau des statistiques de semaine avec une présentation améliorée"""
@@ -1410,55 +1254,16 @@ class StatsView(QWidget):
         self.weekly_stats_table.setAlternatingRowColors(False)
 
         # Application du filtre actuel
+        self.setup_highlighting(self.weekly_stats_table)
         self._apply_filter_to_table(self.weekly_stats_table)
 
     def _add_unassigned_row_weekly(self, row_index: int, stats: dict, all_posts: list):
-        """Ajoute la ligne des postes non attribués pour les statistiques semaine"""
-        unassigned_stats = stats.get("Non attribué", {})
-        unassigned_total = 0
-        
-        # Cellule du nom
-        name_item = QTableWidgetItem("Non attribué")
-        name_item.setBackground(QColor('#F5F5F5'))
-        self.weekly_stats_table.setItem(row_index, 0, name_item)
-        
-        # Valeurs par poste
-        for col, post_type in enumerate(all_posts, start=1):
-            count = unassigned_stats.get(post_type, 0)
-            item = QTableWidgetItem(str(count))
-            item.setBackground(QColor('#F5F5F5'))
-            self.weekly_stats_table.setItem(row_index, col, item)
-            unassigned_total += count
-        
-        # Total
-        total_item = QTableWidgetItem(str(unassigned_total))
-        total_item.setBackground(QColor('#F5F5F5'))
-        self.weekly_stats_table.setItem(row_index, len(all_posts) + 1, total_item)
+        """Ajoute la ligne des postes non attribués pour les statistiques semaine avec style uniformisé"""
+        self.add_unassigned_row(self.weekly_stats_table, row_index, stats, all_posts)
 
     def _add_total_row_weekly(self, row_index: int, stats: dict, all_posts: list):
-        """Ajoute la ligne des totaux pour les statistiques semaine"""
-        # Cellule du nom
-        name_item = QTableWidgetItem("Total")
-        name_item.setBackground(QColor('#EEEEEE'))
-        name_item.setFont(QFont("", -1, QFont.Weight.Bold))
-        self.weekly_stats_table.setItem(row_index, 0, name_item)
-        
-        # Calcul des totaux par poste
-        grand_total = 0
-        for col, post_type in enumerate(all_posts, start=1):
-            total = sum(person_stats.get(post_type, 0) 
-                    for person_stats in stats.values())
-            item = QTableWidgetItem(str(total))
-            item.setBackground(QColor('#EEEEEE'))
-            item.setFont(QFont("", -1, QFont.Weight.Bold))
-            self.weekly_stats_table.setItem(row_index, col, item)
-            grand_total += total
-        
-        # Total général
-        final_total = QTableWidgetItem(str(grand_total))
-        final_total.setBackground(QColor('#EEEEEE'))
-        final_total.setFont(QFont("", -1, QFont.Weight.Bold))
-        self.weekly_stats_table.setItem(row_index, len(all_posts) + 1, final_total)
+        """Ajoute la ligne des totaux pour les statistiques semaine avec style uniformisé"""
+        self.add_total_row(self.weekly_stats_table, row_index, stats, all_posts)
 
     def update_weekend_stats_table(self, weekend_stats):
         """Met à jour le tableau des statistiques weekend"""
@@ -1591,55 +1396,16 @@ class StatsView(QWidget):
         self.weekend_stats_table.setAlternatingRowColors(False)
 
         # Application du filtre actuel
+        self.setup_highlighting(self.weekend_stats_table)
         self._apply_filter_to_table(self.weekend_stats_table)
     
     def _add_unassigned_row_weekend(self, row_index: int, stats: dict, all_posts: list):
-        """Ajoute la ligne des postes non attribués pour les statistiques weekend"""
-        unassigned_stats = stats.get("Non attribué", {})
-        unassigned_total = 0
-        
-        # Cellule du nom
-        name_item = QTableWidgetItem("Non attribué")
-        name_item.setBackground(QColor('#F5F5F5'))
-        self.weekend_stats_table.setItem(row_index, 0, name_item)
-        
-        # Valeurs par poste
-        for col, post_type in enumerate(all_posts, start=1):
-            count = unassigned_stats.get(post_type, 0)
-            item = QTableWidgetItem(str(count))
-            item.setBackground(QColor('#F5F5F5'))
-            self.weekend_stats_table.setItem(row_index, col, item)
-            unassigned_total += count
-        
-        # Total
-        total_item = QTableWidgetItem(str(unassigned_total))
-        total_item.setBackground(QColor('#F5F5F5'))
-        self.weekend_stats_table.setItem(row_index, len(all_posts) + 1, total_item)
+        """Ajoute la ligne des postes non attribués pour les statistiques weekend avec style uniformisé"""
+        self.add_unassigned_row(self.weekend_stats_table, row_index, stats, all_posts)
 
     def _add_total_row_weekend(self, row_index: int, stats: dict, all_posts: list):
-        """Ajoute la ligne des totaux pour les statistiques weekend"""
-        # Cellule du nom
-        name_item = QTableWidgetItem("Total")
-        name_item.setBackground(QColor('#EEEEEE'))
-        name_item.setFont(QFont("", -1, QFont.Weight.Bold))
-        self.weekend_stats_table.setItem(row_index, 0, name_item)
-        
-        # Calcul des totaux par poste
-        grand_total = 0
-        for col, post_type in enumerate(all_posts, start=1):
-            total = sum(person_stats.get(post_type, 0) 
-                    for person_stats in stats.values())
-            item = QTableWidgetItem(str(total))
-            item.setBackground(QColor('#EEEEEE'))
-            item.setFont(QFont("", -1, QFont.Weight.Bold))
-            self.weekend_stats_table.setItem(row_index, col, item)
-            grand_total += total
-        
-        # Total général
-        final_total = QTableWidgetItem(str(grand_total))
-        final_total.setBackground(QColor('#EEEEEE'))
-        final_total.setFont(QFont("", -1, QFont.Weight.Bold))
-        self.weekend_stats_table.setItem(row_index, len(all_posts) + 1, final_total)
+        """Ajoute la ligne des totaux pour les statistiques weekend avec style uniformisé"""
+        self.add_total_row(self.weekend_stats_table, row_index, stats, all_posts)
 
     def calculate_stats(self):
         # Récupérer tous les types de postes possibles
@@ -2212,6 +1978,387 @@ class StatsView(QWidget):
             
         return "\n\n".join(tooltip_parts)
 
+
+
+    def setup_highlighting(self, table):
+        """Configure les gestionnaires d'événements pour la mise en surbrillance des lignes et colonnes"""
+        table.setMouseTracking(True)
+        table.cellEntered.connect(lambda row, col: self.highlight_cell(table, row, col))
+        table.leaveEvent = lambda event: self.clear_highlights(table)
+        
+    def highlight_cell(self, table, row, col):
+        """Met en surbrillance une ligne ou colonne lors du survol"""
+        # Restaurer l'état normal des cellules
+        self.clear_highlights(table)
+        
+        # Mémoriser la cellule actuelle pour le contexte de menu
+        table.setProperty("current_row", row)
+        table.setProperty("current_col", col)
+        
+    def clear_highlights(self, table):
+        """Efface les mises en surbrillance du tableau"""
+        table.setProperty("highlighted_row", -1)
+        table.setProperty("highlighted_col", -1)
+        # Forcer le rafraîchissement
+        table.viewport().update()
+        
+    def set_row_highlight(self, table, row):
+        """Active la mise en surbrillance permanente d'une ligne"""
+        self.highlighted_row = row
+        self.highlighted_col = -1
+        
+        # Appliquer le style de bordure à toutes les cellules de la ligne
+        for col in range(table.columnCount()):
+            item = table.item(row, col)
+            if item:
+                item.setData(Qt.ItemDataRole.UserRole, "highlighted_row")
+                
+        # Forcer le rafraîchissement
+        table.viewport().update()
+        
+    def set_column_highlight(self, table, col):
+        """Active la mise en surbrillance permanente d'une colonne"""
+        self.highlighted_col = col
+        self.highlighted_row = -1
+        
+        # Appliquer le style de bordure à toutes les cellules de la colonne
+        for row in range(table.rowCount()):
+            item = table.item(row, col)
+            if item:
+                item.setData(Qt.ItemDataRole.UserRole, "highlighted_col")
+                
+        # Forcer le rafraîchissement
+        table.viewport().update()
+        
+    def clear_all_highlights(self):
+        """Efface toutes les mises en surbrillance de tous les tableaux"""
+        self.highlighted_row = -1
+        self.highlighted_col = -1
+        
+        tables = [self.stats_table, self.weekend_stats_table, 
+                self.detailed_stats_table, self.weekly_stats_table, 
+                self.weekday_group_stats_table]
+                
+        for table in tables:
+            for row in range(table.rowCount()):
+                for col in range(table.columnCount()):
+                    item = table.item(row, col)
+                    if item:
+                        item.setData(Qt.ItemDataRole.UserRole, None)
+            
+            # Forcer le rafraîchissement
+            table.viewport().update()
+            
+    def sort_table(self, table, col):
+        """Trie le tableau selon la colonne cliquée avec un indicateur de tri amélioré"""
+        table_id = table.property("table_id")
+        
+        # Vérifier si c'est la colonne "Assigné à"
+        if col == 0:
+            # Réinitialiser l'ordre de tri et retourner à l'ordre original
+            self.sort_order[table_id] = {}
+            self._restore_original_order(table)
+            return
+            
+        # Déterminer l'ordre de tri
+        if col in self.sort_order.get(table_id, {}):
+            # Inverser l'ordre actuel
+            order = not self.sort_order[table_id][col]
+        else:
+            # Par défaut: tri ascendant
+            order = True
+            
+        # Mettre à jour l'ordre de tri pour cette colonne
+        if table_id not in self.sort_order:
+            self.sort_order[table_id] = {}
+        self.sort_order[table_id] = {col: order}  # Réinitialiser pour n'avoir qu'une colonne triée
+        
+        # Obtenir les données à trier (uniquement les lignes des utilisateurs)
+        data = []
+        # Toujours exclure "Non attribué" et "Total" du tri
+        sort_range = table.rowCount() - 2
+        
+        # Sauvegarder les lignes "Non attribué" et "Total"
+        unassigned_data = {}
+        total_data = {}
+        for c in range(table.columnCount()):
+            unassigned_item = table.item(table.rowCount() - 2, c)
+            total_item = table.item(table.rowCount() - 1, c)
+            if unassigned_item:
+                unassigned_data[c] = {
+                    'text': unassigned_item.text(),
+                    'background': unassigned_item.background(),
+                    'font': unassigned_item.font(),
+                    'tooltip': unassigned_item.toolTip()
+                }
+            if total_item:
+                total_data[c] = {
+                    'text': total_item.text(),
+                    'background': total_item.background(),
+                    'font': total_item.font(),
+                    'tooltip': total_item.toolTip()
+                }
+        
+        # Trier uniquement les lignes des utilisateurs
+        for row in range(sort_range):
+            # Obtenir la valeur de la cellule
+            item = table.item(row, col)
+            if item:
+                try:
+                    value = int(item.text())
+                except ValueError:
+                    value = item.text()
+                    
+                # Enregistrer la valeur avec son index de ligne et toutes les données de la ligne
+                row_data = {}
+                for c in range(table.columnCount()):
+                    cell = table.item(row, c)
+                    if cell:
+                        row_data[c] = {
+                            'text': cell.text(),
+                            'background': cell.background(),
+                            'font': cell.font(),
+                            'tooltip': cell.toolTip()
+                        }
+                data.append((row, value, row_data))
+        
+        # Trier les données
+        data.sort(key=lambda x: x[1], reverse=not order)
+        
+        # Réorganiser les lignes des utilisateurs selon le tri
+        for new_idx, (old_idx, _, row_data) in enumerate(data):
+            for c, cell_data in row_data.items():
+                new_item = QTableWidgetItem(cell_data['text'])
+                new_item.setBackground(cell_data['background'])
+                new_item.setFont(cell_data['font'])
+                new_item.setToolTip(cell_data['tooltip'])
+                table.setItem(new_idx, c, new_item)
+                
+        # Restaurer les lignes "Non attribué" et "Total" à leur position
+        for c, cell_data in unassigned_data.items():
+            new_item = QTableWidgetItem(cell_data['text'])
+            new_item.setBackground(cell_data['background'])
+            new_item.setFont(cell_data['font'])
+            new_item.setToolTip(cell_data['tooltip'])
+            table.setItem(table.rowCount() - 2, c, new_item)
+            
+        for c, cell_data in total_data.items():
+            new_item = QTableWidgetItem(cell_data['text'])
+            new_item.setBackground(cell_data['background'])
+            new_item.setFont(cell_data['font'])
+            new_item.setToolTip(cell_data['tooltip'])
+            table.setItem(table.rowCount() - 1, c, new_item)
+            for c, cell_data in row_data.items():
+                new_item = QTableWidgetItem(cell_data['text'])
+                new_item.setBackground(cell_data['background'])
+                new_item.setFont(cell_data['font'])
+                new_item.setToolTip(cell_data['tooltip'])
+                table.setItem(new_idx, c, new_item)
+        
+        # Mettre à jour les en-têtes
+        for c in range(table.columnCount()):
+            header_item = table.horizontalHeaderItem(c)
+            if header_item:
+                # Récupérer le texte de base (sans flèche)
+                base_text = header_item.text().replace(" ▲", "").replace(" ▼", "")
+                
+                # Ajouter la flèche uniquement à la colonne triée
+                if c == col:
+                    arrow = " ▲" if order else " ▼"
+                    header_item.setText(base_text + arrow)
+                else:
+                    header_item.setText(base_text)
+                    
+    def _restore_original_order(self, table):
+        """Restaure l'ordre original du tableau"""
+        # Récupérer toutes les données du tableau
+        data = []
+        for row in range(table.rowCount()):
+            row_data = {}
+            name_item = table.item(row, 0)
+            if name_item:
+                # Déterminer la priorité de tri
+                if name_item.text() == "Total":
+                    priority = 3
+                elif name_item.text() == "Non attribué":
+                    priority = 2
+                else:
+                    # Médecins temps plein, puis mi-temps, puis CATs
+                    is_cat = name_item.font().bold()
+                    is_half_time = name_item.background().color() == QColor(230, 230, 230, 255)
+                    if is_cat:
+                        priority = 1.3
+                    elif is_half_time:
+                        priority = 1.2
+                    else:
+                        priority = 1.1
+                        
+                # Sauvegarder les données de la ligne
+                for col in range(table.columnCount()):
+                    item = table.item(row, col)
+                    if item:
+                        row_data[col] = {
+                            'text': item.text(),
+                            'background': item.background(),
+                            'font': item.font(),
+                            'tooltip': item.toolTip()
+                        }
+                data.append((priority, name_item.text(), row_data))
+        
+        # Trier les données
+        data.sort(key=lambda x: (x[0], x[1]))
+        
+        # Réappliquer les données triées
+        for new_idx, (_, _, row_data) in enumerate(data):
+            for col, cell_data in row_data.items():
+                new_item = QTableWidgetItem(cell_data['text'])
+                new_item.setBackground(cell_data['background'])
+                new_item.setFont(cell_data['font'])
+                new_item.setToolTip(cell_data['tooltip'])
+                table.setItem(new_idx, col, new_item)
+        
+        # Nettoyer tous les indicateurs de tri
+        for col in range(table.columnCount()):
+            header_item = table.horizontalHeaderItem(col)
+            if header_item:
+                base_text = header_item.text().replace(" ▲", "").replace(" ▼", "")
+                header_item.setText(base_text)
+
+class CustomTableWidget(QTableWidget):
+    """Widget de tableau personnalisé avec système de réticule et tri amélioré"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.current_reticle = {'row': -1, 'col': -1}
+        self.fixed_reticles = []  # Pour les réticules "figés"
+        self.hover_reticle = {'row': -1, 'col': -1}  # Pour le réticule au survol
+        
+        # Configuration de base
+        self.setMouseTracking(True)
+        self.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)  # Désactiver l'édition
+        self.setSelectionMode(QTableWidget.SelectionMode.NoSelection)  # Désactiver la sélection standard
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # Désactiver le focus visuel
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        
+        # Connexion des signaux
+        self.cellClicked.connect(self.handle_cell_click)
+        self.cellDoubleClicked.connect(self.handle_cell_double_click)
+        self.customContextMenuRequested.connect(self.show_context_menu)
+        
+    def show_context_menu(self, pos):
+        """Affiche le menu contextuel avec l'option de supprimer les réticules"""
+        menu = QMenu(self)
+        clear_action = QAction("Supprimer les réticules", self)
+        clear_action.triggered.connect(self.clear_all_reticles)
+        menu.addAction(clear_action)
+        menu.exec(self.mapToGlobal(pos))
+        
+    def clear_all_reticles(self):
+        """Supprime tous les réticules fixes"""
+        self.fixed_reticles = []
+        self.current_reticle = {'row': -1, 'col': -1}
+        self.viewport().update()
+        
+    def handle_cell_click(self, row, col):
+        """Gère le clic sur une cellule"""
+        # Ignorer les clics sur les en-têtes
+        if row == 0:
+            return
+            
+        # Si on clique sur une cellule avec un réticule fixe, on le supprime
+        if any(r['row'] == row and r['col'] == col for r in self.fixed_reticles):
+            self.fixed_reticles = [r for r in self.fixed_reticles if not (r['row'] == row and r['col'] == col)]
+        else:
+            # Sinon, on remplace le réticule courant
+            self.current_reticle = {'row': row, 'col': col}
+        self.viewport().update()
+        
+    def handle_cell_double_click(self, row, col):
+        """Gère le double-clic pour figer le réticule courant"""
+        # Ignorer les double-clics sur les en-têtes
+        if row == 0:
+            return
+            
+        # Si un réticule fixe existe déjà à cet endroit, le supprimer
+        if any(r['row'] == row and r['col'] == col for r in self.fixed_reticles):
+            self.fixed_reticles = [r for r in self.fixed_reticles if not (r['row'] == row and r['col'] == col)]
+        else:
+            # Sinon, ajouter un nouveau réticule fixe
+            self.fixed_reticles.append({'row': row, 'col': col})
+        
+        # Réinitialiser le réticule courant
+        self.current_reticle = {'row': -1, 'col': -1}
+        self.viewport().update()
+        
+    def leaveEvent(self, event):
+        """Gère la sortie du widget"""
+        self.hover_reticle = {'row': -1, 'col': -1}
+        self.viewport().update()
+        super().leaveEvent(event)
+
+    def mouseMoveEvent(self, event):
+        """Gère le survol des cellules"""
+        row = self.rowAt(int(event.position().y()))
+        col = self.columnAt(int(event.position().x()))
+        if row >= 0 and col >= 0:
+            self.hover_reticle = {'row': row, 'col': col}
+        else:
+            self.hover_reticle = {'row': -1, 'col': -1}
+        self.viewport().update()
+        super().mouseMoveEvent(event)
+
+    def paintEvent(self, event):
+        """Surcharge de l'événement de dessin pour ajouter les réticules"""
+        super().paintEvent(event)
+        
+        painter = QPainter(self.viewport())
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Dessiner le réticule de survol (le plus discret)
+        if self.hover_reticle['row'] > 0 and self.hover_reticle['col'] >= 0:
+            self._draw_reticle(painter, self.hover_reticle['row'], self.hover_reticle['col'], 
+                             QColor(0, 120, 215, 30), 1)  # Bleu très transparent et fin
+        
+        # Dessiner les réticules fixes
+        for reticle in self.fixed_reticles:
+            if reticle['row'] > 0:  # Ne pas dessiner sur les en-têtes
+                self._draw_reticle(painter, reticle['row'], reticle['col'], 
+                                 QColor(0, 120, 215, 120), 2)  # Bleu semi-transparent
+            
+        # Dessiner le réticule courant (le plus visible)
+        if self.current_reticle['row'] > 0 and self.current_reticle['col'] >= 0:
+            self._draw_reticle(painter, self.current_reticle['row'], self.current_reticle['col'], 
+                             QColor(0, 120, 215, 180), 2)  # Bleu plus visible
+            
+        painter.end()
+        
+    def _draw_reticle(self, painter, row, col, color, width=2):
+        """Dessine un réticule comme un cadre autour de la ligne et de la colonne"""
+        pen = QPen(color, width)
+        pen.setStyle(Qt.PenStyle.SolidLine)
+        painter.setPen(pen)
+        
+        # Obtenir les dimensions complètes du viewport
+        viewport_width = self.viewport().width()
+        viewport_height = self.viewport().height()
+        
+        # Calculer les rectangles pour la ligne et la colonne
+        # Pour la ligne, prendre toute la largeur du viewport
+        row_rect = self.visualItemRect(self.item(row, 0))
+        row_rect.setLeft(0)
+        row_rect.setWidth(viewport_width)
+        
+        # Pour la colonne, prendre toute la hauteur du viewport
+        col_rect = self.visualItemRect(self.item(0, col))
+        col_rect.setTop(0)
+        col_rect.setHeight(viewport_height)
+        
+        # Ajuster les dimensions pour éviter la superposition avec la grille
+        row_rect.setHeight(row_rect.height() - 1)
+        col_rect.setWidth(col_rect.width() - 1)
+        
+        # Dessiner les rectangles
+        painter.drawRect(row_rect)
+        painter.drawRect(col_rect)
 
 class DetailedGroupHeader(QTableWidgetItem):
     """Classe personnalisée pour les en-têtes de groupe avec fonctionnalité d'expansion"""
