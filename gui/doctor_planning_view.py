@@ -96,11 +96,10 @@ class DoctorPlanningView(QWidget):
         self._calendar = France()
         
         # Mapping des périodes vers les abréviations de postes (cache)
-        # Aligné avec les périodes dans post_attribution_handler._get_available_posts
         self._period_to_post = {
-            1: ["MM", "CM", "HM", "ML", "MC", "SM", "RM"],  # Matin
+            1: ["ML", "MC", "MM", "CM", "HM", "SM", "RM"],  # Matin
             2: ["CA", "HA", "SA", "RA", "AL", "AC", "CT"],  # Après-midi
-            3: ["CS", "HS", "SS", "RS", "NC", "NM", "NL", "NA"]   # Soir
+            3: ["CS", "HS", "SS", "RS", "NA", "NM", "NC"]   # Soir
         }
         
         # Cache des horaires
@@ -118,8 +117,8 @@ class DoctorPlanningView(QWidget):
         # Initialiser l'interface utilisateur (appel obligatoire avant d'utiliser table)
         self.init_ui()
         
-        # Seulement après init_ui, on peut connecter le signal double-clic
-        self.table.cellDoubleClicked.connect(self.on_cell_double_clicked)
+        # Configurer uniquement le clic droit (supprimer le double-clic)
+        self.set_context_menu_policy()
 
     def init_ui(self):
         # Layout principal
@@ -622,81 +621,7 @@ class DoctorPlanningView(QWidget):
             
         self._schedule_update()
     
-    def on_cell_double_clicked(self, row, col):
-        """Gère le double-clic sur une cellule."""
-        # Vérifier que main_window est disponible
-        if not hasattr(self, 'main_window') or not self.main_window:
-            print("Erreur: main_window n'est pas défini dans DoctorPlanningView")
-            return
-            
-        if not hasattr(self.main_window, 'post_attribution_handler'):
-            print("Erreur: post_attribution_handler n'est pas disponible dans main_window")
-            return
-        
-        # Récupérer la date correspondant à la cellule
-        date = self._get_date_from_row_col(row, col)
-        if not date:
-            print(f"Impossible de déterminer la date pour la cellule ({row}, {col})")
-            return
-        
-        # Calculer la base de la colonne et la période
-        # La première colonne contient le numéro de jour (0)
-        # Ensuite, chaque mois a 4 colonnes: J (jour), M (matin), AM (après-midi), S (soir)
-        # On s'assure que col > 0 pour éviter les erreurs
-        if col <= 0:
-            return
-            
-        # Calculer correctement la colonne de base (première colonne du groupe)
-        base_col = (col - 1) // 4 * 4 + 1
-        
-        # Vérifier que la colonne correspond à une période (M, AM, S)
-        if col not in [base_col + 1, base_col + 2, base_col + 3]:
-            print(f"La colonne {col} n'est pas une colonne de période")
-            return
-        
-        # Calculer la période (1: Matin, 2: Après-midi, 3: Soir)
-        period = col - base_col + 1
-        
-        # Récupérer la personne sélectionnée
-        current_person = self.get_current_person()
-        if not current_person:
-            print("Aucune personne sélectionnée")
-            return
-        
-        print(f"Double-clic détecté pour: {current_person.name}, date={date}, période={period}")
-        
-        # Déterminer le type de jour pour obtenir les postes disponibles
-        day_type = self._get_day_type(date)
-        available_posts = self.main_window.post_attribution_handler._get_available_posts(
-            date, period, day_type, current_person.name
-        )
-        
-        if not available_posts:
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.information(
-                self,
-                "Information",
-                "Aucun poste disponible pour cette période."
-            )
-            return
-        
-        # Afficher le menu de sélection de poste
-        from PyQt6.QtWidgets import QMenu
-        menu = QMenu(self)
-        menu.setTitle("Ajouter un poste post-attribué")
-        
-        for post_type in available_posts:
-            action = menu.addAction(post_type)
-            action.triggered.connect(
-                lambda checked=False, pt=post_type: self.main_window.post_attribution_handler.add_post_attribution(
-                    date, period, current_person.name, pt, self.table
-                )
-            )
-        
-        # Positionner le menu au centre de la cellule cliquée
-        cell_rect = self.table.visualItemRect(self.table.item(row, col))
-        global_pos = self.table.viewport().mapToGlobal(cell_rect.center())
-        menu.exec(global_pos)
+    
 
 
 
@@ -855,8 +780,13 @@ class DoctorPlanningView(QWidget):
                 
    
     
+    def set_context_menu_policy(self):
+        """Définit la politique de menu contextuel pour la table."""
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self.show_context_menu)
+
     def show_context_menu(self, position):
-        """Affiche le menu contextuel pour ajouter/supprimer des post-attributions."""
+        """Affiche le menu contextuel pour gérer les post-attributions."""
         if not hasattr(self, 'main_window') or not self.main_window:
             print("Erreur: main_window n'est pas défini dans DoctorPlanningView")
             return
@@ -865,14 +795,13 @@ class DoctorPlanningView(QWidget):
             print("Erreur: post_attribution_handler n'est pas disponible dans main_window")
             return
         
-        # Forcer la redirection vers la table
-        if not hasattr(self, 'table') or not self.table:
-            print("Erreur: table n'est pas définie dans DoctorPlanningView")
+        # Vérifier que le planning existe
+        if not self.planning:
+            print("Aucun planning disponible")
             return
         
         item = self.table.itemAt(position)
         if not item:
-            print("Aucun élément trouvé à cette position")
             return
         
         row = self.table.row(item)
@@ -880,34 +809,117 @@ class DoctorPlanningView(QWidget):
         
         date = self._get_date_from_row_col(row, col)
         if not date:
-            print(f"Impossible de déterminer la date pour la cellule ({row}, {col})")
             return
         
-        base_col = (col - 1) // 4 * 4 + 1  # Calcul corrigé pour obtenir la première colonne du groupe
+        # Calculer la base de la colonne et la période
+        if col <= 0:
+            return
+            
+        base_col = (col - 1) // 4 * 4 + 1
         if col not in [base_col + 1, base_col + 2, base_col + 3]:
-            print(f"La colonne {col} n'est pas une colonne de période")
             return
         
-        period = col - base_col + 1  # +1 car période commence à 1
+        period_index = col - base_col - 1  # 0-based: 0=Matin, 1=Après-midi, 2=Soir
+        ui_period = period_index + 1        # 1-based: 1=Matin, 2=Après-midi, 3=Soir
         
         current_person = self.get_current_person()
         if not current_person:
-            print("Aucune personne sélectionnée")
             return
         
-        print(f"Affichage du menu contextuel pour: {current_person.name}, date={date}, période={period}")
+        # Créer le menu contextuel
+        from PyQt6.QtWidgets import QMenu
+        menu = QMenu(self)
         
-        # Transmettre le contrôle au gestionnaire de post-attribution
-        global_pos = self.table.mapToGlobal(position)
-        self.main_window.post_attribution_handler.show_post_attribution_menu(
-            event=global_pos,
-            table=self.table,
-            row=row,
-            col=col,
-            date=date,
-            period=period,
-            assignee=current_person.name
-        )
+        # Vérifier si le planning a été généré pour cette date
+        is_date_generated = self._is_date_generated(date)
+        
+        # Si la date n'est pas générée, afficher une option désactivée
+        if not is_date_generated:
+            no_planning_action = menu.addAction("Planning non généré pour post-attribution")
+            no_planning_action.setEnabled(False)
+            menu.exec(self.table.viewport().mapToGlobal(position))
+            return
+        
+        # Obtenir le jour du planning
+        day_planning = next((day for day in self.planning.days if day.date == date), None)
+        if not day_planning:
+            no_day_action = menu.addAction("Jour non disponible")
+            no_day_action.setEnabled(False)
+            menu.exec(self.table.viewport().mapToGlobal(position))
+            return
+        
+        # Vérifier dans post_attributions directement s'il y a une post-attribution
+        # pour cette personne, date et période
+        has_post_attr = False
+        post_type = None
+        
+        handler = self.main_window.post_attribution_handler
+        if hasattr(handler, 'post_attributions'):
+            if date in handler.post_attributions:
+                if current_person.name in handler.post_attributions[date]:
+                    if ui_period in handler.post_attributions[date][current_person.name]:
+                        has_post_attr = True
+                        post_type = handler.post_attributions[date][current_person.name][ui_period]
+        
+        # Si une post-attribution existe, ajouter UNIQUEMENT l'option de suppression
+        if has_post_attr and post_type:
+            action = menu.addAction(f"Supprimer post-attribution: {post_type}")
+            action.triggered.connect(
+                lambda checked=False: handler.remove_post_attribution(
+                    date, ui_period, current_person.name, self.table
+                )
+            )
+        else:
+            # UNIQUEMENT si aucune post-attribution n'existe déjà, proposer l'ajout
+            day_type = self._get_day_type(date)
+            available_posts = handler._get_available_posts(
+                date, period_index, day_type, current_person.name
+            )
+            
+            if available_posts:
+                add_menu = menu.addMenu("Ajouter un poste post-attribué")
+                for post_type in available_posts:
+                    action = add_menu.addAction(post_type)
+                    action.triggered.connect(
+                        lambda checked=False, pt=post_type: handler.add_post_attribution(
+                            date, ui_period, current_person.name, pt, self.table
+                        )
+                    )
+            else:
+                no_posts_action = menu.addAction("Aucun poste disponible à ajouter")
+                no_posts_action.setEnabled(False)
+        
+        # Afficher le menu
+        if menu.actions():
+            menu.exec(self.table.viewport().mapToGlobal(position))
+
+    def _is_date_generated(self, date):
+        """
+        Vérifie si le planning a été généré pour une date donnée.
+        
+        Args:
+            date: Date à vérifier
+            
+        Returns:
+            bool: True si le planning a été généré pour cette date, False sinon
+        """
+        # Vérifier si le planning existe
+        if not self.planning or not hasattr(self.planning, 'weekend_validated'):
+            return False
+        
+        # Déterminer si c'est un weekend ou jour férié
+        is_weekend = date.weekday() >= 5  # 5=Samedi, 6=Dimanche
+        from workalendar.europe import France
+        calendar = France()
+        is_holiday = calendar.is_holiday(date)
+        
+        # Règles:
+        # - Pour les weekends et jours fériés: autorisé après génération des weekends
+        # - Pour les jours de semaine: autorisé seulement si les weekends sont validés
+        if is_weekend or is_holiday:
+            return True  # Les weekends sont toujours générés en premier
+        else:
+            return self.planning.weekend_validated  # Jours de semaine uniquement si validés
 
     # 4. Ajouter la méthode get_current_person
     def get_current_person(self):
@@ -935,7 +947,7 @@ class DoctorPlanningView(QWidget):
             
             for slot in slots:
                 period_index = get_post_period(slot)  # Utilise la fonction existante
-                if 1 <= period_index <= 3:  # Vérifie que l'index est valide (1-3)
+                if 0 <= period_index <= 3:  # Vérifie que l'index est valide (1-3)
                     periods[period_index - 1].append(slot)  # -1 car periods est indexé de 0 à 2
 
             # Obtention de la personne sélectionnée

@@ -949,17 +949,19 @@ class FullPlanningTable(QTableWidget):
                 posts = [slot for slot in day_planning.slots if (selected == "Non attribué" and slot.assignee is None) or slot.assignee == selected]
                 
                 # Tri par période
-                morning_posts = [p for p in posts if get_post_period(p) == 0]
-                afternoon_posts = [p for p in posts if get_post_period(p) == 1]
-                evening_posts = [p for p in posts if get_post_period(p) == 2]
+                morning_posts = [p for p in posts if get_post_period(p) == 1]  # MORNING
+                afternoon_posts = [p for p in posts if get_post_period(p) == 2]  # AFTERNOON
+                evening_posts = [p for p in posts if get_post_period(p) == 3]  # EVENING
 
                 # Création des cellules pour chaque période
                 for i, post_list in enumerate([morning_posts, afternoon_posts, evening_posts]):
                     posts_text = ", ".join([p.abbreviation for p in post_list])
                     if selected == "Non attribué":
                         unassigned_posts = [slot.abbreviation for slot in day_planning.slots 
-                                        if slot.assignee is None and self.get_post_period(slot.abbreviation) == i]
+                                        if slot.assignee is None and self.get_post_period(slot.abbreviation) == i + 1]
                         posts_text = ", ".join(unassigned_posts)
+                    
+                    item = QTableWidgetItem(posts_text)
                     
                     item = QTableWidgetItem(posts_text)
                     item.setFont(bold_font)
@@ -1033,11 +1035,11 @@ class FullPlanningTable(QTableWidget):
 
     def get_post_period(self, post):
         if post in ["ML","MC","MM", "CM", "HM", "SM", "RM"]:
-            return 0  # Matin
-        elif post in ["CA", "HA", "SA", "RA", "AL", "AC"]:
-            return 1  # Après-midi
+            return 1  # Matin (MORNING)
+        elif post in ["CA", "HA", "SA", "RA", "AL", "AC", "CT"]:
+            return 2  # Après-midi (AFTERNOON)
         else:
-            return 2  # Soir
+            return 3  # Soir (EVENING)
 
 
     def on_item_clicked(self, item):
@@ -1133,10 +1135,10 @@ class FullPlanningTable(QTableWidget):
 
                 if current_assignee == "Non attribué":
                     available_posts = [slot.abbreviation for slot in day.slots 
-                                    if slot.assignee is None and self.get_post_period(slot.abbreviation) == period]
+                                    if slot.assignee is None and self.get_post_period(slot.abbreviation) == period + 1]
                 else:
                     available_posts = [slot.abbreviation for slot in day.slots 
-                                    if slot.assignee == current_assignee and self.get_post_period(slot.abbreviation) == period]
+                                    if slot.assignee == current_assignee and self.get_post_period(slot.abbreviation) == period + 1]
 
                 if not available_posts:
                     QMessageBox.warning(self, "Échange impossible", "Aucun poste disponible pour l'échange.")

@@ -53,7 +53,7 @@ class PostAttributionHandler:
         if day:
             for slot in day.slots:
                 if (slot.abbreviation == post_type and 
-                    get_post_period(slot) == period):  # Période alignée avec PostPeriod
+                    get_post_period(slot) + 1 == period):  # +1 car get_post_period renvoie 0, 1, 2
                     return True
         
         # Vérifier dans les post-attributions
@@ -154,6 +154,33 @@ class PostAttributionHandler:
             post_type: Type de poste
             table: Table à mettre à jour
         """
+        logger.info(f"Tentative d'ajout de post-attribution: {date}, période {period}, {assignee}, {post_type}")
+        
+        # Vérification DIRECTE dans la structure post_attributions
+        if date in self.post_attributions:
+            if assignee in self.post_attributions[date]:
+                if period in self.post_attributions[date][assignee]:
+                    existing_post = self.post_attributions[date][assignee][period]
+                    QMessageBox.warning(
+                        table,
+                        "Poste déjà attribué",
+                        f"Un poste ({existing_post}) est déjà post-attribué à cette période. Supprimez-le d'abord."
+                    )
+                    return
+        
+        # Vérification SUPPLÉMENTAIRE dans le planning actuel
+        day = self.main_window.planning.get_day(date)
+        if day:
+            for slot in day.slots:
+                if (slot.assignee == assignee and get_post_period(slot) + 1 == period):
+                    if hasattr(slot, 'is_post_attribution') and slot.is_post_attribution:
+                        QMessageBox.warning(
+                            table,
+                            "Poste déjà attribué",
+                            f"Un poste ({slot.abbreviation}) est déjà post-attribué à cette période. Supprimez-le d'abord."
+                        )
+                        return
+        
         # Créer un slot temporaire pour la vérification des contraintes
         test_slot = self._create_timeslot_for_post(post_type, date)
         if not test_slot:
@@ -209,6 +236,10 @@ class PostAttributionHandler:
         details = f"{assignee} - {post_type} - {date.strftime('%d/%m/%Y')} - Période {period}"
         self.history.append((timestamp, "Ajout post-attribution", details))
         
+        # Marquer explicitement le slot comme post-attribution
+        test_slot.is_post_attribution = True
+        test_slot.assignee = assignee
+        
         # Mettre à jour l'affichage
         self._update_planning_slot(date, assignee, post_type, test_slot)
         self._save_post_attributions()
@@ -226,7 +257,40 @@ class PostAttributionHandler:
         # Mettre à jour les statistiques
         if hasattr(self.main_window, 'update_stats_view'):
             self.main_window.update_stats_view()
-    
+            
+    def clean_and_restore_post_attributions(self):
+        """
+        Nettoie toutes les post-attributions existantes et les restaure proprement.
+        À appeler aux moments clés: après validation des weekends, après génération des semaines.
+        """
+        if not self.main_window.planning:
+            logger.warning("Pas de planning disponible, impossible de nettoyer/restaurer les post-attributions")
+            return
+        
+        logger.info("Nettoyage et restauration des post-attributions...")
+        
+        # 1. Sauvegarde forcée des post-attributions (par précaution)
+        self._save_post_attributions()
+        
+        # 2. Suppression de tous les slots post-attribués existants
+        for day in self.main_window.planning.days:
+            slots_to_keep = []
+            for slot in day.slots:
+                if not hasattr(slot, 'is_post_attribution') or not slot.is_post_attribution:
+                    slots_to_keep.append(slot)
+            
+            # Compter combien de slots ont été supprimés
+            removed = len(day.slots) - len(slots_to_keep)
+            if removed > 0:
+                logger.info(f"Supprimé {removed} slots post-attribués pour le {day.date}")
+            
+            day.slots = slots_to_keep
+        
+        # 3. Restauration propre des post-attributions
+        self._restore_slots_in_planning()
+        
+        logger.info("Nettoyage et restauration des post-attributions terminés")
+            
     def remove_post_attribution(self, date, period, assignee, table):
         """
         Supprime une post-attribution.
@@ -237,56 +301,68 @@ class PostAttributionHandler:
             assignee: Médecin ou CAT assigné
             table: Table à mettre à jour
         """
-        if (date in self.post_attributions and 
-            assignee in self.post_attributions[date] and 
-            period in self.post_attributions[date][assignee]):
+        print(f"Tentative de suppression pour {assignee}, date={date}, période={period}")
+        
+        # Vérifier si la post-attribution existe
+        has_post_attr = False
+        post_type = None
+        
+        if date in self.post_attributions:
+            if assignee in self.post_attributions[date]:
+                if period in self.post_attributions[date][assignee]:
+                    has_post_attr = True
+                    post_type = self.post_attributions[date][assignee][period]
+        
+        print(f"Post-attribution trouvée: {has_post_attr}, type={post_type}")
+        
+        if not has_post_attr or not post_type:
+            print("Aucune post-attribution trouvée à supprimer")
+            return
+        
+        # Supprimer du planning
+        day = self.main_window.planning.get_day(date)
+        if day:
+            slots_to_remove = []
             
-            # Récupérer le type de poste avant suppression
-            post_type = self.post_attributions[date][assignee][period]
+            for slot in day.slots:
+                # Recherche simple par assigné et type de poste
+                if slot.assignee == assignee and slot.abbreviation == post_type:
+                    print(f"Slot trouvé à supprimer: {slot.abbreviation}")
+                    slots_to_remove.append(slot)
             
-            # Supprimer du planning
-            day = self.main_window.planning.get_day(date)
-            if day:
-                slots_to_remove = []
-                for slot in day.slots:
-                    if (slot.assignee == assignee and 
-                        slot.abbreviation == post_type and 
-                        get_post_period(slot) == period and  # Période alignée
-                        hasattr(slot, 'is_post_attribution') and
-                        slot.is_post_attribution):
-                        slots_to_remove.append(slot)
-                
-                for slot in slots_to_remove:
-                    day.slots.remove(slot)
+            print(f"Nombre de slots à supprimer: {len(slots_to_remove)}")
             
-            # Supprimer de la structure de données
-            del self.post_attributions[date][assignee][period]
-            if not self.post_attributions[date][assignee]:
-                del self.post_attributions[date][assignee]
-            if not self.post_attributions[date]:
-                del self.post_attributions[date]
-            
-            # Ajouter à l'historique
-            timestamp = datetime.now()
-            details = f"{assignee} - {post_type} - {date.strftime('%d/%m/%Y')} - Période {period}"
-            self.history.append((timestamp, "Suppression post-attribution", details))
-            
-            # Enregistrer les modifications
-            self._save_post_attributions()
-            
-            # Mettre à jour les vues
-            if hasattr(self.main_window, 'doctor_planning_view') and self.main_window.doctor_planning_view:
-                self.main_window.doctor_planning_view.update_view(
-                    self.main_window.planning,
-                    self.main_window.doctors,
-                    self.main_window.cats
-                )
-            if hasattr(self.main_window, 'comparison_view') and self.main_window.comparison_view:
-                self.main_window.comparison_view.update_comparison(preserve_selection=True)
-            
-            # Mettre à jour les statistiques
-            if hasattr(self.main_window, 'update_stats_view'):
-                self.main_window.update_stats_view()
+            for slot in slots_to_remove:
+                day.slots.remove(slot)
+        
+        # Supprimer de la structure de données
+        del self.post_attributions[date][assignee][period]
+        if not self.post_attributions[date][assignee]:
+            del self.post_attributions[date][assignee]
+        if not self.post_attributions[date]:
+            del self.post_attributions[date]
+        
+        # Ajouter à l'historique
+        timestamp = datetime.now()
+        details = f"{assignee} - {post_type} - {date.strftime('%d/%m/%Y')} - Période {period}"
+        self.history.append((timestamp, "Suppression post-attribution", details))
+        
+        # Enregistrer les modifications
+        self._save_post_attributions()
+        
+        # Mettre à jour les vues
+        if hasattr(self.main_window, 'doctor_planning_view') and self.main_window.doctor_planning_view:
+            self.main_window.doctor_planning_view.update_view(
+                self.main_window.planning,
+                self.main_window.doctors,
+                self.main_window.cats
+            )
+        if hasattr(self.main_window, 'comparison_view') and self.main_window.comparison_view:
+            self.main_window.comparison_view.update_comparison(preserve_selection=True)
+        
+        # Mettre à jour les statistiques
+        if hasattr(self.main_window, 'update_stats_view'):
+            self.main_window.update_stats_view()
     
     def _get_day_type(self, date_to_check):
         """Détermine le type de jour (semaine, samedi, dimanche/férié)."""
@@ -296,13 +372,13 @@ class PostAttributionHandler:
             return "saturday"
         return "weekday"
     
-    def _get_available_posts(self, date, period, day_type, assignee):
+    def _get_available_posts(self, date, period_index, day_type, assignee):
         """
         Retourne les postes disponibles pour une période donnée.
         
         Args:
             date: Date à vérifier
-            period: Période (1: Matin, 2: Après-midi, 3: Soir)
+            period_index: Index de période (0: Matin, 1: Après-midi, 2: Soir) - IMPORTANT: maintenant 0-based
             day_type: Type de jour ('weekday', 'saturday', 'sunday_holiday')
             assignee: Nom du médecin ou CAT
             
@@ -314,40 +390,55 @@ class PostAttributionHandler:
         # Vérifier si l'assigné est un médecin ou un CAT
         is_cat = any(cat.name == assignee for cat in self.main_window.cats)
         
-        # Récupérer tous les types de postes standard possibles
-        all_post_types = []
-        
         # Logs pour déboguer
-        logger.debug(f"Recherche de postes pour {assignee} le {date} (période {period}, type {day_type})")
+        logger.debug(f"Recherche de postes pour {assignee} le {date} (période index={period_index}, type {day_type})")
         logger.debug(f"Est un CAT: {is_cat}")
         
-        # Ajouter les postes selon le jour et la période
-        if day_type == "weekday":  # Jour de semaine
-            if period == 1:  # Matin
-                all_post_types.extend(["MM", "CM", "HM", "ML", "MC", "SM", "RM"])
-            elif period == 2:  # Après-midi
-                all_post_types.extend(["CA", "HA", "SA", "RA", "AL", "AC", "CT"])
-            elif period == 3:  # Soir
-                all_post_types.extend(["CS", "HS", "SS", "RS", "NC", "NM", "NL", "NA"])
-        elif day_type == "saturday":  # Samedi
-            if period == 1:  # Matin
-                all_post_types.extend(["CM", "HM", "ML", "MC", "SM", "RM"])
-            elif period == 2:  # Après-midi
-                all_post_types.extend(["CA", "HA", "SA", "RA", "AL", "AC", "CT"])
-            elif period == 3:  # Soir
-                all_post_types.extend(["CS", "HS", "SS", "RS", "NA", "NM", "NL"])
-        elif day_type == "sunday_holiday":  # Dimanche/Férié
-            if period == 1:  # Matin
-                all_post_types.extend(["CM", "HM", "SM", "RM", "ML", "MC"])
-            elif period == 2:  # Après-midi
-                all_post_types.extend(["CA", "HA", "SA", "RA", "AL", "AC", "CT"])
-            elif period == 3:  # Soir
-                all_post_types.extend(["CS", "HS", "SS", "RS", "NA", "NM", "NL"])
+        # Définir les listes de postes par période et type de jour
+        # Ces listes doivent contenir TOUS les types de postes possibles
+        post_types_by_period = {
+            # Jour de semaine (lundi au vendredi)
+            "weekday": {
+                0: ["MM", "CM", "HM", "SM", "RM", "ML", "MC"],  # Matin (index 0)
+                1: ["CA", "HA", "SA", "RA", "CT", "AL", "AC"],  # Après-midi (index 1)
+                2: ["CS", "HS", "SS", "RS", "NC", "NM", "NL", "NA"]  # Soir/Nuit (index 2)
+            },
+            # Samedi
+            "saturday": {
+                0: ["CM", "HM", "ML", "MC"],  # Matin (index 0)
+                1: ["CA", "HA", "SA", "RA", "AL", "AC"],  # Après-midi (index 1)
+                2: ["CS", "HS", "SS", "RS", "NA", "NM", "NL"]  # Soir/Nuit (index 2)
+            },
+            # Dimanche et jours fériés
+            "sunday_holiday": {
+                0: ["CM", "HM", "SM", "RM", "ML", "MC"],  # Matin (index 0)
+                1: ["CA", "HA", "SA", "RA", "AL", "AC"],  # Après-midi (index 1)
+                2: ["CS", "HS", "SS", "RS", "NA", "NM", "NL"]  # Soir/Nuit (index 2)
+            }
+        }
+        
+        # Obtenir la liste des postes pour la période et le type de jour demandés
+        possible_posts = post_types_by_period.get(day_type, {}).get(period_index, [])
+        
+        logger.debug(f"Postes possibles pour période index {period_index}, jour {day_type}: {possible_posts}")
         
         # Pour chaque type de poste possible
-        for post_type in all_post_types:
+        for post_type in possible_posts:
+            # Vérifier si le poste est compatible avec l'assigné (médecin/CAT)
+            if is_cat:
+                # Si l'assigné est un CAT, vérifier si les CATs peuvent prendre ce poste
+                post_details = self.post_manager.get_post_details(post_type, day_type)
+                if not post_details:
+                    logger.warning(f"Détails introuvables pour le poste {post_type}")
+                    continue
+                    
+                # Pour simplifier, on ajoute tous les postes pour les CATs
+                # La vérification des contraintes se fera ailleurs
+                
             # Vérifier uniquement si le poste est déjà attribué
-            if not self.is_post_attributed(date, period, post_type, self.main_window.planning):
+            # IMPORTANT: Convertir period_index en période 1-based pour is_post_attributed
+            ui_period = period_index + 1
+            if not self.is_post_attributed(date, ui_period, post_type, self.main_window.planning):
                 # Récupérer les détails du poste pour vérifier sa validité
                 post_details = self.post_manager.get_post_details(post_type, day_type)
                 if post_details:
@@ -371,22 +462,22 @@ class PostAttributionHandler:
                 if is_compatible and day_type in custom_post.day_types:
                     post_start_hour = custom_post.start_time.hour
                     
-                    # Vérifier si le poste correspond à la période
+                    # Vérifier si le poste correspond à la période demandée
                     is_matching = False
+                    if period_index == 0 and 7 <= post_start_hour < 13:  # Matin (index 0)
+                        is_matching = True
+                    elif period_index == 1 and 13 <= post_start_hour < 18:  # Après-midi (index 1)
+                        is_matching = True
+                    elif period_index == 2 and (post_start_hour >= 18 or post_start_hour < 7):  # Soir/Nuit (index 2)
+                        is_matching = True
                     
-                    if period == 1 and 7 <= post_start_hour < 13:  # Matin
-                        is_matching = True
-                    elif period == 2 and 13 <= post_start_hour < 18:  # Après-midi
-                        is_matching = True
-                    elif period == 3 and (post_start_hour >= 18 or post_start_hour < 7):  # Soir/Nuit
-                        is_matching = True
-                    
-                    # Vérifier si le poste est déjà attribué
-                    if is_matching and not self.is_post_attributed(date, period, name, self.main_window.planning):
+                    # IMPORTANT: Convertir period_index en période 1-based pour is_post_attributed
+                    ui_period = period_index + 1
+                    if is_matching and not self.is_post_attributed(date, ui_period, name, self.main_window.planning):
                         available_posts.append(name)
                         logger.debug(f"Ajout du poste personnalisé {name} aux postes disponibles")
         
-        logger.debug(f"Postes disponibles: {available_posts}")
+        logger.debug(f"Postes disponibles finaux: {available_posts}")
         return sorted(available_posts)
     
     def _create_timeslot_for_post(self, post_type, date):
@@ -414,6 +505,7 @@ class PostAttributionHandler:
                     slot_type="Custom",
                     abbreviation=post_type
                 )
+                # S'assurer que l'attribut is_post_attribution est explicitement défini
                 slot.is_post_attribution = True
                 return slot
         
@@ -427,6 +519,7 @@ class PostAttributionHandler:
                 slot_type="Standard",
                 abbreviation=post_type
             )
+            # S'assurer que l'attribut is_post_attribution est explicitement défini
             slot.is_post_attribution = True
             return slot
         
@@ -523,6 +616,17 @@ class PostAttributionHandler:
         # Définir l'assigné du slot
         slot.assignee = assignee
         
+        # S'assurer que l'attribut is_post_attribution est défini
+        if not hasattr(slot, 'is_post_attribution'):
+            slot.is_post_attribution = True
+        else:
+            # Vérifier que l'attribut est bien True
+            slot.is_post_attribution = True
+        
+        # Log de débogage
+        logger.debug(f"Ajout d'un slot post-attribué: {post_type} pour {assignee} le {date}")
+        logger.debug(f"Attribut is_post_attribution: {getattr(slot, 'is_post_attribution', 'Non défini')}")
+        
         # Ajouter le slot au jour
         day.slots.append(slot)
     
@@ -536,11 +640,7 @@ class PostAttributionHandler:
                 logger.error(f"Erreur lors de la sauvegarde des post-attributions: {e}")
     
     def load_post_attributions(self):
-        """Charge les post-attributions depuis un fichier."""
-        if not self.main_window.planning:
-            logger.info("Chargement des post-attributions reporté: planning non disponible")
-            return
-            
+        """Charge les post-attributions depuis un fichier sans les restaurer directement."""
         if hasattr(self.main_window, 'data_persistence') and self.main_window.data_persistence:
             try:
                 loaded_data = self.main_window.data_persistence.load_post_attributions()
@@ -548,10 +648,15 @@ class PostAttributionHandler:
                     self.post_attributions = loaded_data
                     logger.info("Post-attributions chargées avec succès")
                     
-                    # Restaurer les slots dans le planning
-                    self._restore_slots_in_planning()
+                    # Ne plus restaurer automatiquement les slots dans le planning ici
+                    # La restauration sera faite explicitement aux moments appropriés
+                    
+                    return True
             except Exception as e:
                 logger.error(f"Erreur lors du chargement des post-attributions: {e}")
+                return False
+        
+        return False
 
     def _restore_slots_in_planning(self):
         """Restaure les slots de post-attribution dans le planning."""
@@ -561,16 +666,47 @@ class PostAttributionHandler:
         
         logger.info("Restauration des slots de post-attribution...")
         slots_added = 0
+        slots_skipped = 0
         
+        # D'abord, nettoyage complet de tous les slots post-attribués existants
+        for day in self.main_window.planning.days:
+            slots_to_keep = []
+            for slot in day.slots:
+                if not hasattr(slot, 'is_post_attribution') or not slot.is_post_attribution:
+                    slots_to_keep.append(slot)
+                else:
+                    logger.debug(f"Suppression d'un slot post-attribué existant: {slot.abbreviation} pour {slot.assignee} le {day.date}")
+            
+            # Compter combien de slots ont été supprimés
+            removed = len(day.slots) - len(slots_to_keep)
+            if removed > 0:
+                logger.info(f"Supprimé {removed} slots post-attribués pour le {day.date}")
+            
+            day.slots = slots_to_keep
+        
+        # Ensuite, ajout des post-attributions
         for date, assignees in self.post_attributions.items():
             for assignee, periods in assignees.items():
                 for period, post_type in periods.items():
+                    # Récupérer le jour du planning
+                    day = self.main_window.planning.get_day(date)
+                    if not day:
+                        logger.warning(f"Jour {date} non trouvé dans le planning, impossible de restaurer le poste")
+                        continue
+                    
+                    # Créer un nouveau slot
                     slot = self._create_timeslot_for_post(post_type, date)
                     if slot:
-                        self._update_planning_slot(date, assignee, post_type, slot)
+                        slot.assignee = assignee
+                        slot.is_post_attribution = True
+                        day.slots.append(slot)
                         slots_added += 1
+                        logger.info(f"Slot restauré: {post_type} pour {assignee} le {date}")
+                    else:
+                        logger.warning(f"Impossible de créer un slot pour {post_type} le {date}")
         
-        logger.info(f"{slots_added} slots de post-attribution restaurés")
+        logger.info(f"{slots_added} slots de post-attribution restaurés, {slots_skipped} slots existants ignorés")
+
     
     def get_history(self):
         """Retourne l'historique des post-attributions."""

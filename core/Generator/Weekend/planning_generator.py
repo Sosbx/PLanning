@@ -1450,6 +1450,20 @@ class PlanningGenerator:
             return False
 
     def _distribute_nl_to_doctors(self, planning: Planning, nlv_total: int, nls_total: int, nld_total: int, pre_analysis: dict) -> bool:
+        """
+        Distribution optimisée des NL aux médecins avec priorité aux NLv.
+        Assure que tous les médecins atteignent leur minimum de NLv en premier.
+        
+        Args:
+            planning: Le planning en cours de génération
+            nlv_total: Total des NLv à distribuer
+            nls_total: Total des NLs à distribuer
+            nld_total: Total des NLd à distribuer
+            pre_analysis: Résultats de la pré-analyse
+            
+        Returns:
+            bool: True si la distribution est réussie
+        """
         try:
             logger.info("\nDISTRIBUTION DES NL AUX MÉDECINS")
             logger.info("=" * 60)
@@ -1478,13 +1492,27 @@ class PlanningGenerator:
                                 pre_attributed["NLd"] += 1
                             pre_attributed["total"] += 1
 
+                # Calculer les minimums spécifiques pour chaque type de NL
+                nlw_min = nlw_distribution[doctor.name]["weekend_groups"]["NLw"]["min"]
+                nlw_max = nlw_distribution[doctor.name]["weekend_groups"]["NLw"]["max"]
+                
+                # Déterminer les minimums par type
+                # Le minimum de NLv est calculé en fonction du total NLw et des proportions NLv/NLs/NLd
+                total_nl_slots = nlv_total + nls_total + nld_total
+                if total_nl_slots > 0:
+                    nlv_ratio = nlv_total / total_nl_slots
+                    nlv_min = max(1, round(nlw_min * nlv_ratio))  # Au moins 1 NLv si le minimum total > 0
+                else:
+                    nlv_min = 0
+                
                 doctor_nl_counts[doctor.name] = {
                     "NLv": pre_attributed["NLv"],
                     "NLs": pre_attributed["NLs"], 
                     "NLd": pre_attributed["NLd"],
                     "total": pre_attributed["total"],
-                    "max": nlw_distribution[doctor.name]["weekend_groups"]["NLw"]["max"],
-                    "min": nlw_distribution[doctor.name]["weekend_groups"]["NLw"]["min"]
+                    "max": nlw_max,
+                    "min": nlw_min,
+                    "nlv_min": nlv_min
                 }
 
                 logger.info(f"\nCompteurs initiaux pour {doctor.name}:")
@@ -1492,33 +1520,71 @@ class PlanningGenerator:
                         f"(NLv:{pre_attributed['NLv']}, "
                         f"NLs:{pre_attributed['NLs']}, "
                         f"NLd:{pre_attributed['NLd']})")
+                logger.info(f"Minimum NLv requis: {nlv_min}")
 
             # Distribution des NL restantes
             available_slots = self._create_nl_distribution_map(planning)
             all_doctors = self.doctors.copy()
-            random.shuffle(all_doctors)
 
-            # Phase 1: Distribution du minimum en tenant compte des pré-attributions
-            logger.info("\nPHASE 1: Distribution du minimum")
+            # Phase 1: Priorité à la distribution du minimum de NLv pour tous les médecins
+            logger.info("\nPHASE 1: Distribution du minimum de NLv")
             logger.info("=" * 50)
 
+            # Trier les médecins par priorité: d'abord les pleins temps, puis aléatoirement
             sorted_doctors = sorted(all_doctors, key=lambda d: (-d.half_parts, random.random()))
+
+            for doctor in sorted_doctors:
+                min_nlv = doctor_nl_counts[doctor.name]["nlv_min"]
+                current_nlv = doctor_nl_counts[doctor.name]["NLv"]
+                
+                if current_nlv >= min_nlv:
+                    logger.info(f"{doctor.name}: Minimum NLv déjà atteint avec les pré-attributions "
+                            f"({current_nlv}/{min_nlv})")
+                    continue
+
+                logger.info(f"\nDistribution NLv pour {doctor.name} "
+                        f"(minimum NLv: {min_nlv}, actuel: {current_nlv})")
+
+                # Distribution des NLv manquantes
+                while (doctor_nl_counts[doctor.name]["NLv"] < min_nlv and 
+                    doctor_nl_counts[doctor.name]["total"] < doctor_nl_counts[doctor.name]["max"]):
+                    if not available_slots["NLv"]:
+                        logger.warning(f"Plus de slots NLv disponibles pour {doctor.name}")
+                        break
+
+                    success = self._try_assign_nl_slot(
+                        doctor,
+                        available_slots["NLv"],
+                        planning,
+                        doctor_nl_counts[doctor.name],
+                        "NLv"
+                    )
+
+                    if success:
+                        logger.info(f"{doctor.name}: NLv attribué "
+                                f"({doctor_nl_counts[doctor.name]['NLv']}/{min_nlv})")
+                    else:
+                        logger.warning(f"Impossible d'attribuer NLv à {doctor.name}")
+                        break
+
+            # Phase 2: Distribution du minimum global NLw restant
+            logger.info("\nPHASE 2: Distribution du minimum global NLw restant")
+            logger.info("=" * 50)
 
             for doctor in sorted_doctors:
                 min_nlw = doctor_nl_counts[doctor.name]["min"]
                 current_total = doctor_nl_counts[doctor.name]["total"]
                 
                 if current_total >= min_nlw:
-                    logger.info(f"{doctor.name}: Minimum déjà atteint avec les pré-attributions "
+                    logger.info(f"{doctor.name}: Minimum global déjà atteint "
                             f"({current_total}/{min_nlw})")
                     continue
 
                 logger.info(f"\nDistribution pour {doctor.name} "
-                        f"(minimum: {min_nlw}, actuel: {current_total}, "
-                        f"maximum: {doctor_nl_counts[doctor.name]['max']})")
+                        f"(minimum global: {min_nlw}, actuel: {current_total})")
 
-                # Distribution du reste du minimum nécessaire
-                for nl_type in ["NLd", "NLs", "NLv"]:
+                # Distribution du reste du minimum nécessaire avec priorité NLd puis NLs
+                for nl_type in ["NLd", "NLs"]:
                     while (doctor_nl_counts[doctor.name]["total"] < min_nlw and 
                         doctor_nl_counts[doctor.name]["total"] < doctor_nl_counts[doctor.name]["max"]):
                         if not available_slots[nl_type]:
@@ -1541,8 +1607,29 @@ class PlanningGenerator:
                     if doctor_nl_counts[doctor.name]["total"] >= min_nlw:
                         break
 
-            # Phase 2: Distribution du reste dans la limite des maximums
-            logger.info("\nPHASE 2: Distribution complémentaire")
+                # Si toujours pas suffisant, essayer encore avec les NLv si disponibles
+                if (doctor_nl_counts[doctor.name]["total"] < min_nlw and available_slots["NLv"]):
+                    while (doctor_nl_counts[doctor.name]["total"] < min_nlw and 
+                        doctor_nl_counts[doctor.name]["total"] < doctor_nl_counts[doctor.name]["max"]):
+                        if not available_slots["NLv"]:
+                            break
+
+                        success = self._try_assign_nl_slot(
+                            doctor,
+                            available_slots["NLv"],
+                            planning,
+                            doctor_nl_counts[doctor.name],
+                            "NLv"
+                        )
+
+                        if success:
+                            logger.info(f"{doctor.name}: NLv supplémentaire attribué "
+                                    f"({doctor_nl_counts[doctor.name]['total']}/{min_nlw})")
+                        else:
+                            break
+
+            # Phase 3: Distribution du reste dans la limite des maximums
+            logger.info("\nPHASE 3: Distribution complémentaire")
             while any(len(slots) > 0 for slots in available_slots.values()):
                 random.shuffle(all_doctors)
                 assigned = False
@@ -1554,7 +1641,8 @@ class PlanningGenerator:
                     if current_count >= max_allowed:
                         continue
 
-                    nl_type = self._distribute_nl_type_randomly(
+                    # Choisir le type de NL à distribuer en fonction de l'équilibre actuel
+                    nl_type = self._distribute_nl_type_balanced(
                         doctor, 
                         available_slots,
                         doctor_nl_counts[doctor.name]
@@ -1581,6 +1669,7 @@ class PlanningGenerator:
                         break
 
                 if not assigned:
+                    logger.info("Aucune attribution possible, fin de la distribution")
                     break
 
             # Log des résultats finaux
@@ -1589,10 +1678,10 @@ class PlanningGenerator:
             for doctor in sorted(all_doctors, key=lambda x: x.name):
                 counts = doctor_nl_counts[doctor.name]
                 logger.info(f"\n{doctor.name} ({doctor.half_parts} demi-parts):")
-                logger.info(f"NLv: {counts['NLv']}")
+                logger.info(f"NLv: {counts['NLv']} (minimum requis: {counts['nlv_min']})")
                 logger.info(f"NLs: {counts['NLs']}")
                 logger.info(f"NLd: {counts['NLd']}")
-                logger.info(f"Total: {counts['total']}")
+                logger.info(f"Total: {counts['total']} (min: {counts['min']}, max: {counts['max']})")
 
             return True
 
@@ -1750,49 +1839,51 @@ class PlanningGenerator:
             logger.info(f"Total: {total_assigned}/{total_quota} ({completion_rate:.1f}%)")
 
     
-    def _distribute_nl_type_randomly(self, doctor, available_slots, nl_counts):
+    def _distribute_nl_type_balanced(self, doctor, available_slots, nl_counts):
         """
-        Distribue les NL de manière aléatoire mais équilibrée
+        Choisit le type de NL à distribuer pour assurer un équilibre.
+        Intègre une priorité pour NLv si le médecin en a moins que sa cible idéale.
+        
+        Returns:
+            str or None: Le type de NL à distribuer ou None si aucun n'est disponible
         """
-        # Calculer les ratios actuels de chaque type de NL
-        total_nl = sum(nl_counts.values())
-        if total_nl == 0:
-            # Premier NL : choix complètement aléatoire
-            return random.choice(list(available_slots.keys()))
-        
-        # Calculer les ratios idéaux (environ 1/3 de chaque)
-        ideal_ratio = 1/3
-        
-        # Calculer les écarts au ratio idéal
-        ratios = {
-            nl_type: count/total_nl if total_nl > 0 else 0 
-            for nl_type, count in nl_counts.items()
-        }
-        deviations = {
-            nl_type: ideal_ratio - ratio
-            for nl_type, ratio in ratios.items()
-        }
-        
-        # Ajouter un facteur aléatoire aux déviations
-        random_factor = 0.2  # Facteur d'aléatoire (0.0 à 1.0)
-        weighted_deviations = {
-            nl_type: dev + (random.random() * random_factor)
-            for nl_type, dev in deviations.items()
-        }
-        
         # Filtrer les types de NL disponibles
         available_types = [nl_type for nl_type, slots in available_slots.items() if slots]
-        
         if not available_types:
             return None
+            
+        # Vérifier s'il y a encore des NLv à distribuer et si le médecin est sous sa cible
+        if "NLv" in available_types and nl_counts.get("NLv", 0) < nl_counts.get("nlv_min", 0):
+            return "NLv"
         
-        # Choisir le type avec la plus grande déviation positive + facteur aléatoire
-        chosen_type = max(
-            available_types,
-            key=lambda x: weighted_deviations[x]
-        )
+        # Calculer les ratios actuels pour les différents types
+        total_nl = nl_counts.get("total", 0)
+        if total_nl == 0:
+            # Premier NL: priorité à NLv si disponible, sinon aléatoire
+            return "NLv" if "NLv" in available_types else random.choice(available_types)
         
-        return chosen_type
+        # Calculer les proportions actuelles
+        proportions = {
+            nl_type: nl_counts.get(nl_type, 0) / total_nl
+            for nl_type in ["NLv", "NLs", "NLd"]
+        }
+        
+        # Calculer les proportions idéales
+        ideal_proportions = {
+            "NLv": 0.34,  # Légèrement augmenté pour favoriser NLv
+            "NLs": 0.33,
+            "NLd": 0.33
+        }
+        
+        # Calculer les écarts et ajouter un facteur aléatoire
+        random_factor = 0.2
+        weighted_deviations = {
+            nl_type: (ideal_proportions[nl_type] - proportions.get(nl_type, 0)) + (random.random() * random_factor)
+            for nl_type in available_types
+        }
+        
+        # Retourner le type avec la plus grande déviation positive + facteur aléatoire
+        return max(available_types, key=lambda x: weighted_deviations[x])
     
     def _log_doctor_nl_distribution(self, doctor_name: str, counts: Dict):
         """Affiche la distribution actuelle des NL pour un médecin"""

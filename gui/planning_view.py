@@ -430,6 +430,22 @@ class PlanningViewWidget(QWidget):
                 self.weekend_validated = True
                 self.planning.weekend_validated = True
                 
+                # AJOUT: S'assurer que les post-attributions sont correctement enregistrées
+                if hasattr(self.main_window, 'post_attribution_handler'):
+                    self.main_window.post_attribution_handler.clean_and_restore_post_attributions()
+                    
+                    # Suppression et recréation des slots pour éviter les duplications
+                    if hasattr(self.planning, 'days'):
+                        for day in self.planning.days:
+                            slots_to_keep = []
+                            for slot in day.slots:
+                                if not hasattr(slot, 'is_post_attribution') or not slot.is_post_attribution:
+                                    slots_to_keep.append(slot)
+                            day.slots = slots_to_keep
+                    
+                    # Restauration contrôlée des post-attributions
+                    self.main_window.post_attribution_handler._restore_slots_in_planning()
+                
                 # Update UI to reflect weekday generation mode
                 self.generate_button.setText("Générer planning semaine")
                 self.validate_weekends_button.setEnabled(False)
@@ -445,10 +461,6 @@ class PlanningViewWidget(QWidget):
                 # Sauvegarder l'état
                 self.main_window.planning_management_tab.save_planning()
                 
-                # Charger les post-attributions après la validation des weekends
-                if hasattr(self.main_window, 'load_post_attributions'):
-                    self.main_window.load_post_attributions()
-                
                 # Notify user
                 QMessageBox.information(
                     self, 
@@ -462,6 +474,7 @@ class PlanningViewWidget(QWidget):
                 "Aucun planning n'a été généré. Veuillez d'abord générer un planning.")
 
 
+
     def generate_weekday_planning(self):
         if self.weekend_validated:
             # Appeler la méthode pour générer le planning de la semaine
@@ -469,13 +482,27 @@ class PlanningViewWidget(QWidget):
             if new_planning:
                 # Ensure the new planning keeps the weekend validation state
                 new_planning.weekend_validated = True
+                
+                # AJOUT: Nettoyer le planning des post-attributions pour éviter les duplications
+                if hasattr(self.main_window, 'post_attribution_handler'):
+                    self.main_window.post_attribution_handler.clean_and_restore_post_attributions()
+                    
+                    # Supprimer les slots post-attribués du nouveau planning
+                    for day in new_planning.days:
+                        slots_to_keep = []
+                        for slot in day.slots:
+                            if not hasattr(slot, 'is_post_attribution') or not slot.is_post_attribution:
+                                slots_to_keep.append(slot)
+                        day.slots = slots_to_keep
+                
+                # Mettre à jour le planning et l'interface
                 self.planning = new_planning
                 self.update_table()
                 
-                # Charger les post-attributions après la génération du planning de semaine
-                if hasattr(self.main_window, 'load_post_attributions'):
-                    self.main_window.load_post_attributions()
-                    
+                # AJOUT: Restaurer les post-attributions sans duplication
+                if hasattr(self.main_window, 'post_attribution_handler'):
+                    self.main_window.post_attribution_handler._restore_slots_in_planning()
+                
                 self.main_window.update_data()
                 QMessageBox.information(self, "Génération terminée", "Le planning de la semaine a été généré avec succès.")
             else:
