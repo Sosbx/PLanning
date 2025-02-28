@@ -9,19 +9,19 @@ def setup_logger():
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
-    # Format pour les logs
+    # Format pour les logs - plus concis
     formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        '%(asctime)s [%(levelname)s] %(message)s'
     )
 
-    # Handler pour le fichier
+    # Handler pour le fichier - taille réduite, moins de backups
     file_handler = RotatingFileHandler(
         'app.log',
-        maxBytes=10485760,  # 10MB
-        backupCount=5,
+        maxBytes=5242880,  # 5MB
+        backupCount=3,
         encoding='utf-8'
     )
-    file_handler.setLevel(logging.DEBUG)
+    file_handler.setLevel(logging.INFO)  # Niveau augmenté à INFO
     file_handler.setFormatter(formatter)
 
     # Handler pour la console

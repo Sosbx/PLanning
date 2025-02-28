@@ -71,7 +71,7 @@ class TimeSlot:
     abbreviation: str
     assignee: str = None
     is_pre_attributed: bool = False  # Nouveau champ avec valeur par défaut False
-
+    
 class DesiderataPeriod(Enum):
     MORNING = 1
     AFTERNOON = 2
@@ -106,49 +106,47 @@ class Desiderata:
         return f"Desiderata(start_date={self.start_date}, end_date={self.end_date}, type='{self.type}', period={self.period})"
 
     def overlaps_with_slot(self, slot: 'TimeSlot') -> bool:
+        """
+        Vérifie si un desiderata chevauche un slot, avec simplification pour CT
+        """
         if self.start_date <= slot.start_time.date() <= self.end_date:
+            # Si c'est un poste CT, toujours le considérer comme après-midi (période 2)
             if slot.abbreviation == "CT":
-                # Pour CT, vérifier si le desiderata couvre soit le matin soit l'après-midi
-                return self.period in [1, 2]  # 1 pour matin, 2 pour après-midi
-            else:
-                slot_period = self.get_slot_period(slot)
-                return self.period == slot_period
+                return self.period == 2
+            
+            # Sinon, utiliser la méthode normale
+            slot_period = self.get_slot_period(slot)
+            return self.period == slot_period
         return False
 
     @staticmethod
     def get_slot_period(slot: 'TimeSlot') -> int:
+        """
+        Détermine la période d'un slot (1: matin, 2: après-midi, 3: soir/nuit)
+        Simplifie le traitement de CT en l'attribuant toujours à l'après-midi
+        """
+        # Si c'est un poste CT, toujours le considérer comme après-midi
         if slot.abbreviation == "CT":
-            # Pour CT, calculer le nombre d'heures dans chaque période
-            start_hour = slot.start_time.hour
-            end_hour = slot.end_time.hour
-            
-            # Calculer les heures dans chaque période
-            morning_hours = 0
-            afternoon_hours = 0
-            
-            # Pour chaque heure du créneau
-            current_hour = start_hour
-            while current_hour <= end_hour:
-                if 7 <= current_hour < 13:
-                    morning_hours += 1
-                elif 13 <= current_hour < 18:
-                    afternoon_hours += 1
-                current_hour += 1
-            
-            # Si égalité ou plus d'heures l'après-midi, attribuer à l'après-midi
-            if afternoon_hours >= morning_hours:
-                return 2  # Après-midi
-            else:
-                return 1  # Matin
-                
-        # Pour les autres postes
-        start_hour = slot.start_time.hour
+            return 2  # Toujours considéré comme période après-midi
+        
+        # Pour les autres postes, vérifier l'heure de début
+        start_time = slot.start_time
+        if hasattr(start_time, 'hour'):  # Vérification plus sûre
+            start_hour = start_time.hour
+        else:
+            # Gérer le cas où start_time n'est pas un objet time/datetime
+            # Si c'est une chaîne ou un autre format, essayer de l'interpréter
+            # Pour cet exemple, on suppose que ce cas ne devrait pas se produire
+            logger.warning(f"Type inattendu pour start_time: {type(start_time)}")
+            return 2  # Valeur par défaut pour éviter les erreurs
+        
+        # Définition des périodes
         if 7 <= start_hour < 13:
             return 1  # Matin
         elif 13 <= start_hour < 18:
             return 2  # Après-midi
         else:
-            return 3  # Soir/Nuit
+            return 3  # Soir/nuit
         
 @dataclass
 class Doctor:
@@ -325,6 +323,13 @@ class Planning:
         self.cats: List[CAT] = []  # Liste des CATs
         self.filename = filename  # Nom du fichier source
         self.weekend_validated = False  # Flag pour suivre la validation des weekends
+        
+        # Nouveaux attributs pour les phases de génération
+        self.nl_distributed = False  # Flag pour suivre la distribution des NL
+        self.nl_validated = False  # Flag pour suivre la validation des NL
+        self.nam_distributed = False  # Flag pour suivre la distribution des NA/NM
+        self.nam_validated = False  # Flag pour suivre la validation des NA/NM
+        self.combinations_distributed = False  # Flag pour suivre la distribution des combinaisons
 
     def set_pre_analysis_results(self, results):
         self.pre_analysis_results = results

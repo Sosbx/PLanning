@@ -439,18 +439,18 @@ class PlanningConstraints:
     def _get_slot_period(self, slot: TimeSlot) -> int:
         """
         Détermine la période d'un slot (1: matin, 2: après-midi, 3: soir/nuit)
-        
-        Args:
-            slot: Le TimeSlot à analyser
-            
-        Returns:
-            int: période (1, 2 ou 3)
         """
-        # Convertir en time si nécessaire
-        if isinstance(slot.start_time, datetime):
-            start_hour = slot.start_time.hour
+        # Si c'est un poste CT, toujours le considérer comme après-midi
+        if slot.abbreviation == "CT":
+            return 2  # Toujours considéré comme période après-midi
+        
+        # Pour les autres postes, vérifier l'heure de début
+        start_time = slot.start_time
+        if hasattr(start_time, 'hour'):  # Vérification plus sûre
+            start_hour = start_time.hour
         else:
-            start_hour = slot.start_time.hour
+            logger.warning(f"Type inattendu pour start_time: {type(start_time)}")
+            return 2  # Valeur par défaut pour éviter les erreurs
         
         # Définition des périodes
         if 7 <= start_hour < 13:

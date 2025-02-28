@@ -4235,7 +4235,7 @@ class WeekdayGenerator:
             return "XM"  # Consultation matin à partir de 9h
         elif post_type in ["MM", "SM", "RM"]:
             return "XmM"  # Consultation matin à partir de 7h
-        elif post_type in ["CA", "HA", "SA", "RA", "CT"]:
+        elif post_type in ["CA", "HA", "SA", "RA", "CT"]:  # CT est déjà correctement dans le groupe XA
             return "XA"  # Consultation après-midi
         elif post_type in ["CS", "HS", "SS", "RS"]:
             return "XS"  # Consultation soir

@@ -41,7 +41,13 @@ class PlanningGenerator:
         self.doctors = doctors
         self.cats = cats
         self.post_configuration = post_configuration
+        
+        # Normalisation des pré-attributions (gérer le cas où c'est un tuple)
+        if pre_attributions is not None:
+            if isinstance(pre_attributions, tuple):
+                pre_attributions, _ = pre_attributions
         self.pre_attributions = pre_attributions if pre_attributions is not None else {}
+        
         self.constraints = PlanningConstraints()
         self.cal = France()
         self.post_manager = PostManager()
@@ -426,10 +432,13 @@ class PlanningGenerator:
         if not zero_quota_posts: 
             return
 
+        # Récupérer les pré-attributions de manière sécurisée
+        pre_attributions = self._get_pre_attributions()
+        
         # Regrouper les pré-attributions par poste et par personne pour éviter les doublons
         attributions_by_post_person = {}
         
-        for person_name, attributions in self.pre_attributions.items():
+        for person_name, attributions in pre_attributions.items():
             for (attr_date, period), post_type in attributions.items():
                 # Ne traiter que les pré-attributions pour cette date et pour les postes à quota zéro
                 if attr_date != day.date or post_type not in zero_quota_posts:
@@ -516,6 +525,29 @@ class PlanningGenerator:
                         )
                         day.slots.append(new_slot)
                         logger.info(f"Nouveau slot créé avec horaires par défaut pour {post_type} le {day.date} - Assigné à {person_name}")
+
+    def _get_pre_attributions(self):
+        """
+        Récupère les pré-attributions de manière sécurisée.
+        Gère les cas où pre_attributions est un tuple ou None.
+        
+        Returns:
+            Dict: Dictionnaire des pré-attributions
+        """
+        if not hasattr(self, 'pre_attributions'):
+            return {}
+            
+        pre_attributions = self.pre_attributions
+        
+        # Si pre_attributions est un tuple, extraire le dictionnaire
+        if isinstance(pre_attributions, tuple):
+            pre_attributions, _ = pre_attributions
+        
+        # S'assurer que pre_attributions est un dictionnaire
+        if pre_attributions is None:
+            pre_attributions = {}
+                
+        return pre_attributions
 
 
     def _verify_zero_quota_assignments(self, planning: Planning) -> bool:
@@ -713,7 +745,10 @@ class PlanningGenerator:
             logger.info("\nAPPLICATION DES PRÉ-ATTRIBUTIONS")
             logger.info("=" * 80)
             
-            self.pre_attributions = pre_attributions.copy()
+            # Récupérer les pré-attributions de manière sécurisée
+            pre_attributions = self._get_pre_attributions()
+            self.pre_attributions = pre_attributions  # Mettre à jour l'attribut avec la version sécurisée
+            
             success = True
             
             # Obtenir la liste de tous les jours pour indexation rapide
@@ -732,7 +767,7 @@ class PlanningGenerator:
             
             # Trier les pré-attributions par date
             all_attributions = []
-            for person_name, attributions in self.pre_attributions.items():
+            for person_name, attributions in pre_attributions.items():
                 person = next((p for p in self.doctors + self.cats if p.name == person_name), None)
                 if not person:
                     logger.warning(f"Personne non trouvée pour les pré-attributions : {person_name}")
@@ -1032,14 +1067,49 @@ class PlanningGenerator:
             group = self._get_post_group(post_type, date)
             if group:
                 counter["weekday_groups"][group] = counter["weekday_groups"].get(group, 0) + 1
+    
+  
+
+    def reset_distribution_slots(self, planning, slot_types=None):
+        """
+        Réinitialise les slots de types spécifiques dans le planning pour permettre une redistribution.
+        
+        Args:
+            planning: Le planning à mettre à jour
+            slot_types: Liste des types de slots à réinitialiser ou None pour tous les types
+        """
+        if not planning or not hasattr(planning, 'days'):
+            return False
+        
+        for day in planning.days:
+            if not (day.is_weekend or day.is_holiday_or_bridge):
+                continue
+                
+            for slot in day.slots:
+                # Ne pas réinitialiser les slots pré-attribués
+                if getattr(slot, 'is_pre_attributed', False):
+                    continue
+                    
+                # Réinitialiser les slots des types spécifiés
+                if slot_types is None or slot.abbreviation in slot_types:
+                    slot.assignee = None
+                    
+        return True
 
     def generate_planning(self, start_date: date, end_date: date) -> Optional[Planning]:
-        """Génération du planning weekend uniquement"""
+        """
+        Génération initiale du planning weekend sans distribution automatique.
+        Initialise le planning et applique les pré-attributions uniquement.
+        """
         try:
             logger.info("=" * 80)
-            logger.info(f"GÉNÉRATION DU PLANNING WEEKEND: {start_date} - {end_date}")
+            logger.info(f"INITIALISATION DU PLANNING: {start_date} - {end_date}")
             logger.info("=" * 80)
             
+            # Import ici pour éviter les imports circulaires si nécessaire
+            from core.Constantes.models import Planning
+
+            # Créer le planning
             planning = Planning(start_date, end_date)
             
             # 1. Initialiser les jours du planning
@@ -1051,27 +1121,22 @@ class PlanningGenerator:
             pre_analysis_results = pre_analyzer.analyze()
             planning.set_pre_analysis_results(pre_analysis_results)
             
-            # 3. Appliquer les pré-attributions - avec planning comme paramètre
-            pre_attributions_success = self._apply_pre_attributions(self.pre_attributions, planning)
+            # 3. Récupérer les pré-attributions de manière sécurisée
+            pre_attributions = self._get_pre_attributions()
+            
+            # 4. Appliquer les pré-attributions
+            pre_attributions_success = self._apply_pre_attributions(pre_attributions, planning)
             if not pre_attributions_success:
                 logger.warning("Certaines pré-attributions n'ont pas pu être appliquées")
-                # Continuer malgré les erreurs, mais les slots non attribués seront disponibles
-                # pour la distribution normale
             
-            # 4. Mettre à jour la pré-analyse en tenant compte des pré-attributions
-            # Cela permet d'ajuster les quotas restants
+            # 5. Mettre à jour la pré-analyse en tenant compte des pré-attributions
             pre_analysis_results = pre_analyzer.analyze()
             planning.set_pre_analysis_results(pre_analysis_results)
-            
-            # 5. Distribution des weekend uniquement
-            weekend_success = self.distribute_weekend(planning)
-            if not weekend_success:
-                logger.warning("Distribution des weekend incomplète")
             
             return planning
             
         except Exception as e:
-            logger.error(f"Erreur lors de la génération du planning weekend: {e}")
+            logger.error(f"Erreur lors de l'initialisation du planning: {e}")
             return None
 
 
@@ -1176,49 +1241,143 @@ class PlanningGenerator:
 
             
     def distribute_weekend(self, planning: Planning) -> bool:
-        """Distribution complète des postes de weekend"""
-        pre_analysis = planning.pre_analysis_results
-        
-        try:
-            # 1. Distribution des NL weekend
-            logger.info("\nDISTRIBUTION NL WEEKEND")
-            nl_success = self.distribute_nlw(planning, pre_analysis)
-            if not nl_success:
-                logger.warning("Distribution des NL weekend incomplète")
-            
-            # 2. Distribution des NAMw - continuer même si incomplète
-            logger.info("\nDISTRIBUTION NAMw")
-            nam_success = self.distribute_namw(planning, pre_analysis)
-            if not nam_success:
-                logger.warning("Distribution NAMw incomplète - continuation avec postes restants")
-            
-            # 3. Distribution des combinaisons aux CAT
-            logger.info("\nDISTRIBUTION COMBINAISONS CAT WEEKEND")
-            cat_success = self._distribute_cat_weekend_combinations(planning)
-            if not cat_success:
-                logger.warning("Distribution des combinaisons CAT weekend incomplète")
-            
-            # 4. Distribution des combinaisons aux médecins
-            logger.info("\nDISTRIBUTION COMBINAISONS MÉDECINS WEEKEND")
-            med_success = self._distribute_doctor_weekend_combinations(planning)
-            if not med_success:
-                logger.warning("Distribution des combinaisons médecins weekend incomplète")
-            
-            # 5. Distribution des postes restants
-            logger.info("\nDISTRIBUTION DES POSTES RESTANTS WEEKEND")
-            remaining_success = self.distribute_remaining_weekend_posts(planning)
-            if not remaining_success:
-                logger.warning("Distribution des postes restants weekend incomplète")
-            
-           
-            
-            # Retourner True pour continuer le processus
+        """
+        Méthode conservée pour la compatibilité mais ne sera plus utilisée pour la distribution
+        automatique complète. Utiliser plutôt les méthodes spécifiques à chaque phase.
+        """
+        # Si on utilise cette méthode, on vérifie si les validations ont déjà été effectuées
+        if hasattr(planning, 'weekend_validated') and planning.weekend_validated:
+            logger.info("Les weekends sont déjà validés")
             return True
+        
+        # Pour la compatibilité avec l'ancien code, on pourrait distribuer tout si nécessaire
+        # Mais il est préférable d'utiliser les méthodes spécifiques à chaque phase
+        logger.warning("Cette méthode est dépréciée. Utilisez plutôt les méthodes de distribution par phase.")
+        return True
+
+    def distribute_nlw_phase(self, planning: Planning) -> bool:
+        """
+        Distribution spécifique des NL weekend.
+        Cette méthode peut être appelée directement depuis le thread PlanningPhaseGenerationThread.
+        
+        Args:
+            planning: Le planning à mettre à jour
             
+        Returns:
+            bool: True si la distribution est réussie
+        """
+        try:
+            logger.info("\nDISTRIBUTION DES NL WEEKEND - PHASE 1")
+            logger.info("=" * 80)
+            
+            # Vérifier si la distribution a déjà été effectuée
+            if hasattr(planning, 'nl_distributed') and planning.nl_distributed:
+                logger.info("Les NL ont déjà été distribuées")
+                return True
+                
+            # Exécuter la distribution des NL
+            if self.distribute_nlw(planning, planning.pre_analysis_results):
+                # Marquer la phase comme distribuée
+                planning.nl_distributed = True
+                return True
+            else:
+                logger.error("Échec de la distribution des NL weekend")
+                return False
+        
         except Exception as e:
-            logger.error(f"Erreur dans la distribution weekend: {e}", exc_info=True)
+            logger.error(f"Erreur dans la phase de distribution NL: {e}")
             return False
 
+    def distribute_namw_phase(self, planning: Planning) -> bool:
+        """
+        Distribution spécifique des NA/NM weekend.
+        Cette méthode peut être appelée directement depuis le thread PlanningPhaseGenerationThread.
+        
+        Args:
+            planning: Le planning à mettre à jour
+            
+        Returns:
+            bool: True si la distribution est réussie
+        """
+        try:
+            logger.info("\nDISTRIBUTION DES NA/NM WEEKEND - PHASE 2")
+            logger.info("=" * 80)
+            
+            # Vérifier si la phase précédente a été validée
+            if not hasattr(planning, 'nl_validated') or not planning.nl_validated:
+                logger.error("Les NL doivent être validés avant de distribuer les NA/NM")
+                return False
+                
+            # Vérifier si la distribution a déjà été effectuée
+            if hasattr(planning, 'nam_distributed') and planning.nam_distributed:
+                logger.info("Les NA/NM ont déjà été distribuées")
+                return True
+                
+            # Exécuter la distribution des NA/NM
+            if self.distribute_namw(planning, planning.pre_analysis_results):
+                # Marquer la phase comme distribuée
+                planning.nam_distributed = True
+                return True
+            else:
+                logger.error("Échec de la distribution des NA/NM weekend")
+                return False
+        
+        except Exception as e:
+            logger.error(f"Erreur dans la phase de distribution NA/NM: {e}")
+            return False
+
+    def distribute_combinations_phase(self, planning: Planning) -> bool:
+        """
+        Distribution spécifique des combinaisons et postes restants weekend.
+        Cette méthode peut être appelée directement depuis le thread PlanningPhaseGenerationThread.
+        
+        Args:
+            planning: Le planning à mettre à jour
+            
+        Returns:
+            bool: True si la distribution est réussie
+        """
+        try:
+            logger.info("\nDISTRIBUTION DES COMBINAISONS ET POSTES RESTANTS - PHASE 3")
+            logger.info("=" * 80)
+            
+            # Vérifier si la phase précédente a été validée
+            if not hasattr(planning, 'nam_validated') or not planning.nam_validated:
+                logger.error("Les NA/NM doivent être validés avant de distribuer les combinaisons")
+                return False
+                
+            # Vérifier si la distribution a déjà été effectuée
+            if hasattr(planning, 'combinations_distributed') and planning.combinations_distributed:
+                logger.info("Les combinaisons ont déjà été distribuées")
+                return True
+                
+            # 1. Distribuer les combinaisons aux CAT
+            logger.info("\nDISTRIBUTION DES COMBINAISONS AUX CAT")
+            cat_success = self._distribute_cat_weekend_combinations(planning)
+            if not cat_success:
+                logger.warning("Distribution des combinaisons CAT incomplète")
+                
+            # 2. Distribuer les combinaisons aux médecins
+            logger.info("\nDISTRIBUTION DES COMBINAISONS AUX MÉDECINS")
+            med_success = self._distribute_doctor_weekend_combinations(planning)
+            if not med_success:
+                logger.warning("Distribution des combinaisons médecins incomplète")
+                
+            # 3. Distribuer les postes restants
+            logger.info("\nDISTRIBUTION DES POSTES RESTANTS")
+            remaining_success = self.distribute_remaining_weekend_posts(planning)
+            if not remaining_success:
+                logger.warning("Distribution des postes restants incomplète")
+                
+            # Même en cas de distribution partielle, on marque comme distribuée
+            planning.combinations_distributed = True
+            
+            # Si toutes les distributions ont réussi
+            return cat_success and med_success and remaining_success
+        
+        except Exception as e:
+            logger.error(f"Erreur dans la phase de distribution des combinaisons: {e}")
+            return False
    
     
 
@@ -5667,7 +5826,6 @@ class PlanningGenerator:
             # 2. Vérifier les contraintes de planning.py
             return all([
                 self.constraints.check_nl_constraint(doctor, date, slot, planning),
-                self.constraints.check_nm_constraint(doctor, date, slot, planning),
                 self.constraints.check_nm_na_constraint(doctor, date, slot, planning),
                 self.constraints.check_max_posts_per_day(doctor, date, slot, planning),
                 self.constraints.check_morning_after_night_shifts(doctor, date, slot, planning),
@@ -5728,7 +5886,6 @@ class PlanningGenerator:
                             if not hasattr(d, 'priority') or d.priority == "primary"]
                 can_assign = all([
                     self.constraints.check_nl_constraint(cat, date, slot, planning),
-                    self.constraints.check_nm_constraint(cat, date, slot, planning),
                     self.constraints.check_nm_na_constraint(cat, date, slot, planning),
                     self.constraints.check_time_overlap(cat, date, slot, planning),
                     self.constraints.check_max_posts_per_day(cat, date, slot, planning)

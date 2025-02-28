@@ -22,8 +22,22 @@ class PreAttributionWidget(QWidget):
         self.end_date = end_date
         self.main_window = main_window
         self.cal = France()
-        # Charger les pré-attributions existantes
-        self.pre_attributions = self.main_window.data_persistence.load_pre_attributions() or {}
+        
+        # Charger les pré-attributions existantes et l'historique
+        result = self.main_window.data_persistence.load_pre_attributions(load_history=True)
+        if isinstance(result, tuple):
+            self.pre_attributions, self.history = result
+        else:
+            self.pre_attributions = result
+            self.history = []
+        
+        # S'assurer que pre_attributions est un dictionnaire et non un tuple
+        if isinstance(self.pre_attributions, tuple):
+            self.pre_attributions, _ = self.pre_attributions
+        
+        # S'assurer que pre_attributions est initialisé comme un dictionnaire vide si None
+        self.pre_attributions = self.pre_attributions or {}
+        
         self.custom_posts = self.main_window.data_persistence.load_custom_posts()
         self.init_ui()
         
@@ -38,14 +52,6 @@ class PreAttributionWidget(QWidget):
         # Initialize display for first person if any
         if len(self.doctors + self.cats) > 0:
             self.person_selector.setCurrentIndex(0)
-
-    def refresh_custom_posts(self):
-        """Refresh custom posts and update UI"""
-        self.custom_posts = self.main_window.data_persistence.load_custom_posts()
-        current_person = self.get_current_person()
-        if current_person:
-            self.planning_table.update_display(current_person)
-            self.post_list.update_for_person(current_person)
 
     def init_ui(self):
         """Initialise l'interface utilisateur"""
@@ -143,6 +149,15 @@ class PreAttributionWidget(QWidget):
                 if current_person:
                     self.planning_table.update_display(current_person)
 
+    def _get_pre_attributions(self):
+        """Récupère les pré-attributions de manière sécurisée"""
+        if hasattr(self, 'pre_attributions'):
+            if isinstance(self.pre_attributions, tuple):
+                pre_attributions, _ = self.pre_attributions
+                return pre_attributions or {}
+            return self.pre_attributions or {}
+        return {}
+    
     def on_person_changed(self):
         """Gère le changement de personne sélectionnée"""
         current_person = self.get_current_person()
@@ -156,12 +171,44 @@ class PreAttributionWidget(QWidget):
         return next((p for p in self.doctors + self.cats if p.name == name), None)
         
     def save_pre_attributions(self):
-        """Sauvegarde les pré-attributions actuelles"""
+        """Sauvegarde les pré-attributions actuelles et leur historique"""
         try:
-            self.main_window.data_persistence.save_pre_attributions(self.pre_attributions)
+            # Récupérer les pré-attributions de manière sécurisée
+            pre_attributions = self._get_pre_attributions()
+            
+            # Récupérer l'historique
+            history = self.history_widget.history if hasattr(self.history_widget, 'history') else []
+            
+            # Sauvegarder les données
+            self.main_window.data_persistence.save_pre_attributions(
+                pre_attributions,
+                history
+            )
+            
+            # Rafraîchir l'affichage après la sauvegarde
+            if hasattr(self, 'history_widget'):
+                self.history_widget.refresh_display()
+                
             QMessageBox.information(self, "Succès", "Les pré-attributions ont été sauvegardées avec succès.")
         except Exception as e:
             QMessageBox.critical(self, "Erreur", f"Erreur lors de la sauvegarde des pré-attributions : {str(e)}")
+
+    def refresh_custom_posts(self):
+        """Actualise les postes personnalisés et met à jour l'affichage"""
+        # Recharger les postes personnalisés depuis la persistance des données
+        self.custom_posts = self.main_window.data_persistence.load_custom_posts()
+        
+        # Mettre à jour l'affichage pour la personne actuellement sélectionnée
+        current_person = self.get_current_person()
+        if current_person:
+            # Mettre à jour le tableau de planning
+            self.planning_table.update_display(current_person)
+            
+            # Mettre à jour la liste des postes disponibles
+            self.post_list.update_for_person(current_person)
+            
+        # Journaliser l'actualisation des postes personnalisés
+        print("Postes personnalisés actualisés dans l'onglet de pré-attribution")
     
     def reset_pre_attributions(self):
         """Réinitialise toutes les pré-attributions"""
@@ -174,7 +221,10 @@ class PreAttributionWidget(QWidget):
         )
         
         if reply == QMessageBox.StandardButton.Yes:
-            self.pre_attributions.clear()
+            # Réinitialiser les pré-attributions avec un dictionnaire vide
+            self.pre_attributions = {}
+            
+            # Mettre à jour l'affichage
             current_person = self.get_current_person()
             if current_person:
                 self.planning_table.update_display(current_person)
@@ -200,6 +250,16 @@ class AvailablePostList(QTableWidget):
         super().__init__()
         self.pre_attribution_widget = pre_attribution_widget
         self.init_ui()
+
+    def _get_pre_attributions(self):
+        """Récupère les pré-attributions de manière sécurisée"""
+        if hasattr(self, 'pre_attributions'):
+            if isinstance(self.pre_attributions, tuple):
+                pre_attributions, _ = self.pre_attributions
+                return pre_attributions or {}
+            return self.pre_attributions or {}
+        return {}
+
 
     def get_post_config(self, date, post_type):
         """Obtient la configuration d'un poste pour une date donnée"""
@@ -290,7 +350,7 @@ class AvailablePostList(QTableWidget):
             
             # Obtenir les attributions existantes pour ce poste
             attributions = []
-            for person_name, person_attributions in self.pre_attribution_widget.pre_attributions.items():
+            for person_name, person_attributions in self._get_pre_attributions().items():
                 if (date, period) in person_attributions and person_attributions[(date, period)] == post_type:
                     attributions.append(person_name)
             
@@ -445,7 +505,7 @@ class AvailablePostList(QTableWidget):
         """Vérifie si un poste est déjà attribué en tenant compte du nombre maximum d'attributions"""
         # Compter le nombre d'attributions existantes pour ce poste
         attribution_count = 0
-        for person_attributions in self.pre_attribution_widget.pre_attributions.values():
+        for person_attributions in self._get_pre_attributions().values():
             if (date, period) in person_attributions:
                 if person_attributions[(date, period)] == post_type:
                     attribution_count += 1
@@ -676,6 +736,20 @@ class PreAttributionTable(QTableWidget):
             
         return warnings
 
+    def _get_pre_attributions(self):
+        """Récupère les pré-attributions de manière sécurisée"""
+        pre_attributions = self.pre_attribution_widget.pre_attributions
+        
+        # Si pre_attributions est un tuple, extraire le dictionnaire
+        if isinstance(pre_attributions, tuple):
+            pre_attributions, _ = pre_attributions
+        
+        # S'assurer que pre_attributions est un dictionnaire
+        if pre_attributions is None:
+            pre_attributions = {}
+            
+        return pre_attributions
+
     # Nouvelle méthode à ajouter pour déterminer la période à partir d'un slot
     def _get_period_from_slot(self, slot):
         """
@@ -781,8 +855,10 @@ class PreAttributionTable(QTableWidget):
             temp_planning.days.append(day)
             current += timedelta(days=1)
         
-        # Ajouter toutes les pré-attributions existantes
-        for person_name, attributions in self.pre_attribution_widget.pre_attributions.items():
+        # Ajouter toutes les pré-attributions existantes en utilisant _get_pre_attributions
+        pre_attributions = self._get_pre_attributions()
+        
+        for person_name, attributions in pre_attributions.items():
             for (date, period), post_type in attributions.items():
                 if start_date <= date <= end_date:
                     slot = self._create_timeslot_for_post(post_type, date)
@@ -796,7 +872,8 @@ class PreAttributionTable(QTableWidget):
 
     def _check_pre_attribution_overlap(self, date, new_slot, current_person):
         """Vérifie uniquement les chevauchements avec d'autres pré-attributions"""
-        attributions = self.pre_attribution_widget.pre_attributions.get(current_person.name, {})
+        # Utiliser la méthode sécurisée _get_pre_attributions
+        attributions = self._get_pre_attributions().get(current_person.name, {})
         
         for (other_date, other_period), other_post in attributions.items():
             if other_date == date:  # Ne vérifier que le même jour
@@ -878,8 +955,10 @@ class PreAttributionTable(QTableWidget):
         if not current_person:
             return
             
-        # Vérifier si une attribution existe pour cette cellule
-        attributions = self.pre_attribution_widget.pre_attributions.get(current_person.name, {})
+        # Vérifier si une attribution existe pour cette cellule en utilisant _get_pre_attributions
+        pre_attributions = self._get_pre_attributions()
+        attributions = pre_attributions.get(current_person.name, {})
+        
         if (date, period) in attributions:
             menu = QMenu(self)
             delete_action = menu.addAction("Supprimer l'attribution")
@@ -892,11 +971,17 @@ class PreAttributionTable(QTableWidget):
         """Attribue un poste à une cellule"""
         current_person = self.pre_attribution_widget.get_current_person()
         if current_person:
-            if current_person.name not in self.pre_attribution_widget.pre_attributions:
-                self.pre_attribution_widget.pre_attributions[current_person.name] = {}
+            # Utiliser _get_pre_attributions pour récupérer et modifier de manière sécurisée
+            pre_attributions = self._get_pre_attributions()
+            
+            if current_person.name not in pre_attributions:
+                pre_attributions[current_person.name] = {}
             
             # Stocker l'attribution
-            self.pre_attribution_widget.pre_attributions[current_person.name][(date, period)] = post_type
+            pre_attributions[current_person.name][(date, period)] = post_type
+            
+            # Mettre à jour pre_attributions dans le widget parent
+            self.pre_attribution_widget.pre_attributions = pre_attributions
             
             # Ajouter l'action à l'historique
             details = f"{current_person.name} - {post_type} - {date.strftime('%d/%m/%Y')} - Période {period}"
@@ -906,17 +991,24 @@ class PreAttributionTable(QTableWidget):
             self.update_display(current_person)
             self.pre_attribution_widget.post_list.update_for_period(date, period, current_person)
 
+    # Méthode à modifier dans PreAttributionTable
     def delete_attribution(self, date, period, person):
         """Supprime une attribution existante"""
-        if person.name in self.pre_attribution_widget.pre_attributions:
-            attributions = self.pre_attribution_widget.pre_attributions[person.name]
+        # Utiliser _get_pre_attributions pour récupérer et modifier de manière sécurisée
+        pre_attributions = self._get_pre_attributions()
+        
+        if person.name in pre_attributions:
+            attributions = pre_attributions[person.name]
             if (date, period) in attributions:
                 # Récupérer le type de poste avant de le supprimer
                 post_type = attributions[(date, period)]
                 
                 del attributions[(date, period)]
                 if not attributions:
-                    del self.pre_attribution_widget.pre_attributions[person.name]
+                    del pre_attributions[person.name]
+                
+                # Mettre à jour pre_attributions dans le widget parent
+                self.pre_attribution_widget.pre_attributions = pre_attributions
                 
                 # Ajouter l'action à l'historique
                 details = f"{person.name} - {post_type} - {date.strftime('%d/%m/%Y')} - Période {period}"
@@ -925,7 +1017,6 @@ class PreAttributionTable(QTableWidget):
                 # Mettre à jour l'affichage
                 self.update_display(person)
                 self.pre_attribution_widget.post_list.update_for_period(date, period, person)
-
     def create_calendar(self):
         """Crée la structure du calendrier"""
         self.clear()
@@ -1073,7 +1164,8 @@ class PreAttributionTable(QTableWidget):
                 current_date += timedelta(days=1)
 
         # Affichage des pré-attributions par dessus les desiderata
-        attributions = self.pre_attribution_widget.pre_attributions.get(person.name, {})
+        # Utiliser la méthode sécurisée pour récupérer les pré-attributions
+        attributions = self._get_pre_attributions().get(person.name, {})
         for (d, p), post in attributions.items():
             row = d.day - 1
             month_col = (d.year - self.start_date.year) * 12 + d.month - self.start_date.month
@@ -1108,14 +1200,37 @@ class AttributionHistoryWidget(QTableWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.pre_attribution_widget = parent
-        self.history = []  # Liste des actions [(timestamp, type, details)]
+        
+        # Charger les pré-attributions et l'historique
+        result = self.pre_attribution_widget.main_window.data_persistence.load_pre_attributions(load_history=True)
+        if isinstance(result, tuple):
+            pre_attributions, self.history = result
+        else:
+            pre_attributions = result
+            self.history = []
+        
+        # S'assurer que history est une liste et non None
+        self.history = self.history or []
+        
+        # Convertir les pré-attributions existantes en entrées d'historique si elles n'y sont pas déjà
+        self._sync_pre_attributions_to_history(pre_attributions)
+        
         self.init_ui()
+        
+        # Afficher l'historique complet au démarrage
+        self.refresh_display()
 
     def init_ui(self):
         """Initialise l'interface de l'historique"""
         self.setColumnCount(3)
-        self.setHorizontalHeaderLabels(["Date/Heure", "Action", "Détails"])
+        self.setHorizontalHeaderLabels(["Date", "Garde", "Médecin"])
+        
+        # Enable sorting
+        self.setSortingEnabled(True)
+        
+        # Configure header and general properties
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self.horizontalHeader().setSectionsClickable(True)
         self.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.setAlternatingRowColors(True)
         
@@ -1131,6 +1246,15 @@ class AttributionHistoryWidget(QTableWidget):
             QTableWidget::item:selected {
                 background-color: """ + color_system.colors['table']['selected'].name() + """;
             }
+            QHeaderView::section {
+                background-color: """ + color_system.colors['container']['background'].name() + """;
+                padding: 5px;
+                border: none;
+                border-bottom: 1px solid """ + color_system.colors['container']['border'].name() + """;
+            }
+            QHeaderView::section:hover {
+                background-color: """ + color_system.colors['table']['selected'].name() + """;
+            }
         """)
 
     def add_action(self, action_type, details):
@@ -1138,46 +1262,149 @@ class AttributionHistoryWidget(QTableWidget):
         
         Args:
             action_type (str): Type d'action ('Attribution' ou 'Suppression')
-            details (str): Détails de l'action
+            details (str): Détails de l'action au format "nom_medecin - type_garde - date - période"
         """
-        # Ajouter l'action à l'historique
-        timestamp = datetime.now()
-        self.history.append((timestamp, action_type, details))
+        # Parser les détails
+        parts = details.split(" - ")
+        if len(parts) >= 4:
+            doctor_name = parts[0]
+            guard_type = parts[1]
+            date_str = parts[2]
+            
+            if action_type == "Suppression":
+                # Trouver et supprimer l'entrée correspondante dans l'historique
+                for i, (_, _, hist_details) in enumerate(self.history):
+                    hist_parts = hist_details.split(" - ")
+                    if (len(hist_parts) >= 4 and
+                        hist_parts[0] == doctor_name and
+                        hist_parts[1] == guard_type and
+                        hist_parts[2] == date_str):
+                        del self.history[i]
+                        break
+            else:
+                # Ajouter la nouvelle attribution à l'historique
+                timestamp = datetime.now()
+                self.history.append((timestamp, action_type, details))
+            
+            # Mettre à jour l'affichage
+            self.refresh_display()
+            
+            # Sauvegarder l'historique
+            self.pre_attribution_widget.main_window.data_persistence.save_pre_attributions(
+                self.pre_attribution_widget.pre_attributions,
+                self.history
+            )
+            
+    
+    def _sync_pre_attributions_to_history(self, pre_attributions):
+        """Synchronise les pré-attributions avec l'historique"""
+        from datetime import datetime
         
-        # Ajouter une nouvelle ligne au début du tableau
-        row = 0
-        self.insertRow(row)
+        # Créer un ensemble des attributions déjà dans l'historique
+        existing_entries = set()
+        for entry in self.history:
+            if isinstance(entry, tuple) and len(entry) >= 3:
+                _, _, details = entry
+                existing_entries.add(details)
         
-        # Timestamp
-        time_item = QTableWidgetItem(timestamp.strftime("%d/%m %H:%M"))
-        self.setItem(row, 0, time_item)
-        
-        # Type d'action avec code couleur
-        action_item = QTableWidgetItem(action_type)
-        if action_type == "Suppression":
-            color = color_system.colors['danger']
-        else:
-            color = color_system.colors['available']
-        
-        if isinstance(color, QColor):
-            action_item.setBackground(QBrush(color))
-        else:
-            # Fallback sur une couleur par défaut
-            action_item.setBackground(QBrush(QColor('#C28E8E' if action_type == "Suppression" else '#D1E6D6')))
-        self.setItem(row, 1, action_item)
-        
-        # Détails de l'action
-        details_item = QTableWidgetItem(details)
-        self.setItem(row, 2, details_item)
-        
-        # Limiter l'historique aux 50 dernières actions
-        if self.rowCount() > 50:
-            self.removeRow(self.rowCount() - 1)
-            self.history = self.history[:50]
-        
-        self.resizeColumnsToContents()
+        # Ajouter les pré-attributions qui ne sont pas dans l'historique
+        for person_name, attributions in pre_attributions.items():
+            for (date_obj, period), post_type in attributions.items():
+                details = f"{person_name} - {post_type} - {date_obj.strftime('%d/%m/%Y')} - Période {period}"
+                
+                if details not in existing_entries:
+                    # Ajouter à l'historique avec la date actuelle comme timestamp
+                    self.history.append((datetime.now(), "Attribution", details))
+                    existing_entries.add(details)
+
+    def refresh_display(self):
+        """Rafraîchit l'affichage de l'historique"""
+        try:
+            # Désactiver temporairement le tri
+            self.setSortingEnabled(False)
+            
+            # Effacer le tableau
+            self.setRowCount(0)
+            
+            # Trier l'historique par date (plus récent en premier)
+            sorted_history = sorted(
+                self.history,
+                key=lambda x: x[0] if hasattr(x[0], 'timestamp') else datetime.now().timestamp(),
+                reverse=True
+            )
+            
+            # Remplir avec les données actuelles
+            for entry in sorted_history:
+                if isinstance(entry, tuple) and len(entry) >= 3:
+                    timestamp, action_type, details = entry
+                    
+                    # Vérifier que details est bien formaté
+                    parts = details.split(" - ")
+                    if len(parts) >= 3:  # Au moins médecin, garde et date
+                        doctor_name = parts[0]
+                        guard_type = parts[1]
+                        date_str = parts[2]
+                        
+                        row = self.rowCount()
+                        self.insertRow(row)
+                        
+                        # Date avec tri personnalisé
+                        date_item = QTableWidgetItem(date_str)
+                        if hasattr(timestamp, 'timestamp'):
+                            date_item.setData(Qt.ItemDataRole.UserRole, timestamp.timestamp())
+                        
+                        self.setItem(row, 0, date_item)
+                        
+                        # Type de garde
+                        guard_item = QTableWidgetItem(guard_type)
+                        color = color_system.colors.get('available')
+                        if isinstance(color, QColor):
+                            guard_item.setBackground(QBrush(color))
+                        else:
+                            guard_item.setBackground(QBrush(QColor('#D1E6D6')))
+                        self.setItem(row, 1, guard_item)
+                        
+                        # Nom du médecin
+                        doctor_item = QTableWidgetItem(doctor_name)
+                        self.setItem(row, 2, doctor_item)
+            
+            # Réactiver le tri
+            self.setSortingEnabled(True)
+            self.resizeColumnsToContents()
+            
+        except Exception as e:
+            print(f"Erreur lors du rafraîchissement de l'affichage: {e}")
+    
+    def load_history(self):
+        """Charge l'historique depuis la persistance des données"""
+        try:
+            # Charger à la fois les pré-attributions et l'historique
+            result = self.pre_attribution_widget.main_window.data_persistence.load_pre_attributions(load_history=True)
+            if isinstance(result, tuple):
+                pre_attributions, self.history = result
+            else:
+                pre_attributions = result
+                self.history = []
+            
+            # S'assurer que history est une liste et non None
+            self.history = self.history or []
+            
+            # Synchroniser avec les pré-attributions existantes
+            self._sync_pre_attributions_to_history(pre_attributions)
+            
+            # Rafraîchir l'affichage
+            self.refresh_display()
+            return True
+        except Exception as e:
+            print(f"Erreur lors du chargement de l'historique: {e}")
+            return False
 
     def clear_history(self):
         """Efface l'historique"""
         self.history.clear()
         self.setRowCount(0)
+        # Sauvegarder l'historique vide
+        self.pre_attribution_widget.main_window.data_persistence.save_pre_attributions(
+            self.pre_attribution_widget.pre_attributions,
+            self.history
+        )

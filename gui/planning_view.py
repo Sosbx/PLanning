@@ -68,6 +68,145 @@ class PlanningGenerationThread(QThread):
         """Annule la génération en cours."""
         self._is_cancelled = True
 
+class PlanningPhaseGenerationThread(QThread):
+    """Thread dédié à la génération d'une phase spécifique du planning weekend."""
+    progress_update = pyqtSignal(str, int)  # Message, pourcentage
+    planning_generated = pyqtSignal(object)
+    error_occurred = pyqtSignal(str)
+
+    def __init__(self, planning_generator, phase_type, planning):
+        """
+        Initialise le thread de génération par phase.
+        
+        Args:
+            planning_generator: Générateur de planning
+            phase_type: Type de phase à générer ("nl", "nam", "combinations")
+            planning: Planning existant à mettre à jour
+        """
+        super().__init__()
+        self.planning_generator = planning_generator
+        self.phase_type = phase_type
+        self.planning = planning
+        self._is_cancelled = False
+
+    def run(self):
+        """Exécute la génération de la phase demandée avec possibilité de redistribution."""
+        try:
+            if self.phase_type == "nl":
+                # Phase 1: Distribution des NL
+                self.progress_update.emit("Distribution des gardes NL...", 20)
+                
+                # Réinitialiser les slots NL non attribués avant redistribution
+                if hasattr(self.planning, 'days'):
+                    for day in self.planning.days:
+                        for slot in day.slots:
+                            if slot.abbreviation == "NL" and not slot.is_pre_attributed:
+                                slot.assignee = None
+                
+                # Utiliser la méthode dédiée pour la distribution des NL
+                success = self.planning_generator.distribute_nlw(
+                    self.planning, 
+                    self.planning.pre_analysis_results
+                )
+                
+                if not success:
+                    self.error_occurred.emit("Échec de la distribution des gardes NL")
+                    return
+                    
+                # Marquer la phase comme distribuée
+                self.planning.nl_distributed = True
+                
+                if not self._is_cancelled:
+                    self.progress_update.emit("Distribution des NL terminée", 100)
+                    self.planning_generated.emit(self.planning)
+                
+            elif self.phase_type == "nam":
+                # Phase 2: Distribution des NA/NM
+                self.progress_update.emit("Distribution des gardes NA/NM...", 20)
+                
+                # Vérifier que la phase NL a été validée
+                if not self.planning.nl_validated:
+                    self.error_occurred.emit("Les gardes NL doivent être validées avant les NA/NM")
+                    return
+                
+                # Réinitialiser les slots NA/NM non attribués avant redistribution
+                if hasattr(self.planning, 'days'):
+                    for day in self.planning.days:
+                        for slot in day.slots:
+                            if slot.abbreviation in ["NA", "NM"] and not getattr(slot, 'is_pre_attributed', False):
+                                slot.assignee = None
+                
+                # Exécuter la distribution des NA/NM
+                success = self.planning_generator.distribute_namw(
+                    self.planning, 
+                    self.planning.pre_analysis_results
+                )
+                
+                if not success:
+                    self.error_occurred.emit("Échec de la distribution des gardes NA/NM")
+                    return
+                
+                # Marquer la phase comme distribuée
+                self.planning.nam_distributed = True
+                
+                if not self._is_cancelled:
+                    self.progress_update.emit("Distribution des NA/NM terminée", 100)
+                    self.planning_generated.emit(self.planning)
+                
+            elif self.phase_type == "combinations":
+                # Phase 3: Distribution des combinaisons et postes restants
+                self.progress_update.emit("Distribution des combinaisons...", 20)
+                
+                # Vérifier que la phase précédente a été validée
+                if not self.planning.nam_validated:
+                    self.error_occurred.emit("Les gardes NA/NM doivent être validées avant les combinaisons")
+                    return
+                
+                # Réinitialiser les slots restants (qui ne sont ni NL, ni NA, ni NM)
+                if hasattr(self.planning, 'days'):
+                    for day in self.planning.days:
+                        if day.is_weekend or day.is_holiday_or_bridge:
+                            for slot in day.slots:
+                                if slot.abbreviation not in ["NL", "NA", "NM"] and not getattr(slot, 'is_pre_attributed', False):
+                                    slot.assignee = None
+                
+                # Distribuer les combinaisons aux CAT
+                success_cat = self.planning_generator._distribute_cat_weekend_combinations(self.planning)
+                if not success_cat:
+                    self.error_occurred.emit("Échec de la distribution des combinaisons aux CAT")
+                    return
+                
+                self.progress_update.emit("Distribution des combinaisons aux médecins...", 40)
+                
+                # Distribuer les combinaisons aux médecins
+                success_med = self.planning_generator._distribute_doctor_weekend_combinations(self.planning)
+                if not success_med:
+                    self.error_occurred.emit("Échec de la distribution des combinaisons aux médecins")
+                    return
+                
+                self.progress_update.emit("Distribution des postes restants...", 70)
+                
+                # Distribuer les postes restants
+                success_remaining = self.planning_generator.distribute_remaining_weekend_posts(self.planning)
+                if not success_remaining:
+                    self.error_occurred.emit("Échec de la distribution des postes restants")
+                    return
+                
+                # Marquer la phase comme distribuée
+                self.planning.combinations_distributed = True
+                
+                if not self._is_cancelled:
+                    self.progress_update.emit("Distribution terminée", 100)
+                    self.planning_generated.emit(self.planning)
+                
+            else:
+                self.error_occurred.emit(f"Phase de génération inconnue: {self.phase_type}")
+                
+        except Exception as e:
+            self.error_occurred.emit(f"Erreur lors de la génération de la phase {self.phase_type}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
 
 class PlanningViewWidget(QWidget):
     """Widget principal pour la vue et la génération du planning."""
@@ -83,13 +222,19 @@ class PlanningViewWidget(QWidget):
         self.planning_generator = PlanningGenerator(doctors, cats, post_configuration)
         self.planning = None
         self.weekend_validated = False
+        self.nl_validated = False
+        self.nam_validated = False
+        self.combinations_validated = False
         self.generation_thread = None
         self.update_timer = QTimer()
         self.update_timer.setSingleShot(True)
         self.update_timer.timeout.connect(self._delayed_update)
         self.pending_update = None
+        self.generation_phase = "init"  # ["init", "nl", "nam", "combinations", "weekday"]
         self.init_ui()
 
+
+    # Modifiez la méthode init_ui dans PlanningViewWidget pour n'avoir que deux boutons évolutifs
 
     def init_ui(self):
         layout = QVBoxLayout(self)
@@ -121,32 +266,28 @@ class PlanningViewWidget(QWidget):
         date_layout.addWidget(QLabel("Au:"))
         date_layout.addWidget(self.end_date)
         
-        # Bouton de génération
-        self.generate_button = QPushButton("Générer le planning")
+        # Modification des boutons de génération et de validation
+        self.generate_button = QPushButton("Générer les gardes NL")
         self.generate_button.clicked.connect(self.generate_planning)
         self.generate_button.setStyleSheet(ACTION_BUTTON_STYLE)
         date_layout.addWidget(self.generate_button)
 
-        # Bouton de validation des weekends
-        self.validate_weekends_button = QPushButton("Valider les weekends")
-        self.validate_weekends_button.clicked.connect(self.validate_weekends)
-        self.validate_weekends_button.setEnabled(False)  # Désactivé par défaut
-        self.validate_weekends_button.setStyleSheet(ACTION_BUTTON_STYLE)
-        date_layout.addWidget(self.validate_weekends_button)
-
-        date_layout.setStretchFactor(self.start_date, 2)
-        date_layout.setStretchFactor(self.end_date, 2)
-        date_layout.setStretchFactor(self.generate_button, 1)
+        # Bouton de validation
+        self.validate_button = QPushButton("Valider les gardes NL")
+        self.validate_button.clicked.connect(self.validate_current_phase)
+        self.validate_button.setEnabled(False)  # Désactivé par défaut
+        self.validate_button.setStyleSheet(ACTION_BUTTON_STYLE)
+        date_layout.addWidget(self.validate_button)
         
-        layout.addLayout(date_layout)
-
         # Bouton de réinitialisation
         self.reset_planning_button = QPushButton("Réinitialiser le planning")
         self.reset_planning_button.clicked.connect(self.reset_planning)
         self.reset_planning_button.setEnabled(True)
         self.reset_planning_button.setStyleSheet(EDIT_DELETE_BUTTON_STYLE)
         date_layout.addWidget(self.reset_planning_button)
-
+        
+        layout.addLayout(date_layout)
+        
         # Barre de progression avec style
         self.progress_bar = QProgressBar(self)
         self.progress_bar.setStyleSheet(f"""
@@ -167,6 +308,7 @@ class PlanningViewWidget(QWidget):
 
         # Widget avec des onglets
         tab_widget = QTabWidget()
+        
         tab_widget.setStyleSheet(f"""
             QTabWidget::pane {{
                 border: 1px solid {color_system.colors['container']['border'].name()};
@@ -275,15 +417,16 @@ class PlanningViewWidget(QWidget):
         end_date = self.end_date.date().toPyDate()
         self.dates_changed.emit(start_date, end_date)
 
+
     def generate_planning(self, existing_planning=None):
-        """Lance la génération du planning avec gestion des états."""
+        """Lance la génération du planning selon la phase actuelle, avec possibilité de redistribution."""
         try:
             start_date = self.start_date.date().toPyDate()
             end_date = self.end_date.date().toPyDate()
 
             if start_date > end_date:
                 QMessageBox.warning(self, "Erreur", 
-                                "La date de début doit être antérieure à la date de fin.")
+                            "La date de début doit être antérieure à la date de fin.")
                 return
 
             # Désactiver les contrôles pendant la génération
@@ -301,31 +444,58 @@ class PlanningViewWidget(QWidget):
                 pre_attributions=pre_attributions
             )
             
-            # Create and configure the thread based on validation state
-            if self.weekend_validated:
-                # Si les weekends sont validés, générer uniquement la semaine
+            # Si on est en phase initiale ou sans planning, on initialise
+            if self.generation_phase == "init" or not self.planning:
+                # Créer un nouveau planning
+                self.planning = self.planning_generator.generate_planning(start_date, end_date)
                 if not self.planning:
-                    QMessageBox.warning(self, "Erreur", 
-                                    "Aucun planning weekend validé trouvé.")
-                    self._set_controls_enabled(True)
+                    self._handle_generation_error("Échec de l'initialisation du planning")
                     return
                     
+                # Passer à la phase NL
+                self.generation_phase = "nl"
+            
+            # Configure the thread based on current phase
+            if hasattr(self.planning, 'weekend_validated') and self.planning.weekend_validated:
+                # Si les weekends sont validés, générer uniquement la semaine
+                # Utiliser la classe existante PlanningGenerationThread pour la génération de semaine
                 self.generation_thread = PlanningGenerationThread(
                     self.planning_generator, start_date, end_date,
                     self.doctors, self.cats, self.post_configuration,
                     generate_weekdays=True,
-                    existing_planning=self.planning  # Use current validated planning
+                    existing_planning=self.planning
                 )
                 self.generate_button.setText("Génération planning semaine en cours...")
             else:
-                # Sinon, générer uniquement les weekends
-                self.generation_thread = PlanningGenerationThread(
-                    self.planning_generator, start_date, end_date,
-                    self.doctors, self.cats, self.post_configuration,
-                    generate_weekdays=False,
-                    existing_planning=None
-                )
-                self.generate_button.setText("Génération weekends en cours...")
+                # Sinon, générer selon la phase actuelle
+                if self.generation_phase == "nl":
+                    self.generate_button.setText("Distribution NL en cours...")
+                    # Réinitialiser l'état de distribution pour permettre la redistribution
+                    self.planning.nl_distributed = False
+                    self.generation_thread = PlanningPhaseGenerationThread(
+                        self.planning_generator, 
+                        "nl", 
+                        self.planning
+                    )
+                elif self.generation_phase == "nam":
+                    self.generate_button.setText("Distribution NA/NM en cours...")
+                    # Réinitialiser l'état de distribution pour permettre la redistribution
+                    self.planning.nam_distributed = False
+                    self.generation_thread = PlanningPhaseGenerationThread(
+                        self.planning_generator, 
+                        "nam", 
+                        self.planning
+                    )
+                else:  # phase "combinations"
+                    self.generate_button.setText("Distribution postes restants en cours...")
+                    # Réinitialiser l'état de distribution pour permettre la redistribution
+                    if hasattr(self.planning, 'combinations_distributed'):
+                        self.planning.combinations_distributed = False
+                    self.generation_thread = PlanningPhaseGenerationThread(
+                        self.planning_generator, 
+                        "combinations", 
+                        self.planning
+                    )
 
             # Connecter les signaux
             self.generation_thread.progress_update.connect(self._update_progress)
@@ -341,47 +511,165 @@ class PlanningViewWidget(QWidget):
         except Exception as e:
             self._handle_generation_error(f"Erreur de démarrage: {str(e)}")
             self._set_controls_enabled(True)
-            
+
     def _planning_generated(self, planning):
-        """Gère la fin de la génération avec succès."""
+        """Gère la fin de la génération avec succès, adaptée pour les redistributions."""
         if planning:
             self.planning = planning
-            # Conserver l'état de validation des weekends
-            if hasattr(planning, 'weekend_validated'):
-                self.weekend_validated = planning.weekend_validated
-            else:
-                self.weekend_validated = False
-                
             self.update_table()
             
             # Mise à jour des boutons selon l'étape
-            if self.weekend_validated:
+            if hasattr(planning, 'weekend_validated') and planning.weekend_validated:
                 # Fin de la génération de la semaine
-                self.validate_weekends_button.setEnabled(False)
+                self.validate_button.setEnabled(False)
                 self.generate_button.setText("Générer le planning")
                 QMessageBox.information(self, "Génération réussie", 
-                    "Le planning de semaine a été généré avec succès.")
+                                    "Le planning de semaine a été généré avec succès.")
             else:
-                # Fin de la génération des weekends uniquement
-                self.validate_weekends_button.setEnabled(True)
-                self.generate_button.setText("Générer planning semaine")
-                QMessageBox.information(self, "Génération réussie", 
-                    "Les weekends ont été générés. Vous devez maintenant les valider avant de générer le planning de semaine.")
+                # Phase weekend - mise à jour selon la phase actuelle
+                if self.generation_phase == "nl":
+                    self.validate_button.setText("Valider les gardes NL")
+                    self.validate_button.setEnabled(True)  # Toujours activer après distribution
+                    self.generate_button.setText("Générer les gardes NL")  # Permettre la redistribution
+                    QMessageBox.information(self, "Distribution NL terminée", 
+                                        "Les gardes NL ont été distribuées. Vous pouvez les valider ou redistribuer.")
+                elif self.generation_phase == "nam":
+                    self.validate_button.setText("Valider les gardes NA/NM")
+                    self.validate_button.setEnabled(True)  # Toujours activer après distribution
+                    self.generate_button.setText("Générer les gardes NA/NM")  # Permettre la redistribution
+                    QMessageBox.information(self, "Distribution NA/NM terminée", 
+                                        "Les gardes NA/NM ont été distribuées. Vous pouvez les valider ou redistribuer.")
+                else:  # phase "combinations"
+                    self.validate_button.setText("Valider les weekends")
+                    self.validate_button.setEnabled(True)  # Toujours activer après distribution
+                    self.generate_button.setText("Générer les postes restants")  # Permettre la redistribution
+                    QMessageBox.information(self, "Distribution terminée", 
+                                        "Les postes weekend restants ont été distribués. Vous pouvez les valider ou redistribuer.")
             
-            # Démarrer la sauvegarde automatique de manière sécurisée
+            # Démarrer la sauvegarde automatique
             try:
                 if hasattr(self.main_window, 'planning_management_tab'):
                     self.main_window.planning_management_tab.start_auto_save()
             except Exception as e:
                 print(f"Erreur lors du démarrage de la sauvegarde automatique: {str(e)}")
             
-            # Charger les post-attributions après que le planning a été généré avec succès
+            # Charger les post-attributions après génération
             if hasattr(self.main_window, 'load_post_attributions'):
                 self.main_window.load_post_attributions()
                 
             self.main_window.update_data()
         else:
             self._handle_generation_error("La génération n'a pas produit de planning valide")
+
+
+    def validate_current_phase(self):
+        """Valide la phase actuelle et prépare la suivante."""
+        if not self.planning:
+            QMessageBox.warning(self, "Erreur", "Aucun planning n'a été généré.")
+            return
+        
+        confirm_msg = ""
+        
+        if self.generation_phase == "nl":
+            confirm_msg = "Voulez-vous valider les gardes NL ? Cette action ne pourra pas être annulée."
+        elif self.generation_phase == "nam":
+            confirm_msg = "Voulez-vous valider les gardes NA/NM ? Cette action ne pourra pas être annulée."
+        else:  # phase "combinations"
+            confirm_msg = "Voulez-vous valider les weekends ? Cette action ne pourra pas être annulée."
+        
+        confirm = QMessageBox.question(
+            self,
+            "Confirmation",
+            confirm_msg,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if confirm == QMessageBox.StandardButton.Yes:
+            if self.generation_phase == "nl":
+                # Valider les NL
+                self.planning.nl_validated = True
+                self.generation_phase = "nam"
+                self.generate_button.setText("Générer les gardes NA/NM")
+                self.validate_button.setEnabled(False)
+                QMessageBox.information(self, "Validation", "Les gardes NL ont été validées.")
+            elif self.generation_phase == "nam":
+                # Valider les NA/NM
+                self.planning.nam_validated = True
+                self.generation_phase = "combinations"
+                self.generate_button.setText("Générer les postes restants")
+                self.validate_button.setEnabled(False)
+                QMessageBox.information(self, "Validation", "Les gardes NA/NM ont été validées.")
+            else:  # phase "combinations"
+                # Valider les weekends comme dans le code original
+                self.planning.weekend_validated = True
+                
+                # Gestion des post-attributions
+                if hasattr(self.main_window, 'post_attribution_handler'):
+                    self.main_window.post_attribution_handler.clean_and_restore_post_attributions()
+                    
+                    # Suppression et recréation des slots pour éviter les duplications
+                    if hasattr(self.planning, 'days'):
+                        for day in self.planning.days:
+                            slots_to_keep = []
+                            for slot in day.slots:
+                                if not hasattr(slot, 'is_post_attribution') or not slot.is_post_attribution:
+                                    slots_to_keep.append(slot)
+                            day.slots = slots_to_keep
+                    
+                    # Restauration contrôlée des post-attributions
+                    self.main_window.post_attribution_handler._restore_slots_in_planning()
+                
+                # Update UI to reflect weekday generation mode
+                self.generate_button.setText("Générer planning semaine")
+                self.validate_button.setEnabled(False)
+                
+                # Sauvegarder l'état
+                self.main_window.planning_management_tab.save_planning()
+                
+                # Notify user
+                QMessageBox.information(
+                    self, 
+                    "Validation", 
+                    "Les weekends ont été validés. Vous pouvez maintenant générer le planning de la semaine."
+                )
+                
+            # Sauvegarder après chaque validation
+            if hasattr(self.main_window, 'planning_management_tab'):
+                self.main_window.planning_management_tab.save_planning()
+
+    def _set_controls_enabled(self, enabled: bool):
+        """Active/désactive les contrôles pendant la génération avec une logique améliorée pour les redistributions."""
+        self.generate_button.setEnabled(enabled)
+        self.start_date.setEnabled(enabled)
+        self.end_date.setEnabled(enabled)
+        self.reset_planning_button.setEnabled(enabled)
+        
+        # Mise à jour du bouton de validation selon la phase
+        if self.planning:
+            if self.generation_phase == "nl":
+                # Activer le bouton de validation seulement si la phase actuelle est distribuée
+                self.validate_button.setEnabled(enabled and hasattr(self.planning, 'nl_distributed') and self.planning.nl_distributed)
+                self.validate_button.setText("Valider les gardes NL")
+            elif self.generation_phase == "nam":
+                # Pour NAM, vérifier aussi que NL est validé
+                if hasattr(self.planning, 'nl_validated') and self.planning.nl_validated:
+                    self.validate_button.setEnabled(enabled and hasattr(self.planning, 'nam_distributed') and self.planning.nam_distributed)
+                    self.validate_button.setText("Valider les gardes NA/NM")
+                else:
+                    self.validate_button.setEnabled(False)
+            elif self.generation_phase == "combinations":
+                # Pour les combinaisons, vérifier que NAM est validé
+                if hasattr(self.planning, 'nam_validated') and self.planning.nam_validated:
+                    self.validate_button.setEnabled(enabled and hasattr(self.planning, 'combinations_distributed') and self.planning.combinations_distributed)
+                    self.validate_button.setText("Valider les weekends")
+                else:
+                    self.validate_button.setEnabled(False)
+            elif hasattr(self.planning, 'weekend_validated') and self.planning.weekend_validated:
+                # Si les weekends sont validés, le bouton de validation reste désactivé
+                self.validate_button.setEnabled(False)
+            else:
+                self.validate_button.setEnabled(False)
 
 
 
@@ -396,14 +684,6 @@ class PlanningViewWidget(QWidget):
         self.progress_bar.setValue(value)
         self.progress_bar.setFormat(f"{message} ({value}%)")
 
-    def _set_controls_enabled(self, enabled: bool):
-        """Active/désactive les contrôles pendant la génération."""
-        self.generate_button.setEnabled(enabled)
-        self.start_date.setEnabled(enabled)
-        self.end_date.setEnabled(enabled)
-        self.reset_planning_button.setEnabled(enabled)
-        if self.planning:
-            self.validate_weekends_button.setEnabled(enabled and not self.weekend_validated)
 
     def cancel_generation(self):
         """Annule la génération en cours."""
@@ -593,59 +873,79 @@ class PlanningViewWidget(QWidget):
             self.pre_attribution_tab.refresh_custom_posts()
 
     def update_data(self, doctors, cats, post_configuration):
+        """Met à jour les données du planning."""
         self.doctors = doctors
         self.cats = cats
         self.post_configuration = post_configuration
         self.planning_generator = PlanningGenerator(doctors, cats, post_configuration)
+        
         if self.planning:
-            # Update UI based on validation state
+            # Mise à jour du bouton selon la phase
             if self.weekend_validated:
                 self.generate_button.setText("Générer planning semaine")
-                self.validate_weekends_button.setEnabled(False)
+                self.validate_button.setEnabled(False)
             else:
-                self.generate_button.setText("Générer le planning")
-                self.validate_weekends_button.setEnabled(True)
+                if self.generation_phase == "nl":
+                    self.generate_button.setText("Générer les gardes NL")
+                    if not self.nl_validated:
+                        self.validate_button.setText("Valider les gardes NL")
+                        self.validate_button.setEnabled(True)
+                elif self.generation_phase == "nam":
+                    self.generate_button.setText("Générer les gardes NA/NM")
+                    if not self.nam_validated:
+                        self.validate_button.setText("Valider les gardes NA/NM")
+                        self.validate_button.setEnabled(True)
+                else:
+                    self.generate_button.setText("Générer les postes restants")
+                    self.validate_button.setText("Valider les weekends")
+                    self.validate_button.setEnabled(True)
             
             self.update_table()
-
+    
     def update_planning(self, updated_planning):
+        """Met à jour le planning."""
         self.planning = updated_planning
-        # Sync weekend validation state
-        self.weekend_validated = updated_planning.weekend_validated
-        # Update UI based on validation state
-        if self.weekend_validated:
-            self.generate_button.setText("Générer planning semaine")
-            self.validate_weekends_button.setEnabled(False)
-        else:
-            self.generate_button.setText("Générer le planning")
-            self.validate_weekends_button.setEnabled(True)
         
-            self.update_table()
-            self.main_window.update_data()
+        # Récupérer les états de validation du planning
+        if hasattr(updated_planning, 'weekend_validated'):
+            self.weekend_validated = updated_planning.weekend_validated
+        if hasattr(updated_planning, 'nl_validated'):
+            self.nl_validated = updated_planning.nl_validated
+        if hasattr(updated_planning, 'nam_validated'):
+            self.nam_validated = updated_planning.nam_validated
+        
+        # Déterminer la phase actuelle
+        if self.weekend_validated:
+            self.generation_phase = "weekday"
+        elif self.nam_validated:
+            self.generation_phase = "combinations"
+        elif self.nl_validated:
+            self.generation_phase = "nam"
+        else:
+            self.generation_phase = "nl"
+        
+        # Mise à jour de l'interface
+        self.update_data(self.doctors, self.cats, self.post_configuration)
 
 
     def reset_planning(self):
+        """Réinitialise le planning."""
         confirm = QMessageBox.question(self, "Confirmation", 
-                                    "Êtes-vous sûr de vouloir réinitialiser le planning ? Toutes les données de planning seront perdues.",
-                                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
-                                    QMessageBox.StandardButton.No)
+                                "Êtes-vous sûr de vouloir réinitialiser le planning ? Toutes les données de planning seront perdues.",
+                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
+                                QMessageBox.StandardButton.No)
         if confirm == QMessageBox.StandardButton.Yes:
-            # Réinitialiser le planning et les flags de validation
-            if self.planning:
-                self.planning.weekend_validated = False
+            # Réinitialiser le planning
             self.planning = None
-            self.weekend_validated = False
+            self.generation_phase = "init"
 
             # Réinitialiser l'état des boutons
-            self.generate_button.setText("Générer le planning")
+            self.generate_button.setText("Générer les gardes NL")
             self.generate_button.setEnabled(True)
-            self.validate_weekends_button.setEnabled(False)
+            self.validate_button.setText("Valider les gardes NL")
+            self.validate_button.setEnabled(False)
 
-            # Déconnecter et reconnecter le signal pour s'assurer qu'il n'y a qu'une seule connexion
-            self.generate_button.clicked.disconnect()
-            self.generate_button.clicked.connect(self.generate_planning)
-
-            # Réinitialiser les compteurs et attributs des médecins et CAT
+            # Réinitialiser les compteurs et attributs
             for doctor in self.doctors:
                 doctor.night_shifts = {'NLv': 0, 'NLs': 0, 'NLd': 0, 'total': 0}
                 doctor.nm_shifts = {'NMs': 0, 'NMd': 0, 'total': 0}
@@ -673,4 +973,4 @@ class PlanningViewWidget(QWidget):
             # Mettre à jour les données dans la fenêtre principale
             self.main_window.reset_all_views()
 
-            QMessageBox.information(self, "Réinitialisation", "Le planning a été réinitialisé avec succès. Vous pouvez maintenant générer un nouveau planning.")
+            QMessageBox.information(self, "Réinitialisation", "Le planning a été réinitialisé avec succès.")

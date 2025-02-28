@@ -17,18 +17,16 @@ class DataPersistence:
         
 
     def save_data(self, doctors, cats, post_configuration):
-        logger.info("Starting save_data process")
-        
-        # Charger les pré-attributions existantes
-        existing_pre_attributions = {}
         try:
+            # Charger les pré-attributions existantes
+            existing_pre_attributions = {}
             if os.path.exists(self.filename):
                 with open(self.filename, 'rb') as file:
                     existing_data = pickle.load(file)
                     if 'pre_attributions' in existing_data:
                         existing_pre_attributions = existing_data['pre_attributions']
         except Exception as e:
-            logger.error(f"Error loading existing pre-attributions: {e}")
+            logger.error(f"Erreur chargement pré-attributions: {e}")
         
         data = {
             'version': 1,
@@ -59,14 +57,14 @@ class DataPersistence:
         
         with open(self.filename, 'wb') as file:
             pickle.dump(data, file)
-        logger.info("Data saved successfully")
+        logger.info("Données sauvegardées")
 
     def save_custom_posts(self, custom_posts_data):
         """Sauvegarde les postes personnalisés dans un fichier séparé"""
         try:
             with open(self.custom_posts_filename, 'wb') as file:
                 pickle.dump(custom_posts_data, file)
-            logger.info("Custom posts saved successfully")
+            logger.info("Postes personnalisés sauvegardés")
         except Exception as e:
             logger.error(f"Error saving custom posts: {e}")
 
@@ -86,7 +84,6 @@ class DataPersistence:
                             else:
                                 # Si c'est déjà un CustomPost, l'utiliser tel quel
                                 custom_posts[name] = data
-                            logger.info(f"Poste personnalisé chargé: {name}")
                         except Exception as e:
                             logger.error(f"Erreur lors de la conversion du poste {name}: {e}")
                             continue
@@ -97,13 +94,10 @@ class DataPersistence:
             return {}
 
     def load_data(self):
-        logger.info("Starting load_data process")
         if os.path.exists(self.filename):
             try:
                 with open(self.filename, 'rb') as file:
                     data = pickle.load(file)
-                
-                logger.debug(f"Raw loaded data: {data}")
                 data = self.migrate_data(data)
                 
                 # Chargement des médecins
@@ -176,9 +170,7 @@ class DataPersistence:
                 pre_attributions = {}
                 if 'pre_attributions' in data:
                     pre_attributions = self.load_pre_attributions()
-                    logger.info("Pre-attributions loaded successfully")
-
-                logger.info("Data loaded successfully")
+                logger.info("Données chargées")
                 return doctors, cats, post_configuration, pre_attributions
 
             except Exception as e:
@@ -287,8 +279,8 @@ class DataPersistence:
         """Désérialise une configuration de poste simple"""
         return {post_type: PostConfig(total=total) for post_type, total in data.items()}
 
-    def save_pre_attributions(self, pre_attributions):
-        """Sauvegarde les pré-attributions dans le fichier de données"""
+    def save_pre_attributions(self, pre_attributions, history=None):
+        """Sauvegarde les pré-attributions et leur historique dans le fichier de données"""
         try:
             # Charger les données existantes
             with open(self.filename, 'rb') as file:
@@ -307,17 +299,33 @@ class DataPersistence:
             # Ajouter ou mettre à jour les pré-attributions
             data['pre_attributions'] = serialized_pre_attributions
             
+            # Sauvegarder l'historique si fourni
+            if history is not None:
+                serialized_history = []
+                for timestamp, action_type, details in history:
+                    serialized_history.append((timestamp.isoformat(), action_type, details))
+                data['pre_attribution_history'] = serialized_history
+            
             # Sauvegarder les données mises à jour
             with open(self.filename, 'wb') as file:
                 pickle.dump(data, file)
             
-            logger.info("Pre-attributions saved successfully")
+            logger.info("Pré-attributions sauvegardées")
         except Exception as e:
             logger.error(f"Error saving pre-attributions: {e}")
             raise
     
-    def load_pre_attributions(self):
-        """Charge les pré-attributions depuis le fichier de données"""
+    def load_pre_attributions(self, load_history=True):
+        """
+        Charge les pré-attributions et leur historique depuis le fichier de données
+        
+        Args:
+            load_history (bool): Si True, charge aussi l'historique
+            
+        Returns:
+            dict ou tuple: Dictionnaire des pré-attributions si load_history=False, 
+                        sinon tuple (pre_attributions, history)
+        """
         try:
             if os.path.exists(self.filename):
                 with open(self.filename, 'rb') as file:
@@ -330,16 +338,83 @@ class DataPersistence:
                 pre_attributions = {}
                 for person_name, attributions in serialized_pre_attributions.items():
                     person_attributions = {}
-                    for (date_str, period), post in attributions.items():
-                        # Convertir la string ISO en objet date
-                        d = datetime.date.fromisoformat(date_str)
-                        person_attributions[(d, period)] = post
-                    pre_attributions[person_name] = person_attributions
+                    for key, post in attributions.items():
+                        try:
+                            # Gérer les différents formats possibles
+                            if isinstance(key, tuple) and len(key) == 2:
+                                date_str, period = key
+                                if isinstance(date_str, str):
+                                    d = date.fromisoformat(date_str)
+                                elif isinstance(date_str, date):
+                                    d = date_str
+                                else:
+                                    # Ignorer les entrées invalides
+                                    logger.warning(f"Format de date invalide ignoré : {date_str}")
+                                    continue
+                                
+                                if isinstance(period, int):
+                                    person_attributions[(d, period)] = post
+                                else:
+                                    # Tenter de convertir en entier
+                                    try:
+                                        period_int = int(period)
+                                        person_attributions[(d, period_int)] = post
+                                    except (ValueError, TypeError):
+                                        logger.warning(f"Format de période invalide ignoré : {period}")
+                                        continue
+                        except Exception as e:
+                            logger.warning(f"Erreur lors de la conversion d'une attribution : {e}")
+                            continue
+                    
+                    if person_attributions:  # N'ajouter que s'il y a des attributions valides
+                        pre_attributions[person_name] = person_attributions
+                
+                if load_history:
+                    # Charger l'historique
+                    history = []
+                    serialized_history = data.get('pre_attribution_history', [])
+                    
+                    for entry in serialized_history:
+                        try:
+                            if isinstance(entry, tuple) and len(entry) >= 3:
+                                timestamp_str, action_type, details = entry
+                                
+                                # Conversion du timestamp
+                                if isinstance(timestamp_str, str):
+                                    try:
+                                        # Utiliser datetime.fromisoformat()
+                                        from datetime import datetime
+                                        timestamp = datetime.fromisoformat(timestamp_str)
+                                    except ValueError:
+                                        # Utiliser l'heure actuelle en cas d'erreur
+                                        from datetime import datetime
+                                        timestamp = datetime.now()
+                                        logger.warning(f"Timestamp invalide, utilisation de l'heure actuelle : {timestamp_str}")
+                                elif hasattr(timestamp_str, 'timestamp'):  # Si c'est un objet datetime ou date
+                                    timestamp = timestamp_str
+                                else:
+                                    from datetime import datetime
+                                    timestamp = datetime.now()
+                                    logger.warning(f"Type de timestamp non pris en charge : {type(timestamp_str)}")
+                                
+                                history.append((timestamp, action_type, details))
+                        except Exception as e:
+                            logger.warning(f"Erreur lors du chargement d'une entrée d'historique : {e}")
+                            continue
+                    
+                    return pre_attributions, history
                 
                 return pre_attributions
+            
+            # Retourner des structures vides si le fichier n'existe pas
+            if load_history:
+                return {}, []
             return {}
         except Exception as e:
-            logger.error(f"Error loading pre-attributions: {e}")
+            logger.error(f"Erreur lors du chargement des pré-attributions : {e}")
+            # Retourner des structures vides en cas d'erreur
+            if load_history:
+                return {}, []
             return {}
 
     def debug_dates(self, doctors, cats):
@@ -383,7 +458,7 @@ class DataPersistence:
             with open(self.filename, 'wb') as file:
                 pickle.dump(data, file)
             
-            logger.info("Post-attributions sauvegardées avec succès")
+            logger.info("Post-attributions sauvegardées")
         except Exception as e:
             logger.error(f"Erreur lors de la sauvegarde des post-attributions: {e}")
             raise

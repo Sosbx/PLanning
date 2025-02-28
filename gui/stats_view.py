@@ -20,6 +20,34 @@ from workalendar.europe import France
 # Initialiser le logger
 logger = logging.getLogger(__name__)
 
+class CustomHeaderView(QHeaderView):
+    """En-tête personnalisé permettant de différencier les clics droits et gauches"""
+    rightClicked = pyqtSignal(int)  # Signal pour le clic droit sur un en-tête
+    
+    def __init__(self, orientation, parent=None):
+        super().__init__(orientation, parent)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        # Activer le tri interactif explicitement
+        self.setSectionsClickable(True)
+        self.setSortIndicatorShown(True)
+        
+        # Logger pour faciliter le débogage
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug("CustomHeaderView initialisé avec tri interactif activé")
+    
+    def mousePressEvent(self, event):
+        """Gère les événements de clic sur les en-têtes"""
+        index = self.logicalIndexAt(event.pos())
+        
+        # Clic droit pour expansion
+        if event.button() == Qt.MouseButton.RightButton:
+            self.logger.debug(f"Clic droit sur la section {index}")
+            self.rightClicked.emit(index)
+            event.accept()
+        # Clic gauche pour tri (comportement standard)
+        else:
+            self.logger.debug(f"Clic gauche sur la section {index}, transmission à QHeaderView")
+            super().mousePressEvent(event)
 
 class StatsView(QWidget):
     def __init__(self, planning=None, doctors=None, cats=None):
@@ -129,11 +157,47 @@ class StatsView(QWidget):
             self.parent_window.detach_stats()
         else:
             logging.warning("Parent window not set for detachment")
+    
+    def initialize_custom_header(self):
+        """Configure l'en-tête personnalisé pour la table de groupes détaillés"""
+        try:
+            # Créer et configurer l'en-tête personnalisé pour le tableau détaillé
+            custom_header = CustomHeaderView(Qt.Orientation.Horizontal, self.detailed_stats_table)
+            self.detailed_stats_table.setHorizontalHeader(custom_header)
+            
+            # Activer explicitement le tri
+            custom_header.setSortIndicatorShown(True)
+            custom_header.setSectionsClickable(True)
+            
+            # Connecter les signaux avec des logs de débogage
+            custom_header.rightClicked.connect(self._handle_header_right_click)
+            logger.debug("Signal rightClicked connecté à _handle_header_right_click")
+            
+            custom_header.sectionClicked.connect(self._handle_header_left_click)
+            logger.debug("Signal sectionClicked connecté à _handle_header_left_click")
+            
+            # Déconnecter l'ancien gestionnaire s'il existe
+            try:
+                if hasattr(self, '_old_section_clicked_connection'):
+                    self.detailed_stats_table.horizontalHeader().sectionClicked.disconnect(self._old_section_clicked_connection)
+                    logger.debug("Ancien signal sectionClicked déconnecté")
+            except Exception as e:
+                logger.debug(f"Pas d'ancien signal à déconnecter: {e}")
+            
+            logger.debug("En-tête personnalisé configuré avec succès")
+        except Exception as e:
+            logger.error(f"Erreur lors de l'initialisation de l'en-tête personnalisé: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+
 
     def init_ui(self):
-        """Initialise l'interface utilisateur complète"""
+        """Initialise l'interface utilisateur complète avec gestion des erreurs améliorée"""
         main_layout = QVBoxLayout(self)
         main_layout.setSpacing(10)
+        
+        # Attribut pour protéger contre les opérations concurrentes
+        self._header_click_in_progress = False
         
         # Création des tableaux de statistiques personnalisés
         self.stats_table = CustomTableWidget()
@@ -144,15 +208,20 @@ class StatsView(QWidget):
         
         # Configuration des tables pour le tri et la mise en surbrillance
         tables = [self.stats_table, self.weekend_stats_table, self.detailed_stats_table, 
-                 self.weekly_stats_table, self.weekday_group_stats_table]
+                self.weekly_stats_table, self.weekday_group_stats_table]
         
         for i, table in enumerate(tables):
-            table.horizontalHeader().sectionClicked.connect(lambda col, t=table: self.sort_table(t, col))
-            table.setSelectionMode(QTableWidget.SelectionMode.ExtendedSelection)
-            table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectItems)
-            # Identifiant unique pour chaque table
-            table.setProperty("table_id", i)
-            self.sort_order[i] = {}
+            try:
+                # Pour la table detailed_stats_table, on configurera l'en-tête personnalisé plus tard
+                if table != self.detailed_stats_table:
+                    table.horizontalHeader().sectionClicked.connect(lambda col, t=table: self.sort_table(t, col))
+                table.setSelectionMode(QTableWidget.SelectionMode.ExtendedSelection)
+                table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectItems)
+                # Identifiant unique pour chaque table
+                table.setProperty("table_id", i)
+                self.sort_order[i] = {}
+            except Exception as e:
+                logger.error(f"Erreur lors de la configuration du tableau {i}: {e}")
         
         # Conteneur des boutons de filtre
         filter_widget = QWidget()
@@ -231,9 +300,22 @@ class StatsView(QWidget):
         # Configuration de la synchronisation du défilement
         self.setup_scroll_sync()
         
+        # Initialiser l'en-tête personnalisé pour le tableau détaillé
+        self.initialize_custom_header()
+        
         # Initialisation des données si disponibles
         if self.planning and self.doctors and self.cats:
-            self.update_stats()
+            try:
+                self.update_stats()
+            except Exception as e:
+                logger.error(f"Erreur lors de l'initialisation des statistiques: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                self.set_empty_table_message(self.stats_table)
+                self.set_empty_table_message(self.detailed_stats_table)
+                self.set_empty_table_message(self.weekly_stats_table)
+                self.set_empty_table_message(self.weekend_stats_table)
+                self.set_empty_table_message(self.weekday_group_stats_table)
         else:
             self.set_empty_table_message(self.stats_table)
             self.set_empty_table_message(self.detailed_stats_table)
@@ -522,6 +604,181 @@ class StatsView(QWidget):
         
         # Mise à jour des totaux
         self._update_visible_totals(table)
+    
+    def _handle_header_left_click(self, logical_index):
+        """Gère le clic gauche sur un en-tête (tri de colonne)"""
+        # Debug pour voir si la méthode est appelée
+        logger.debug(f"Clic gauche sur la colonne {logical_index}")
+        
+        # Vérifier que ce n'est pas la colonne "Assigné à" ou "Total"
+        if logical_index == 0 or logical_index == self.detailed_stats_table.columnCount() - 1:
+            return
+        
+        try:
+            # Déterminer l'identifiant de la table
+            table_id = self.detailed_stats_table.property("table_id")
+            if table_id is None:
+                table_id = 2  # L'ID par défaut pour detailed_stats_table
+            
+            # Déterminer l'ordre de tri
+            if logical_index in self.sort_order.get(table_id, {}):
+                # Inverser l'ordre actuel
+                order = not self.sort_order[table_id][logical_index]
+            else:
+                # Par défaut: tri ascendant
+                order = True
+                
+            # Mettre à jour l'ordre de tri pour cette colonne
+            if table_id not in self.sort_order:
+                self.sort_order[table_id] = {}
+            self.sort_order[table_id] = {logical_index: order}  # Réinitialiser pour n'avoir qu'une colonne triée
+            
+            # Trier la table directement
+            self._sort_table_data(self.detailed_stats_table, logical_index, order)
+            
+            # Mettre à jour les en-têtes pour montrer l'ordre de tri
+            self._update_sort_indicators(self.detailed_stats_table, logical_index, order)
+            
+            logger.debug(f"Tri effectué sur la colonne {logical_index}, ordre: {'ascendant' if order else 'descendant'}")
+        except Exception as e:
+            logger.error(f"Erreur lors du tri de la colonne {logical_index}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+    
+    def _sort_table_data(self, table, col, ascending=True):
+        """Trie les données de la table selon la colonne spécifiée"""
+        # Obtenir les données à trier (uniquement les lignes des utilisateurs)
+        data = []
+        # Toujours exclure "Non attribué" et "Total" du tri
+        sort_range = table.rowCount() - 2
+        
+        # Sauvegarder les lignes "Non attribué" et "Total"
+        unassigned_data = {}
+        total_data = {}
+        for c in range(table.columnCount()):
+            unassigned_item = table.item(table.rowCount() - 2, c)
+            total_item = table.item(table.rowCount() - 1, c)
+            if unassigned_item:
+                unassigned_data[c] = {
+                    'text': unassigned_item.text(),
+                    'background': unassigned_item.background(),
+                    'font': unassigned_item.font(),
+                    'tooltip': unassigned_item.toolTip()
+                }
+            if total_item:
+                total_data[c] = {
+                    'text': total_item.text(),
+                    'background': total_item.background(),
+                    'font': total_item.font(),
+                    'tooltip': total_item.toolTip()
+                }
+        
+        # Trier uniquement les lignes des utilisateurs
+        for row in range(sort_range):
+            # Obtenir la valeur de la cellule
+            item = table.item(row, col)
+            if item:
+                try:
+                    value = int(item.text())
+                except ValueError:
+                    value = item.text()
+                    
+                # Enregistrer toutes les données de la ligne
+                row_data = {}
+                for c in range(table.columnCount()):
+                    cell = table.item(row, c)
+                    if cell:
+                        row_data[c] = {
+                            'text': cell.text(),
+                            'background': cell.background(),
+                            'font': cell.font(),
+                            'tooltip': cell.toolTip()
+                        }
+                data.append((row, value, row_data))
+        
+        # Trier les données
+        data.sort(key=lambda x: x[1], reverse=not ascending)
+        
+        # Réorganiser les lignes selon le tri
+        for new_idx, (old_idx, _, row_data) in enumerate(data):
+            for c, cell_data in row_data.items():
+                new_item = QTableWidgetItem(cell_data['text'])
+                new_item.setBackground(cell_data['background'])
+                new_item.setFont(cell_data['font'])
+                new_item.setToolTip(cell_data['tooltip'])
+                table.setItem(new_idx, c, new_item)
+                
+        # Restaurer les lignes "Non attribué" et "Total"
+        for c, cell_data in unassigned_data.items():
+            new_item = QTableWidgetItem(cell_data['text'])
+            new_item.setBackground(cell_data['background'])
+            new_item.setFont(cell_data['font'])
+            new_item.setToolTip(cell_data['tooltip'])
+            table.setItem(table.rowCount() - 2, c, new_item)
+            
+        for c, cell_data in total_data.items():
+            new_item = QTableWidgetItem(cell_data['text'])
+            new_item.setBackground(cell_data['background'])
+            new_item.setFont(cell_data['font'])
+            new_item.setToolTip(cell_data['tooltip'])
+            table.setItem(table.rowCount() - 1, c, new_item)
+
+    def _update_sort_indicators(self, table, sorted_column, ascending):
+        """Met à jour les en-têtes pour indiquer la colonne triée et l'ordre"""
+        for col in range(table.columnCount()):
+            header_item = table.horizontalHeaderItem(col)
+            if header_item:
+                # Récupérer le texte de base (sans flèche)
+                base_text = header_item.text().replace(" ▲", "").replace(" ▼", "")
+                
+                # Ajouter la flèche uniquement à la colonne triée
+                if col == sorted_column:
+                    arrow = " ▲" if ascending else " ▼"
+                    header_item.setText(base_text + arrow)
+                else:
+                    header_item.setText(base_text)
+
+    def _handle_header_right_click(self, logical_index):
+        """Gère le clic droit sur un en-tête (expansion de groupe)"""
+        # Vérifier si c'est un en-tête de groupe et pas les colonnes spéciales
+        if logical_index <= 0 or logical_index >= self.detailed_stats_table.columnCount() - 1:
+            return
+        
+        header_item = self.detailed_stats_table.horizontalHeaderItem(logical_index)
+        if not isinstance(header_item, AnimatedDetailedGroupHeader):
+            return
+        
+        group_name = header_item.group_name
+        
+        # Protection contre les opérations multiples
+        if hasattr(self, '_header_click_in_progress') and self._header_click_in_progress:
+            return
+        self._header_click_in_progress = True
+        
+        try:
+            if self.expanded_group == group_name:
+                # Fermer le groupe actuel
+                self._collapse_group(group_name)
+                self.expanded_group = None
+            else:
+                # Si un autre groupe est ouvert, le fermer d'abord
+                if self.expanded_group and self.expanded_group in self.component_columns:
+                    self._collapse_group(self.expanded_group)
+                
+                # Ouvrir le nouveau groupe après un court délai
+                def expand_after_delay():
+                    self._expand_group(group_name)
+                    self.expanded_group = group_name
+                    self._header_click_in_progress = False
+                
+                QTimer.singleShot(200, expand_after_delay)
+                return
+        except Exception as e:
+            logger.error(f"Erreur lors du traitement du clic droit: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+        
+        self._header_click_in_progress = False
 
     def _update_visible_totals(self, table):
         """Met à jour les totaux en fonction des colonnes visibles"""
@@ -617,141 +874,153 @@ class StatsView(QWidget):
 
     def update_detailed_stats_table(self, detailed_stats):
         """Mise à jour de l'onglet des groupes weekend avec fonctionnalité d'expansion et style uniformisé"""
-        self.detailed_stats_table.clear()
-        self.expanded_group = None
-        self.component_columns.clear()
+        try:
+            self.detailed_stats_table.clear()
+            self.expanded_group = None
+            self.component_columns.clear()
 
-        # Mettre à jour les composants des groupes avec les postes personnalisés
-        self._update_group_components()
+            # Mettre à jour les composants des groupes avec les postes personnalisés
+            self._update_group_components()
 
-        # Configuration des couleurs des groupes
-        weekend_group_colors = {
-            'gardes': QColor(180, 220, 255, 255),      # Bleu plus vif
-            'visites': QColor(255, 200, 150, 255),     # Orange plus vif
-            'consultations': QColor(220, 180, 255, 255) # Violet plus vif
-        }
-
-        # Configuration des données de base
-        weekend_groups = {
-            'gardes': {
-                'label': 'Gardes',
-                'groups': ['NLw', 'NAMw'],
-                'color': weekend_group_colors['gardes']
-            },
-            'visites': {
-                'label': 'Visites',
-                'groups': ['VmS', 'VmD', 'VaSD'],
-                'color': weekend_group_colors['visites']
-            },
-            'consultations': {
-                'label': 'Consultations',
-                'groups': ['CmS', 'CmD', 'CaSD', 'CsSD'],
-                'color': weekend_group_colors['consultations']
+            # Configuration des couleurs des groupes
+            weekend_group_colors = {
+                'gardes': QColor(180, 220, 255, 255),      # Bleu plus vif
+                'visites': QColor(255, 200, 150, 255),     # Orange plus vif
+                'consultations': QColor(220, 180, 255, 255) # Violet plus vif
             }
-        }
- # Collecte des groupes principaux
-        all_groups = []
-        for category in weekend_groups.values():
-            all_groups.extend(category['groups'])
 
-        # Configuration initiale du tableau
-        self.detailed_stats_table.setColumnCount(len(all_groups) + 2)  # +2 pour nom et total
-        headers = ['Assigné à'] + all_groups + ['Total']
-        
-        # Modifier la création des en-têtes pour utiliser AnimatedDetailedGroupHeader
-        for col, group in enumerate(all_groups, start=1):
-            header_item = AnimatedDetailedGroupHeader(
-                group, 
-                self.group_details.get(group, {}).get('components', [])
-            )
-            self.detailed_stats_table.setHorizontalHeaderItem(col, header_item)
-        
+            # Configuration des données de base
+            weekend_groups = {
+                'gardes': {
+                    'label': 'Gardes',
+                    'groups': ['NLw', 'NAMw'],
+                    'color': weekend_group_colors['gardes']
+                },
+                'visites': {
+                    'label': 'Visites',
+                    'groups': ['VmS', 'VmD', 'VaSD'],
+                    'color': weekend_group_colors['visites']
+                },
+                'consultations': {
+                    'label': 'Consultations',
+                    'groups': ['CmS', 'CmD', 'CaSD', 'CsSD'],
+                    'color': weekend_group_colors['consultations']
+                }
+            }
             
-            # Coloration selon la catégorie
+            # Collecte des groupes principaux
+            all_groups = []
             for category in weekend_groups.values():
-                if group in category['groups']:
-                    header_item.setBackground(category['color'])
-                    
-                    # Ajout d'une infobulle explicative
-                    tooltip = self.get_group_tooltip(group)
-                    header_item.setToolTip(tooltip)
-                    break
-                # Configuration des événements d'en-tête
-        self.detailed_stats_table.horizontalHeader().sectionClicked.connect(self._handle_header_click)
+                all_groups.extend(category['groups'])
 
-
-        # Récupération des intervalles depuis la pré-analyse
-        ideal_intervals = {}
-        if self.planning and hasattr(self.planning, 'pre_analysis_results'):
-            ideal_intervals = self.planning.pre_analysis_results.get('ideal_distribution', {})
-
-        # Tri des médecins et CATs
-        sorted_doctors = sorted([d for d in self.doctors if d.half_parts == 2], key=lambda x: x.name)
-        sorted_half_doctors = sorted([d for d in self.doctors if d.half_parts == 1], key=lambda x: x.name)
-        sorted_cats = sorted(self.cats, key=lambda x: x.name)
-        all_personnel = sorted_doctors + sorted_half_doctors + sorted_cats
-
-        # Configuration des lignes
-        self.detailed_stats_table.setRowCount(len(all_personnel) + 2)  # +2 pour Non attribué et Total
-
-        # Remplissage des données
-        for row, person in enumerate(all_personnel):
-            # Déterminer le style de base pour la personne
-            is_cat = not hasattr(person, 'half_parts')
-            is_half_time = hasattr(person, 'half_parts') and person.half_parts == 1
-            base_color = QColor('#E8F5E9') if is_cat else (QColor('#F3F4F6') if is_half_time else None)
+            # Configuration initiale du tableau
+            self.detailed_stats_table.setColumnCount(len(all_groups) + 2)  # +2 pour nom et total
+            headers = ['Assigné à'] + all_groups + ['Total']
+            self.detailed_stats_table.setHorizontalHeaderItem(0, QTableWidgetItem('Assigné à'))
+            self.detailed_stats_table.setHorizontalHeaderItem(len(all_groups) + 1, QTableWidgetItem('Total'))
             
-            # Nom avec distinction CAT/mi-temps
-            name_item = QTableWidgetItem(person.name)
-            if is_cat:
-                name_item.setFont(QFont("", -1, QFont.Weight.Bold))
-            if base_color:
-                name_item.setBackground(base_color)
-            self.detailed_stats_table.setItem(row, 0, name_item)
-
-            # Valeurs des groupes
-            row_total = 0
+            # Modifier la création des en-têtes pour utiliser AnimatedDetailedGroupHeader
             for col, group in enumerate(all_groups, start=1):
-                count = detailed_stats.get(person.name, {}).get(group, 0)
-                item = QTableWidgetItem(str(count))
+                try:
+                    components = self.group_details.get(group, {}).get('components', [])
+                    logger.debug(f"Création d'en-tête pour {group} avec composants: {components}")
+                    header_item = AnimatedDetailedGroupHeader(group, components)
+                    self.detailed_stats_table.setHorizontalHeaderItem(col, header_item)
                 
-                # Appliquer la couleur de base pour CAT ou mi-temps
+                    # Coloration selon la catégorie
+                    for category in weekend_groups.values():
+                        if group in category['groups']:
+                            header_item.setBackground(category['color'])
+                            
+                            # Ajout d'une infobulle explicative
+                            tooltip = self.get_group_tooltip(group)
+                            if tooltip:
+                                header_item.setToolTip(tooltip + "\n\nCliquez droit pour développer les composants")
+                            else:
+                                header_item.setToolTip("Cliquez droit pour développer les composants")
+                            break
+                except Exception as e:
+                    logger.error(f"Erreur lors de la création de l'en-tête pour {group}: {e}")
+                    # Utiliser un en-tête standard en cas d'erreur
+                    self.detailed_stats_table.setHorizontalHeaderItem(col, QTableWidgetItem(group))
+            
+            # Récupération des intervalles depuis la pré-analyse
+            ideal_intervals = {}
+            if self.planning and hasattr(self.planning, 'pre_analysis_results'):
+                ideal_intervals = self.planning.pre_analysis_results.get('ideal_distribution', {})
+
+            # Tri des médecins et CATs
+            sorted_doctors = sorted([d for d in self.doctors if d.half_parts == 2], key=lambda x: x.name)
+            sorted_half_doctors = sorted([d for d in self.doctors if d.half_parts == 1], key=lambda x: x.name)
+            sorted_cats = sorted(self.cats, key=lambda x: x.name)
+            all_personnel = sorted_doctors + sorted_half_doctors + sorted_cats
+
+            # Configuration des lignes
+            self.detailed_stats_table.setRowCount(len(all_personnel) + 2)  # +2 pour Non attribué et Total
+
+            # Remplissage des données
+            for row, person in enumerate(all_personnel):
+                # Déterminer le style de base pour la personne
+                is_cat = not hasattr(person, 'half_parts')
+                is_half_time = hasattr(person, 'half_parts') and person.half_parts == 1
+                base_color = QColor('#E8F5E9') if is_cat else (QColor('#F3F4F6') if is_half_time else None)
+                
+                # Nom avec distinction CAT/mi-temps
+                name_item = QTableWidgetItem(person.name)
+                if is_cat:
+                    name_item.setFont(QFont("", -1, QFont.Weight.Bold))
                 if base_color:
-                    item.setBackground(base_color)
-                # Pour les médecins à temps plein uniquement, appliquer la coloration conditionnelle
-                elif hasattr(person, 'half_parts') and person.half_parts == 2:
-                    intervals = ideal_intervals.get(person.name, {}).get('weekend_groups', {}).get(group, {})
-                    if intervals:
-                        min_val = intervals.get('min', 0)
-                        max_val = intervals.get('max', float('inf'))
-                        if count < min_val:
-                            item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif pour Windows
-                        elif count > max_val:
-                            item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif pour Windows
-                        else:
-                            item.setBackground(QBrush())  # Blanc si dans l'intervalle
-                
-                self.detailed_stats_table.setItem(row, col, item)
-                row_total += count
+                    name_item.setBackground(base_color)
+                self.detailed_stats_table.setItem(row, 0, name_item)
 
-            # Total de la ligne avec la même coloration de base
-            total_item = QTableWidgetItem(str(row_total))
-            if base_color:
-                total_item.setBackground(base_color)
-            self.detailed_stats_table.setItem(row, len(all_groups) + 1, total_item)
+                # Valeurs des groupes
+                row_total = 0
+                for col, group in enumerate(all_groups, start=1):
+                    count = detailed_stats.get(person.name, {}).get(group, 0)
+                    item = QTableWidgetItem(str(count))
+                    
+                    # Appliquer la couleur de base pour CAT ou mi-temps
+                    if base_color:
+                        item.setBackground(base_color)
+                    # Pour les médecins à temps plein uniquement, appliquer la coloration conditionnelle
+                    elif hasattr(person, 'half_parts') and person.half_parts == 2:
+                        intervals = ideal_intervals.get(person.name, {}).get('weekend_groups', {}).get(group, {})
+                        if intervals:
+                            min_val = intervals.get('min', 0)
+                            max_val = intervals.get('max', float('inf'))
+                            if count < min_val:
+                                item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif pour Windows
+                            elif count > max_val:
+                                item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif pour Windows
+                            else:
+                                item.setBackground(QBrush())  # Blanc si dans l'intervalle
+                    
+                    self.detailed_stats_table.setItem(row, col, item)
+                    row_total += count
 
-        # Ajout des lignes "Non attribué" et "Total"
-        self._add_unassigned_row_detailed(len(all_personnel), detailed_stats, all_groups)
-        self._add_total_row_detailed(len(all_personnel) + 1, detailed_stats, all_groups)
+                # Total de la ligne avec la même coloration de base
+                total_item = QTableWidgetItem(str(row_total))
+                if base_color:
+                    total_item.setBackground(base_color)
+                self.detailed_stats_table.setItem(row, len(all_groups) + 1, total_item)
 
-        # Configuration de l'affichage
-        self.detailed_stats_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.detailed_stats_table.verticalHeader().setVisible(False)
-        self.detailed_stats_table.setAlternatingRowColors(False)
+            # Ajout des lignes "Non attribué" et "Total"
+            self._add_unassigned_row_detailed(len(all_personnel), detailed_stats, all_groups)
+            self._add_total_row_detailed(len(all_personnel) + 1, detailed_stats, all_groups)
 
-        # Application du filtre actuel
-        self.setup_highlighting(self.detailed_stats_table)
-        self._apply_filter_to_table(self.detailed_stats_table)
+            # Configuration de l'affichage
+            self.detailed_stats_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+            self.detailed_stats_table.verticalHeader().setVisible(False)
+            self.detailed_stats_table.setAlternatingRowColors(False)
+
+            # Application du filtre actuel
+            self.setup_highlighting(self.detailed_stats_table)
+            self._apply_filter_to_table(self.detailed_stats_table)
+
+        except Exception as e:
+            logger.error(f"Erreur dans update_detailed_stats_table: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
 
     def get_group_tooltip(self, group):
         """Retourne l'infobulle explicative pour chaque groupe"""
@@ -769,26 +1038,44 @@ class StatsView(QWidget):
         return tooltips.get(group, "")
     
     def _handle_header_click(self, logical_index):
-        """Gère le clic sur un en-tête de colonne"""
-        if logical_index == 0 or logical_index == self.detailed_stats_table.columnCount() - 1:
+        """Gère le clic sur un en-tête de colonne de manière robuste"""
+        if logical_index <= 0 or logical_index >= self.detailed_stats_table.columnCount() - 1:
             return  # Ignorer les clics sur 'Assigné à' et 'Total'
 
         header_item = self.detailed_stats_table.horizontalHeaderItem(logical_index)
-        if not isinstance(header_item, DetailedGroupHeader):
+        if not isinstance(header_item, AnimatedDetailedGroupHeader):
             return
 
-        if self.expanded_group == header_item.group_name:
-            # Cacher les composants du groupe actuel
-            self._collapse_group(header_item.group_name)
-            self.expanded_group = None
-        else:
-            # Cacher les composants du groupe précédent s'il y en a un
-            if self.expanded_group:
-                self._collapse_group(self.expanded_group)
-            
-            # Montrer les composants du nouveau groupe
-            self._expand_group(header_item.group_name)
-            self.expanded_group = header_item.group_name
+        group_name = header_item.group_name
+
+        # Protection contre les opérations multiples
+        if hasattr(self, '_header_click_in_progress') and self._header_click_in_progress:
+            return
+        self._header_click_in_progress = True
+
+        try:
+            if self.expanded_group == group_name:
+                # Cacher les composants du groupe actuel
+                self._collapse_group(group_name)
+                self.expanded_group = None
+            else:
+                # Cacher les composants du groupe précédent s'il y en a un
+                if self.expanded_group and self.expanded_group in self.component_columns:
+                    self._collapse_group(self.expanded_group)
+                
+                # Délai avant d'ouvrir le nouveau groupe pour éviter les conflits
+                def expand_after_delay():
+                    # Montrer les composants du nouveau groupe
+                    self._expand_group(group_name)
+                    self.expanded_group = group_name
+                    self._header_click_in_progress = False
+                
+                QTimer.singleShot(200, expand_after_delay)
+        except Exception as e:
+            logger.error(f"Erreur lors du traitement du clic sur l'en-tête: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            self._header_click_in_progress = False
 
     def _update_group_components(self):
         """Met à jour les composants des groupes en incluant les postes personnalisés"""
@@ -885,8 +1172,8 @@ class StatsView(QWidget):
 
         return stats
     def _expand_group(self, group_name):
-        """Version améliorée de l'expansion de groupe avec animation"""
-        components = self.group_details[group_name]['components']
+        """Version améliorée de l'expansion de groupe avec animation plus robuste"""
+        components = self.group_details.get(group_name, {}).get('components', [])
         if not components:
             return
 
@@ -905,13 +1192,23 @@ class StatsView(QWidget):
         header = self.detailed_stats_table.horizontalHeaderItem(group_index)
         header.toggle_expansion()
 
-        # Insérer et préparer les colonnes des composants
+        # Insérer les colonnes des composants
         current_column = group_index + 1
         self.component_columns[group_name] = []
         stats = self.calculate_weekend_component_stats()
 
-        # Créer les colonnes masquées initialement
+        # Vérifier si les colonnes existent déjà (important pour la stabilité)
+        existing_columns = []
+        for i in range(self.detailed_stats_table.columnCount()):
+            header = self.detailed_stats_table.horizontalHeaderItem(i)
+            if header and header.text() in components:
+                existing_columns.append(header.text())
+
+        # Créer les colonnes pour les composants qui n'existent pas déjà
         for component in components:
+            if component in existing_columns:
+                continue  # Sauter les colonnes qui existent déjà
+                
             self.detailed_stats_table.insertColumn(current_column)
             header_item = QTableWidgetItem(component)
             self.detailed_stats_table.setHorizontalHeaderItem(current_column, header_item)
@@ -926,7 +1223,6 @@ class StatsView(QWidget):
                 doctor = next((d for d in self.doctors if d.name == person_name), None)
                 is_cat = person_name in [cat.name for cat in self.cats]
                 is_half_time = doctor and doctor.half_parts == 1
-                base_color = QColor('#E8F5E9') if is_cat else (QColor('#F3F4F6') if is_half_time else None)
                 
                 # Appliquer la couleur de base pour CAT ou mi-temps, sans condition
                 if is_half_time:
@@ -939,17 +1235,19 @@ class StatsView(QWidget):
             self.component_columns[group_name].append(current_column)
             current_column += 1
 
-        # Lancer l'animation d'expansion
-        animation = ColumnAnimation(
-            self.detailed_stats_table,
-            group_index + 1,
-            group_index + len(components)
-        )
-        animation.expand()
+        # S'assurer que component_columns contient des valeurs valides avant l'animation
+        if self.component_columns.get(group_name, []):
+            # Lancer l'animation d'expansion
+            animation = ColumnAnimation(
+                self.detailed_stats_table,
+                min(self.component_columns[group_name]),
+                max(self.component_columns[group_name])
+            )
+            animation.expand()
 
     def _collapse_group(self, group_name):
-        """Version améliorée de la réduction de groupe avec animation"""
-        if group_name not in self.component_columns:
+        """Version améliorée de la réduction de groupe avec animation plus robuste"""
+        if group_name not in self.component_columns or not self.component_columns[group_name]:
             return
 
         # Mettre à jour l'indicateur
@@ -958,25 +1256,39 @@ class StatsView(QWidget):
             header = self.detailed_stats_table.horizontalHeaderItem(i)
             if isinstance(header, AnimatedDetailedGroupHeader) and header.group_name == group_name:
                 group_index = i
-                header.toggle_expansion()
+                if header.is_expanded:  # Vérifier si déjà réduit
+                    header.toggle_expansion()
                 break
 
+        # Capturer une copie de la liste des colonnes à supprimer
+        columns_to_remove = list(self.component_columns[group_name])
+        
+        if not columns_to_remove:
+            # Pas de colonnes à supprimer
+            return
+            
         # Lancer l'animation de réduction
-        columns = self.component_columns[group_name]
         animation = ColumnAnimation(
             self.detailed_stats_table,
-            min(columns),
-            max(columns)
+            min(columns_to_remove),
+            max(columns_to_remove)
         )
         animation.collapse()
         
-        # Supprimer les colonnes après l'animation
+        # Supprimer les colonnes après un délai correspondant à la durée de l'animation
         def remove_columns():
-            for column in sorted(self.component_columns[group_name], reverse=True):
-                self.detailed_stats_table.removeColumn(column)
-            self.component_columns.pop(group_name)
+            # Protection contre les erreurs si le groupe n'existe plus
+            if group_name in self.component_columns:
+                for column in sorted(self.component_columns[group_name], reverse=True):
+                    try:
+                        self.detailed_stats_table.removeColumn(column)
+                    except Exception as e:
+                        logger.error(f"Erreur lors de la suppression de la colonne {column}: {e}")
+                # Supprimer la référence aux colonnes après leur suppression
+                self.component_columns.pop(group_name, None)
 
-        QTimer.singleShot(animation.duration + 50, remove_columns)
+        # Utiliser un timer pour s'assurer que l'animation est terminée
+        QTimer.singleShot(animation.duration + 100, remove_columns)
 
     
     def _add_unassigned_row_detailed(self, row_index: int, stats: dict, all_groups: list):
@@ -2387,67 +2699,125 @@ class AnimatedDetailedGroupHeader(DetailedGroupHeader):
         self._update_text()
 
 class ColumnAnimation:
-    """Gère l'animation des colonnes lors de l'expansion/réduction"""
+    """Gère l'animation des colonnes lors de l'expansion/réduction avec une approche compatible Qt6"""
     def __init__(self, table, start_col, end_col):
         self.table = table
         self.start_col = start_col
         self.end_col = end_col
         self.animations = []
         self.original_widths = {}
-        # Durée de base + 50ms par colonne
         self.base_duration = 200
         self.duration = self.base_duration + (end_col - start_col + 1) * 50
+        self.timers = []  # Pour garder une référence aux timers
 
     def expand(self):
-        """Anime l'expansion des colonnes avec un effet cascade fluide"""
+        """Anime l'expansion des colonnes sans utiliser sectionSize"""
         header = self.table.horizontalHeader()
         font_metrics = QFontMetrics(header.font())
         
-        # Calcul des largeurs optimales
+        # Calcul des largeurs optimales et sauvegarde des largeurs originales
         target_widths = {}
         for col in range(self.start_col, self.end_col + 1):
-            # Sauvegarder la largeur originale
             self.original_widths[col] = self.table.columnWidth(col)
             
-            # Calculer la largeur nécessaire
-            max_width = max(
-                (font_metrics.horizontalAdvance(self.table.horizontalHeaderItem(col).text()) + 20),
-                max((font_metrics.horizontalAdvance(self.table.item(row, col).text()) + 10 
-                     for row in range(self.table.rowCount()) 
-                     if self.table.item(row, col)), default=0)
-            )
-            target_widths[col] = min(max_width, 400)  # Limite à 400px
-
-        # Créer les animations avec effet cascade
-        for idx, col in enumerate(range(self.start_col, self.end_col + 1)):
-            anim = QPropertyAnimation(self.table.horizontalHeader(), b"sectionSize")
-            anim.setDuration(self.duration)
-            anim.setStartValue(0)
-            anim.setEndValue(target_widths[col])
-            anim.setEasingCurve(QEasingCurve.Type.OutBack)
+            # Calculer une largeur raisonnable basée sur le contenu
+            header_width = font_metrics.horizontalAdvance(self.table.horizontalHeaderItem(col).text()) + 20
             
-            # Décalage progressif pour effet cascade
-            delay = idx * 50
-            QTimer.singleShot(delay, anim.start)
-            self.animations.append(anim)
+            max_content_width = header_width
+            for row in range(self.table.rowCount()):
+                item = self.table.item(row, col)
+                if item:
+                    content_width = font_metrics.horizontalAdvance(item.text()) + 10
+                    max_content_width = max(max_content_width, content_width)
+            
+            target_widths[col] = min(max_content_width, 150)  # Limite raisonnable
+
+        # Animation progressive par étapes et timers
+        steps = 10  # Nombre d'étapes pour l'animation
+        
+        def animate_step(col, current_step, total_steps, start_width, target_width):
+            progress = current_step / total_steps
+            # Fonction d'easing simple pour un effet plus naturel
+            eased_progress = 1 - pow(1 - progress, 3)  # Easing cubique
+            new_width = int(start_width + (target_width - start_width) * eased_progress)
+            
+            # Appliquer la nouvelle largeur
+            self.table.setColumnWidth(col, new_width)
+            
+            # Si ce n'est pas la dernière étape, planifier la suivante
+            if current_step < total_steps:
+                timer = QTimer()
+                timer.setSingleShot(True)
+                timer.timeout.connect(
+                    lambda col=col, step=current_step+1: 
+                    animate_step(col, step, total_steps, start_width, target_width)
+                )
+                # Convertir en entier pour éviter l'erreur
+                timer_ms = int(self.duration / total_steps)
+                timer.start(timer_ms)
+                self.timers.append(timer)
+        
+        # Lancer l'animation pour chaque colonne avec un délai cascade
+        for idx, col in enumerate(range(self.start_col, self.end_col + 1)):
+            # Rendre la colonne visible avant d'animer
+            self.table.setColumnHidden(col, False)
+            
+            # Configuration initiale
+            start_width = 0
+            self.table.setColumnWidth(col, start_width)
+            
+            # Créer un timer pour le délai en cascade
+            start_timer = QTimer()
+            start_timer.setSingleShot(True)
+            start_timer.timeout.connect(
+                lambda col=col, width=start_width, target=target_widths[col]: 
+                animate_step(col, 1, steps, width, target)
+            )
+            start_timer.start(idx * 50)  # Délai en cascade (déjà un entier)
+            self.timers.append(start_timer)
 
     def collapse(self):
-        """Anime la réduction des colonnes avec effet cascade inversé"""
-        # Créer les animations en ordre inverse
-        for idx, col in enumerate(reversed(range(self.start_col, self.end_col + 1))):
-            anim = QPropertyAnimation(self.table.horizontalHeader(), b"sectionSize")
-            anim.setDuration(self.base_duration + idx * 30)
-            anim.setStartValue(self.table.columnWidth(col))
-            anim.setEndValue(0)
-            anim.setEasingCurve(QEasingCurve.Type.InBack)
+        """Anime la réduction des colonnes sans utiliser sectionSize"""
+        steps = 8  # Moins d'étapes pour la réduction
+        
+        def animate_step(col, current_step, total_steps, start_width):
+            progress = current_step / total_steps
+            # Fonction d'easing simple
+            eased_progress = pow(progress, 2)  # Easing quadratique
+            new_width = int(start_width * (1 - eased_progress))
             
-            # Restaurer la largeur originale après l'animation
-            def restore_width(col):
+            # Appliquer la nouvelle largeur
+            self.table.setColumnWidth(col, new_width)
+            
+            # Si c'est la dernière étape, masquer la colonne
+            if current_step == total_steps:
+                self.table.setColumnHidden(col, True)
+                # Restaurer la largeur originale pour la prochaine utilisation
                 if col in self.original_widths:
                     self.table.setColumnWidth(col, self.original_widths[col])
-                    self.table.setColumnHidden(col, True)
+            elif current_step < total_steps:
+                # Sinon planifier la prochaine étape
+                timer = QTimer()
+                timer.setSingleShot(True)
+                timer.timeout.connect(
+                    lambda col=col, step=current_step+1: 
+                    animate_step(col, step, total_steps, start_width)
+                )
+                # Convertir en entier pour éviter l'erreur
+                timer_ms = int(self.duration / total_steps)
+                timer.start(timer_ms)
+                self.timers.append(timer)
+        
+        # Lancer l'animation pour chaque colonne avec un délai cascade inversé
+        for idx, col in enumerate(reversed(range(self.start_col, self.end_col + 1))):
+            start_width = self.table.columnWidth(col)
             
-            # Décalage progressif pour effet cascade
-            delay = idx * 40
-            QTimer.singleShot(delay, lambda col=col: [anim.start(), restore_width(col)])
-            self.animations.append(anim)
+            # Créer un timer pour le délai en cascade
+            start_timer = QTimer()
+            start_timer.setSingleShot(True)
+            start_timer.timeout.connect(
+                lambda col=col, width=start_width: 
+                animate_step(col, 1, steps, width)
+            )
+            start_timer.start(idx * 40)  # Délai en cascade inversé (déjà un entier)
+            self.timers.append(start_timer)
