@@ -9,7 +9,7 @@ from ..Desiderata.desiderata_management import DesiderataManagementWidget
 from ..Gestion.post_configuration import PostConfigurationWidget
 from core.Constantes.data_persistence import DataPersistence
 from ..Repartition.stats_view import StatsView
-from .doctor_planning_view import DoctorPlanningView
+from ..Attributions.doctor_planning_view import DoctorPlanningView
 from ..Echanges.planning_comparison_view import PlanningComparisonView
 from ..Repartition.detached_stats_window import DetachedStatsWindow
 from .planning_management import PlanningManagementWidget
