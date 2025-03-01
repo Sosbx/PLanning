@@ -14858,3 +14858,14 @@ TypeError: unhashable type: 'SpecificPostConfig'
 2025-03-01 11:42:22,634 [INFO] Traitement du poste NZ
 2025-03-01 11:42:22,634 [INFO] - Ajouté au groupe soir/nuit
 2025-03-01 11:43:27,030 [INFO] Données sauvegardées
+2025-03-01 12:23:32,976 [INFO] Données chargées
+2025-03-01 12:23:32,987 [INFO] Poste personnalisé chargé: NR
+2025-03-01 12:23:32,987 [INFO] Poste personnalisé chargé: NZ
+2025-03-01 12:23:33,368 [INFO] Postes personnalisés chargés: ['NR', 'NZ']
+2025-03-01 12:23:33,442 [INFO] Chargement des postes personnalisés: {'NR': CustomPost(name='NR', start_time=datetime.time(19, 0), end_time=datetime.time(23, 0), day_types={'weekday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x1034b9950>), 'NZ': CustomPost(name='NZ', start_time=datetime.time(20, 0), end_time=datetime.time(23, 0), day_types={'sunday_holiday', 'saturday', 'weekday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x10eafcb50>)}
+2025-03-01 12:23:33,443 [INFO] Mise à jour des groupes avec les postes personnalisés
+2025-03-01 12:23:33,443 [INFO] Traitement du poste NR
+2025-03-01 12:23:33,443 [INFO] - Ajouté au groupe soir/nuit
+2025-03-01 12:23:33,443 [INFO] Traitement du poste NZ
+2025-03-01 12:23:33,443 [INFO] - Ajouté au groupe soir/nuit
+2025-03-01 13:39:42,100 [INFO] Données sauvegardées
