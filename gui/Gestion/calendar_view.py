@@ -11,7 +11,7 @@ import calendar
 from core.Constantes.models import SpecificPostConfig
 from core.Constantes.day_type import DayType
 from workalendar.europe import France
-from .styles import color_system, ACTION_BUTTON_STYLE, StyleConstants
+from ..styles import color_system, ACTION_BUTTON_STYLE, StyleConstants
 import logging
 
 logger = logging.getLogger(__name__)

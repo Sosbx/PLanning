@@ -11,7 +11,7 @@ from PyQt6.QtCore import (Qt, QPropertyAnimation, QEasingCurve, QTimer, QSize, Q
 from gui.styles import color_system, ACTION_BUTTON_STYLE
 from core.Constantes.models import ALL_POST_TYPES
 from core.Constantes.data_persistence import DataPersistence
-from gui.post_configuration import PostConfig   
+from gui.Gestion.post_configuration import PostConfig   
 import numpy as np
 from datetime import datetime, time, date
 from typing import List, Dict, Optional, Tuple, Union

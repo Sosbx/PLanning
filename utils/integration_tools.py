@@ -5,7 +5,7 @@ import logging
 from datetime import date, timedelta
 from PyQt6.QtWidgets import QMessageBox, QDialog
 from PyQt6.QtCore import QDate
-from gui.post_configuration import AddConfigDialog
+from gui.Gestion.post_configuration import AddConfigDialog
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ def attach_harmonization_tools(main_window):
     Args:
         main_window: Fenêtre principale de l'application
     """
-    from gui.harmonization_dialog import HarmonizationDialog
+    from gui.Gestion.harmonization_dialog import HarmonizationDialog
     
     # Ajouter une méthode pour ouvrir le dialogue d'harmonisation
     def show_harmonization_dialog():
@@ -126,7 +126,7 @@ def patch_post_configuration_widget(main_window):
         
         # Ajouter la méthode d'harmonisation
         def show_harmonization_dialog():
-            from gui.harmonization_dialog import HarmonizationDialog
+            from gui.Gestion.harmonization_dialog import HarmonizationDialog
             
             try:
                 dialog = HarmonizationDialog(widget.specific_config_tab.post_configuration, widget.specific_config_tab)
@@ -154,7 +154,7 @@ def patch_calendar_view(main_window):
     Args:
         main_window: Fenêtre principale de l'application
     """
-    from gui.calendar_view import CalendarView
+    from gui.Gestion.calendar_view import CalendarView
     
     # Sauvegarder les méthodes originales
     original_show_date_configs = CalendarView.show_date_configs
@@ -163,7 +163,7 @@ def patch_calendar_view(main_window):
     # Remplacer par les versions améliorées
     def enhanced_show_date_configs(self, date_obj):
         """Affiche les configurations pour une date spécifique avec préréglage du type de jour."""
-        from gui.post_configuration import SpecificConfigDialog
+        from gui.Gestion.post_configuration import SpecificConfigDialog
         
         configs = self.config_dates.get(date_obj, [])
         if configs:
@@ -228,7 +228,7 @@ def patch_calendar_view(main_window):
     
     def enhanced_add_configuration(self, date_obj=None):
         """Ajoute une nouvelle configuration pour une date avec présélection améliorée."""
-        from gui.post_configuration import AddConfigDialog
+        from gui.Gestion.post_configuration import AddConfigDialog
         
         # Si une date est fournie, déterminer son type
         selected_day_type = None

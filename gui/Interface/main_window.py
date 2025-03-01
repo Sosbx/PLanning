@@ -3,18 +3,18 @@
 from PyQt6.QtWidgets import QMainWindow, QTabWidget, QPushButton, QVBoxLayout, QWidget
 from PyQt6.QtCore import Qt, QDate, QSize
 from PyQt6.QtGui import QIcon
-from .personnel_management import PersonnelManagementWidget
+from ..Gestion.personnel_management import PersonnelManagementWidget
 from .planning_view import PlanningViewWidget
-from .desiderata_management import DesiderataManagementWidget
-from .post_configuration import PostConfigurationWidget
+from ..Desiderata.desiderata_management import DesiderataManagementWidget
+from ..Gestion.post_configuration import PostConfigurationWidget
 from core.Constantes.data_persistence import DataPersistence
-from .stats_view import StatsView
+from ..Repartition.stats_view import StatsView
 from .doctor_planning_view import DoctorPlanningView
-from .planning_comparison_view import PlanningComparisonView
-from .detached_stats_window import DetachedStatsWindow
+from ..Echanges.planning_comparison_view import PlanningComparisonView
+from ..Repartition.detached_stats_window import DetachedStatsWindow
 from .planning_management import PlanningManagementWidget
 from core.utils import resource_path
-from .styles import color_system, GLOBAL_STYLE, ACTION_BUTTON_STYLE, StyleConstants
+from ..styles import color_system, GLOBAL_STYLE, ACTION_BUTTON_STYLE, StyleConstants
 from core.Constantes.constraints import PlanningConstraints
 from core.post_attribution_handler import PostAttributionHandler
 from gui.Attributions.post_attribution_history_dialog import PostAttributionHistoryDialog

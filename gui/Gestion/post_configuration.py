@@ -12,7 +12,7 @@ from datetime import time  # Ajout de l'import correct pour time
 from core.Constantes.models import DailyPostConfiguration, PostConfig, SpecificPostConfig, ALL_POST_TYPES, PostManager, TimeSlot
 from core.Constantes.custom_post import CustomPost
 from typing import List, Dict, Optional, TYPE_CHECKING, Union
-from .styles import EDIT_DELETE_BUTTON_STYLE, ACTION_BUTTON_STYLE, ADD_BUTTON_STYLE
+from ..styles import EDIT_DELETE_BUTTON_STYLE, ACTION_BUTTON_STYLE, ADD_BUTTON_STYLE
 from workalendar.europe import France
 from core.Constantes.day_type import DayType
 import logging

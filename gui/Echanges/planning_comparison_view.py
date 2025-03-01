@@ -2,20 +2,21 @@
 # gui/planning_comparison_view.py
 
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton, QHeaderView, QMessageBox,
-                             QTableWidget, QTableWidgetItem, QDialog, QLabel, QScrollArea, QTextEdit)
+                             QTableWidget, QTableWidgetItem, QDialog, QLabel, QScrollArea, QTextEdit,QGridLayout)
 
-from PyQt6.QtCore import Qt, QDate
+from PyQt6.QtCore import Qt, QDate, pyqtSignal
 from PyQt6.QtGui import QColor, QBrush, QFont, QTextCharFormat
 from datetime import date, timedelta, datetime, time
 from core.utils import get_post_period
 from core.Constantes.models import TimeSlot, Doctor, CAT
 from dateutil.relativedelta import relativedelta
 from core.Constantes.constraints import PlanningConstraints
+from gui.Echanges.post_filter_component import PostFilterComponent
 from workalendar.europe import France
 
 
 
-from .styles import color_system, StyleConstants
+from ..styles import color_system, StyleConstants
 
 # Get colors from color system
 WEEKEND_COLOR = color_system.get_color('weekend')
@@ -96,11 +97,11 @@ class PlanningComparisonView(QWidget):
             }}
         """)
 
-        # Zone des sélecteurs
+        # Zone des sélecteurs compactée
         selectors_layout = QHBoxLayout()
         selectors_layout.setSpacing(StyleConstants.SPACING['md'])
 
-        # Création des sélecteurs
+        # Création des sélecteurs avec hauteur réduite
         self.selector1 = QComboBox()
         self.selector2 = QComboBox()
         
@@ -112,7 +113,8 @@ class PlanningComparisonView(QWidget):
                 border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
                 padding: {StyleConstants.SPACING['xs']}px;
                 min-width: 200px;
-                min-height: {StyleConstants.SPACING['xl']}px;
+                min-height: {StyleConstants.SPACING['lg']}px;
+                max-height: {StyleConstants.SPACING['xl']}px;
             }}
             QComboBox:hover {{
                 border-color: {color_system.colors['primary'].name()};
@@ -124,6 +126,22 @@ class PlanningComparisonView(QWidget):
         selectors_layout.addWidget(self.selector1)
         selectors_layout.addWidget(self.selector2)
         layout.addLayout(selectors_layout)
+
+        # Ajout des composants de filtre
+        filter_layout = QHBoxLayout()
+        filter_layout.setSpacing(StyleConstants.SPACING['sm'])
+        
+        # Filtres pour le planning de gauche
+        self.filter1 = PostFilterComponent(self)
+        self.filter1.filter_changed.connect(lambda filters: self.apply_filters(self.table1, filters))
+        
+        # Filtres pour le planning de droite
+        self.filter2 = PostFilterComponent(self)
+        self.filter2.filter_changed.connect(lambda filters: self.apply_filters(self.table2, filters))
+        
+        filter_layout.addWidget(self.filter1)
+        filter_layout.addWidget(self.filter2)
+        layout.addLayout(filter_layout)
 
         # Zone des tableaux
         tables_layout = QHBoxLayout()
@@ -153,6 +171,10 @@ class PlanningComparisonView(QWidget):
         # Initialisation des attributs de suivi
         self.selected_date = None
         self.selected_period = None
+        
+        # Initialisation des attributs de filtrage
+        self.active_filters1 = self.filter1.get_active_filters()  # Tous les posts par défaut
+        self.active_filters2 = self.filter2.get_active_filters()  # Tous les posts par défaut
 
         # Connexion des signaux
         self.selector1.currentIndexChanged.connect(self.on_selector_changed)
@@ -222,6 +244,26 @@ class PlanningComparisonView(QWidget):
             self.is_syncing_horizontal = True
             self.table1.horizontalScrollBar().setValue(value)
             self.is_syncing_horizontal = False
+    
+    def apply_filters(self, table, filters):
+        """
+        Applique les filtres de postes à la table spécifiée.
+        
+        Args:
+            table: Table à filtrer (table1 ou table2)
+            filters: Liste des types de postes à afficher
+        """
+        # Mise à jour des filtres actifs
+        if table == self.table1:
+            self.active_filters1 = filters
+        else:
+            self.active_filters2 = filters
+        
+        # Mise à jour de la table avec les filtres
+        if table == self.table1:
+            self.table1.populate_table(self.selector1.currentText(), self.active_filters1)
+        else:
+            self.table2.populate_table(self.selector2.currentText(), self.active_filters2)
 
     def get_doctor_parts(self, doctor_name):
         """
@@ -274,10 +316,10 @@ class PlanningComparisonView(QWidget):
         sender = self.sender()
         if sender == self.selector1:
             self.current_selection1 = sender.currentText()
-            self.table1.populate_table(self.current_selection1)
+            self.table1.populate_table(self.current_selection1, self.active_filters1)
         elif sender == self.selector2:
             self.current_selection2 = sender.currentText()
-            self.table2.populate_table(self.current_selection2)
+            self.table2.populate_table(self.current_selection2, self.active_filters2)
 
     def update_comparison(self, preserve_selection=False):
         if preserve_selection and hasattr(self, 'current_selection1') and hasattr(self, 'current_selection2'):
@@ -287,8 +329,8 @@ class PlanningComparisonView(QWidget):
             selected1 = self.selector1.currentText()
             selected2 = self.selector2.currentText()
         
-        self.table1.populate_table(selected1)
-        self.table2.populate_table(selected2)
+        self.table1.populate_table(selected1, self.active_filters1)
+        self.table2.populate_table(selected2, self.active_filters2)
         
         if preserve_selection:
             self.selector1.setCurrentText(selected1)
@@ -408,6 +450,10 @@ class PlanningComparisonView(QWidget):
         # Reset selectors
         self.selector1.setCurrentIndex(0)
         self.selector2.setCurrentIndex(0)
+        
+        # Reset filters
+        self.filter1.toggle_all_filters(True)
+        self.filter2.toggle_all_filters(True)
         
         # Reset bottom section text widgets
         self.bottom_section.left_content.clear()
@@ -863,10 +909,24 @@ class FullPlanningTable(QTableWidget):
 
 
    
-    def populate_table(self, selected):
-        """Remplit le tableau avec les données du planning"""
+    def populate_table(self, selected, active_filters=None):
+        """
+        Remplit le tableau avec les données du planning, en filtrant par les types de postes actifs.
+        
+        Args:
+            selected: Nom du médecin/CAT sélectionné ou "Non attribué"
+            active_filters: Liste des types de postes à afficher (None = tous les postes)
+        """
         if not self.parent.planning or not self.parent.planning.days:
             return
+
+        # Si aucun filtre n'est spécifié, utiliser tous les types de postes
+        if active_filters is None:
+            active_filters = [
+                "ML", "MC", "MM", "CM", "HM", "RM", "SM", 
+                "CA", "HA", "RA", "SA", "AL", "AC", "CT",
+                "CS", "HS", "RS", "SS", "NC", "NA", "NM", "NL"
+            ]
 
         self.clear()
 
@@ -945,23 +1005,24 @@ class FullPlanningTable(QTableWidget):
             if day_planning:
                 is_weekend_or_holiday = day_planning.is_weekend or day_planning.is_holiday_or_bridge
 
-                # Récupération des posts
-                posts = [slot for slot in day_planning.slots if (selected == "Non attribué" and slot.assignee is None) or slot.assignee == selected]
+                # Récupération des posts filtrés
+                if selected == "Non attribué":
+                    # Pour "Non attribué", filtrer les slots sans assignation
+                    all_posts = [slot for slot in day_planning.slots if slot.assignee is None]
+                    filtered_posts = [p for p in all_posts if p.abbreviation in active_filters]
+                else:
+                    # Pour un médecin/CAT sélectionné, filtrer par son nom et les types de postes actifs
+                    all_posts = [slot for slot in day_planning.slots if slot.assignee == selected]
+                    filtered_posts = [p for p in all_posts if p.abbreviation in active_filters]
                 
                 # Tri par période
-                morning_posts = [p for p in posts if get_post_period(p) == 1]  # MORNING
-                afternoon_posts = [p for p in posts if get_post_period(p) == 2]  # AFTERNOON
-                evening_posts = [p for p in posts if get_post_period(p) == 3]  # EVENING
+                morning_posts = [p for p in filtered_posts if self.get_post_period(p.abbreviation) == 1]
+                afternoon_posts = [p for p in filtered_posts if self.get_post_period(p.abbreviation) == 2]
+                evening_posts = [p for p in filtered_posts if self.get_post_period(p.abbreviation) == 3]
 
                 # Création des cellules pour chaque période
                 for i, post_list in enumerate([morning_posts, afternoon_posts, evening_posts]):
                     posts_text = ", ".join([p.abbreviation for p in post_list])
-                    if selected == "Non attribué":
-                        unassigned_posts = [slot.abbreviation for slot in day_planning.slots 
-                                        if slot.assignee is None and self.get_post_period(slot.abbreviation) == i + 1]
-                        posts_text = ", ".join(unassigned_posts)
-                    
-                    item = QTableWidgetItem(posts_text)
                     
                     item = QTableWidgetItem(posts_text)
                     item.setFont(bold_font)
@@ -1268,3 +1329,180 @@ class PostAssignmentDialog(QDialog):
 
     def get_selected_post(self):
         return self.post_selector.currentText()
+    
+
+
+class PostFilterComponent(QWidget):
+    """
+    Composant pour filtrer les types de postes dans les plannings.
+    Permet de sélectionner/désélectionner visuellement les types de postes à afficher.
+    """
+    filter_changed = pyqtSignal(list)  # Signal émis lorsque les filtres changent
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.post_types = [
+            # Postes du matin
+            "ML", "MC", "MM", "CM", "HM", "SM", "RM",
+            # Postes d'après-midi
+            "CA", "HA", "SA", "RA", "AL", "AC", "CT",
+            # Postes du soir
+            "CS", "HS", "SS", "RS", "NA", "NM", "NC", "NL"
+        ]
+        self.post_groups = {
+            "Matin": ["ML", "MC", "MM", "CM", "HM", "SM", "RM"],
+            "Après-midi": ["CA", "HA", "SA", "RA", "AL", "AC", "CT"],
+            "Soir/Nuit": ["CS", "HS", "SS", "RS", "NA", "NM", "NC", "NL"]
+        }
+        self.post_colors = {
+            "Matin": "#D8E1ED",      # Bleu clair
+            "Après-midi": "#E6D4B8",  # Orange clair
+            "Soir/Nuit": "#DFD8ED"    # Violet clair
+        }
+        
+        # État des filtres (True = affiché, False = masqué)
+        self.filters = {post_type: True for post_type in self.post_types}
+        
+        self.init_ui()
+    
+    def init_ui(self):
+        """Initialise l'interface utilisateur du composant de filtrage."""
+        main_layout = QHBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(2)
+        
+        # Créer un widget défilable
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setMaximumHeight(80)  # Hauteur maximale pour éviter de prendre trop de place
+        
+        # Conteneur pour les boutons
+        filter_container = QWidget()
+        grid_layout = QGridLayout(filter_container)
+        grid_layout.setContentsMargins(2, 2, 2, 2)
+        grid_layout.setSpacing(2)
+        
+        # Créer les groupes de boutons
+        self.button_groups = {}
+        self.group_toggle_buttons = {}
+        self.filter_buttons = {}
+        
+        # Créer un bouton pour tout sélectionner/désélectionner
+        select_all_button = QPushButton("Tout")
+        select_all_button.setCheckable(True)
+        select_all_button.setChecked(True)
+        select_all_button.clicked.connect(self.toggle_all_filters)
+        select_all_button.setFixedWidth(40)
+        select_all_button.setStyleSheet("""
+            QPushButton {
+                background-color: #B8C7DB;
+                border-radius: 3px;
+                padding: 2px;
+                font-size: 8pt;
+            }
+            QPushButton:checked {
+                background-color: #7691B4;
+                color: white;
+            }
+        """)
+        grid_layout.addWidget(select_all_button, 0, 0)
+        
+        col_offset = 1
+        
+        # Créer les boutons de groupe et les boutons de filtre
+        for group_idx, (group_name, post_types) in enumerate(self.post_groups.items()):
+            # Bouton de groupe
+            group_button = QPushButton(group_name)
+            group_button.setCheckable(True)
+            group_button.setChecked(True)
+            group_button.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {self.post_colors[group_name]};
+                    border-radius: 3px;
+                    padding: 2px;
+                    font-size: 8pt;
+                }}
+                QPushButton:checked {{
+                    background-color: {self.darker_color(self.post_colors[group_name])};
+                    color: white;
+                }}
+            """)
+            group_button.clicked.connect(lambda checked, g=group_name: self.toggle_group(g, checked))
+            grid_layout.addWidget(group_button, 0, group_idx + col_offset)
+            self.group_toggle_buttons[group_name] = group_button
+            
+            # Boutons pour chaque type de poste dans le groupe
+            for i, post_type in enumerate(post_types):
+                post_button = QPushButton(post_type)
+                post_button.setCheckable(True)
+                post_button.setChecked(True)
+                post_button.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: {self.post_colors[group_name]};
+                        border-radius: 3px;
+                        padding: 2px;
+                        font-size: 8pt;
+                    }}
+                    QPushButton:checked {{
+                        background-color: {self.darker_color(self.post_colors[group_name])};
+                        color: white;
+                    }}
+                """)
+                post_button.clicked.connect(lambda checked, pt=post_type: self.toggle_filter(pt, checked))
+                grid_layout.addWidget(post_button, 1, i + group_idx + col_offset)
+                self.filter_buttons[post_type] = post_button
+            
+            col_offset += len(post_types) - 1
+        
+        scroll_area.setWidget(filter_container)
+        main_layout.addWidget(scroll_area)
+    
+    def darker_color(self, hex_color, factor=0.7):
+        """Retourne une version plus foncée de la couleur."""
+        color = QColor(hex_color)
+        darker = color.darker(int(100/factor))
+        return darker.name()
+    
+    def toggle_filter(self, post_type, checked):
+        """Active ou désactive l'affichage d'un type de poste spécifique."""
+        self.filters[post_type] = checked
+        
+        # Mettre à jour l'état du bouton de groupe
+        for group_name, posts in self.post_groups.items():
+            if post_type in posts:
+                # Vérifier si tous les posts de ce groupe sont dans le même état
+                all_same = all(self.filters[pt] == checked for pt in posts)
+                if all_same:
+                    self.group_toggle_buttons[group_name].setChecked(checked)
+        
+        # Émettre le signal de changement
+        self.filter_changed.emit(self.get_active_filters())
+    
+    def toggle_group(self, group_name, checked):
+        """Active ou désactive l'affichage de tous les postes d'un groupe."""
+        for post_type in self.post_groups[group_name]:
+            self.filters[post_type] = checked
+            self.filter_buttons[post_type].setChecked(checked)
+        
+        # Émettre le signal de changement
+        self.filter_changed.emit(self.get_active_filters())
+    
+    def toggle_all_filters(self, checked):
+        """Active ou désactive l'affichage de tous les postes."""
+        # Mettre à jour tous les filtres
+        for post_type in self.post_types:
+            self.filters[post_type] = checked
+            self.filter_buttons[post_type].setChecked(checked)
+        
+        # Mettre à jour tous les boutons de groupe
+        for group_name in self.post_groups:
+            self.group_toggle_buttons[group_name].setChecked(checked)
+        
+        # Émettre le signal de changement
+        self.filter_changed.emit(self.get_active_filters())
+    
+    def get_active_filters(self):
+        """Retourne la liste des types de postes actifs."""
+        return [post_type for post_type, active in self.filters.items() if active]

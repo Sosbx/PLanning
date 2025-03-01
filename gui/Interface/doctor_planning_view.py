@@ -13,7 +13,7 @@ from core.utils import get_post_period
 from core.Constantes.models import Doctor, CAT, TimeSlot
 import logging
 from dateutil.relativedelta import relativedelta
-from .styles import color_system, StyleConstants
+from ..styles import color_system, StyleConstants
 
 logger = logging.getLogger(__name__)
 

@@ -8,8 +8,8 @@ from core.Generator.Weekend.planning_generator import PlanningGenerator
 from core.Constantes.models import ALL_POST_TYPES, WEEKDAY_COMBINATIONS, WEEKEND_COMBINATIONS
 from datetime import date, timedelta
 from PyQt6.QtCore import pyqtSignal
-from .Attributions.pre_attribution_view import PreAttributionWidget
-from .styles import color_system, EDIT_DELETE_BUTTON_STYLE, ACTION_BUTTON_STYLE, ADD_BUTTON_STYLE, StyleConstants
+from ..Attributions.pre_attribution_view import PreAttributionWidget
+from ..styles import color_system, EDIT_DELETE_BUTTON_STYLE, ACTION_BUTTON_STYLE, ADD_BUTTON_STYLE, StyleConstants
 
 
 class PlanningGenerationThread(QThread):

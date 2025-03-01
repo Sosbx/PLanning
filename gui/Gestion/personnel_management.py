@@ -9,7 +9,7 @@ from PyQt6.QtGui import QFont, QColor, QIcon
 from core.Constantes.models import Doctor, CAT, ALL_POST_TYPES, Desiderata
 from core.Constantes.data_persistence import DataPersistence
 from .post_configuration import PostConfigurationWidget
-from .styles import color_system, EDIT_DELETE_BUTTON_STYLE, ADD_BUTTON_STYLE, ACTION_BUTTON_STYLE, GLOBAL_STYLE
+from ..styles import color_system, EDIT_DELETE_BUTTON_STYLE, ADD_BUTTON_STYLE, ACTION_BUTTON_STYLE, GLOBAL_STYLE
 
 class PersonnelManagementWidget(QWidget):
     def __init__(self, doctors, cats, post_configuration, main_window):

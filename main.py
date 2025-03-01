@@ -10,7 +10,7 @@ from logger_config import setup_logger
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QPalette, QColor, QIcon
 from PyQt6.QtCore import QTimer, QThread, pyqtSignal
-from gui.main_window import MainWindow
+from gui.Interface.main_window import MainWindow
 from gui.splash_screen import SplashScreen
 from core.Constantes.models import Doctor, CAT, create_default_post_configuration
 from core.Constantes.data_persistence import DataPersistence

@@ -3,7 +3,7 @@
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QPushButton
 from PyQt6.QtCore import Qt
 from .stats_view import StatsView
-from .styles import ACTION_BUTTON_STYLE
+from ..styles import ACTION_BUTTON_STYLE
 
 class DetachedStatsWindow(QMainWindow):
     def __init__(self, main_window):
