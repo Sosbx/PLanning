@@ -522,7 +522,7 @@ class SpecificConfigWidget(QWidget):
         tools_layout = QHBoxLayout()
         
         # Bouton d'harmonisation
-        harmonize_button = QPushButton("Harmoniser les configurations")
+        harmonize_button = QPushButton("Analyse des erreurs")
         harmonize_button.setObjectName("harmonizeButton")
         harmonize_button.setIcon(QIcon("icons/harmonize.png"))
         harmonize_button.clicked.connect(self.show_harmonization_dialog)

@@ -14837,3 +14837,24 @@ TypeError: unhashable type: 'SpecificPostConfig'
 2025-03-01 11:35:39,312 [INFO] Traitement du poste NZ
 2025-03-01 11:35:39,312 [INFO] - Ajouté au groupe soir/nuit
 2025-03-01 11:37:52,560 [INFO] Données sauvegardées
+2025-03-01 11:38:11,646 [INFO] Données chargées
+2025-03-01 11:38:11,764 [INFO] Poste personnalisé chargé: NR
+2025-03-01 11:38:11,764 [INFO] Poste personnalisé chargé: NZ
+2025-03-01 11:38:12,153 [INFO] Postes personnalisés chargés: ['NR', 'NZ']
+2025-03-01 11:38:12,219 [INFO] Chargement des postes personnalisés: {'NR': CustomPost(name='NR', start_time=datetime.time(19, 0), end_time=datetime.time(23, 0), day_types={'weekday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x105211950>), 'NZ': CustomPost(name='NZ', start_time=datetime.time(20, 0), end_time=datetime.time(23, 0), day_types={'sunday_holiday', 'weekday', 'saturday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x1194f0b50>)}
+2025-03-01 11:38:12,219 [INFO] Mise à jour des groupes avec les postes personnalisés
+2025-03-01 11:38:12,219 [INFO] Traitement du poste NR
+2025-03-01 11:38:12,219 [INFO] - Ajouté au groupe soir/nuit
+2025-03-01 11:38:12,219 [INFO] Traitement du poste NZ
+2025-03-01 11:38:12,219 [INFO] - Ajouté au groupe soir/nuit
+2025-03-01 11:42:22,192 [INFO] Données chargées
+2025-03-01 11:42:22,197 [INFO] Poste personnalisé chargé: NR
+2025-03-01 11:42:22,197 [INFO] Poste personnalisé chargé: NZ
+2025-03-01 11:42:22,568 [INFO] Postes personnalisés chargés: ['NR', 'NZ']
+2025-03-01 11:42:22,634 [INFO] Chargement des postes personnalisés: {'NR': CustomPost(name='NR', start_time=datetime.time(19, 0), end_time=datetime.time(23, 0), day_types={'weekday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x102fdd950>), 'NZ': CustomPost(name='NZ', start_time=datetime.time(20, 0), end_time=datetime.time(23, 0), day_types={'weekday', 'sunday_holiday', 'saturday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x10ebc4b50>)}
+2025-03-01 11:42:22,634 [INFO] Mise à jour des groupes avec les postes personnalisés
+2025-03-01 11:42:22,634 [INFO] Traitement du poste NR
+2025-03-01 11:42:22,634 [INFO] - Ajouté au groupe soir/nuit
+2025-03-01 11:42:22,634 [INFO] Traitement du poste NZ
+2025-03-01 11:42:22,634 [INFO] - Ajouté au groupe soir/nuit
+2025-03-01 11:43:27,030 [INFO] Données sauvegardées
