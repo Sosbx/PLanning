@@ -25,7 +25,9 @@ class CustomSpinBox(QSpinBox):
         event.ignore()
 
 class SpecificConfigDialog(QDialog):
-    def __init__(self, parent, start_date, end_date, default_weekday_config, default_saturday_config, default_sunday_config, existing_config=None):
+    def __init__(self, parent, start_date, end_date, default_weekday_config, default_saturday_config, 
+                default_sunday_config, existing_config=None):
+        """Initialise la boîte de dialogue de configuration spécifique"""
         super().__init__(parent)
         self.start_date = start_date
         self.end_date = end_date
@@ -33,10 +35,29 @@ class SpecificConfigDialog(QDialog):
         self.default_saturday_config = default_saturday_config
         self.default_sunday_config = default_sunday_config
         self.existing_config = existing_config
-        self.cal = France()  # Instance du calendrier France
-        self.setWindowTitle("Configuration spécifique")
+        self.result = None
+        
+        self.setWindowTitle("Configuration Spécifique")
+        self.setMinimumWidth(600)
+        
         self.init_ui()
-
+        
+        # Initialiser en fonction de la configuration existante
+        if existing_config:
+            # Définir les dates
+            self.start_date_edit.setDate(QDate(existing_config.start_date))
+            self.end_date_edit.setDate(QDate(existing_config.end_date))
+            
+            # Définir le type de jour
+            if existing_config.apply_to == "Semaine":
+                self.day_type_group.button(1).setChecked(True)
+            elif existing_config.apply_to == "Samedi":
+                self.day_type_group.button(2).setChecked(True)
+            else:  # "Dimanche/Férié"
+                self.day_type_group.button(3).setChecked(True)
+        
+        # Mettre à jour la table (cela prendra en compte le type de jour et la configuration existante)
+        self.update_table()
     def init_ui(self):
         layout = QVBoxLayout(self)
         self.setStyleSheet("""
@@ -193,27 +214,71 @@ class SpecificConfigDialog(QDialog):
         self.update_table()
 
     def update_table(self):
+        """Met à jour la table en fonction du type de jour sélectionné"""
         self.post_table.setRowCount(0)
         day_type_id = self.day_type_group.checkedId()
+        
+        # Sélectionner la configuration par défaut en fonction du type de jour
         if day_type_id == 1:
             default_config = self.default_weekday_config
         elif day_type_id == 2:
             default_config = self.default_saturday_config
         else:
             default_config = self.default_sunday_config
-
+        
+        from core.Constantes.models import ALL_POST_TYPES
+        
         for post_type in ALL_POST_TYPES:
             row = self.post_table.rowCount()
             self.post_table.insertRow(row)
-            self.post_table.setItem(row, 0, QTableWidgetItem(post_type))
-            spinbox = CustomSpinBox()
+            
+            # Cellule pour le type de poste
+            name_item = QTableWidgetItem(post_type)
+            name_item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            self.post_table.setItem(row, 0, name_item)
+            
+            # Spinbox pour la valeur
+            spinbox = QSpinBox()
             spinbox.setRange(0, 20)
+            
+            # Style amélioré pour le spinbox
+            spinbox.setStyleSheet("""
+                QSpinBox {
+                    min-height: 30px;
+                    min-width: 80px;
+                    padding: 5px;
+                    font-size: 14px;
+                    font-weight: bold;
+                    background-color: white;
+                    border: 1px solid #cccccc;
+                    border-radius: 4px;
+                }
+                QSpinBox::up-button, QSpinBox::down-button {
+                    width: 20px;
+                    height: 15px;
+                    border-radius: 2px;
+                    background-color: #f0f0f0;
+                }
+                QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+                    background-color: #e0e0e0;
+                }
+            """)
+            
+            # Initialiser avec la valeur de la configuration existante si disponible
+            # sinon utiliser la valeur par défaut
             if self.existing_config and post_type in self.existing_config.post_counts:
                 spinbox.setValue(self.existing_config.post_counts[post_type])
             else:
-                spinbox.setValue(default_config.get(post_type, PostConfig()).total)
+                # Utiliser la valeur par défaut du type de jour
+                default_value = default_config.get(post_type, None)
+                default_total = 0 if default_value is None else default_value.total
+                spinbox.setValue(default_total)
+            
             self.post_table.setCellWidget(row, 1, spinbox)
-        self.post_table.resizeColumnsToContents()
+        
+        # Optimiser la largeur des colonnes
+        self.post_table.setColumnWidth(0, 150)  # Type de poste
+        self.post_table.setColumnWidth(1, 100)  # Nombre
 
     
     
@@ -265,43 +330,59 @@ class SpecificConfigDialog(QDialog):
         return True  # Permettre la configuration dans tous les cas
 
     def accept(self):
-        """Valide et accepte la configuration sans vérification du type de jour"""
-        # Vérifier que des dates sont sélectionnées
-        selected_dates = self.calendar.getSelectedDates()
-        if not selected_dates:
-            QMessageBox.warning(self, "Attention", 
-                "Veuillez sélectionner au moins une date dans le calendrier")
+        """Valide la boîte de dialogue et récupère les résultats"""
+        # Vérifier que les dates sont valides
+        start_date = self.start_date_edit.date().toPyDate()
+        end_date = self.end_date_edit.date().toPyDate()
+        
+        if start_date > end_date:
+            QMessageBox.warning(
+                self,
+                "Dates invalides",
+                "La date de début doit être antérieure ou égale à la date de fin."
+            )
             return
-
-        # Récupérer tous les paramètres de configuration
+        
+        # Récupérer le type de jour
+        day_type_id = self.day_type_group.checkedId()
+        if day_type_id == 1:
+            day_type = "Semaine"
+        elif day_type_id == 2:
+            day_type = "Samedi"
+        else:
+            day_type = "Dimanche/Férié"
+        
+        # Récupérer les valeurs des postes
         post_counts = {}
         for row in range(self.post_table.rowCount()):
             post_type = self.post_table.item(row, 0).text()
-            cell_widget = self.post_table.cellWidget(row, 1)
+            spinbox = self.post_table.cellWidget(row, 1)
+            value = spinbox.value()
             
-            if isinstance(cell_widget, QWidget) and cell_widget.layout():
-                # Cas spécial NL/NLv
-                nl_spinbox = cell_widget.layout().itemAt(0).widget()
-                nlv_spinbox = cell_widget.layout().itemAt(1).widget()
-                if "NL" in post_type:
-                    post_counts["NL"] = nl_spinbox.value()
-                    post_counts["NLv"] = nlv_spinbox.value()
+            # Récupérer la valeur par défaut
+            if day_type_id == 1:
+                default_config = self.default_weekday_config
+            elif day_type_id == 2:
+                default_config = self.default_saturday_config
             else:
-                # Inclure toutes les valeurs, même nulles
-                post_counts[post_type] = cell_widget.value()
-
-        # Créer la configuration pour chaque date sélectionnée
-        self.config_results = []
-        for date in selected_dates:
-            specific_config = SpecificPostConfig(
-                start_date=date,
-                end_date=date,
-                apply_to=self.day_type_mapping[self.day_type_group.checkedId()],
-                post_counts=post_counts.copy()
-            )
-            self.config_results.append(specific_config)
-            logger.debug(f"Configuration créée pour {date}: {post_counts}")
-
+                default_config = self.default_sunday_config
+                
+            default_value = default_config.get(post_type, None)
+            default_total = 0 if default_value is None else default_value.total
+            
+            # Ajouter uniquement si la valeur est différente de la valeur par défaut
+            if value != default_total:
+                post_counts[post_type] = value
+        
+        # Créer l'objet SpecificPostConfig
+        self.result = SpecificPostConfig(
+            start_date=start_date,
+            end_date=end_date,
+            apply_to=day_type,
+            post_counts=post_counts
+        )
+        
+        # Accepter la boîte de dialogue
         super().accept()
     def get_result(self) -> Optional[SpecificPostConfig]:
         """Accesseur pour récupérer la configuration créée"""
@@ -382,6 +463,22 @@ class SpecificConfigWidget(QWidget):
             QPushButton#deleteButton:hover {
                 background-color: #da190b;
             }
+            QPushButton#viewCalendarButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+            }
+            QPushButton#viewCalendarButton:hover {
+                background-color: #2980b9;
+            }
+            QPushButton#harmonizeButton {
+                background-color: #9b59b6;
+                color: white;
+                border: none;
+            }
+            QPushButton#harmonizeButton:hover {
+                background-color: #8e44ad;
+            }
             QGroupBox {
                 background-color: white;
                 border: 1px solid #ddd;
@@ -420,6 +517,26 @@ class SpecificConfigWidget(QWidget):
         """)
         header_layout.addWidget(self.stats_label)
         header_layout.addStretch()
+        
+        # Boutons outils
+        tools_layout = QHBoxLayout()
+        
+        # Bouton d'harmonisation
+        harmonize_button = QPushButton("Harmoniser les configurations")
+        harmonize_button.setObjectName("harmonizeButton")
+        harmonize_button.setIcon(QIcon("icons/harmonize.png"))
+        harmonize_button.clicked.connect(self.show_harmonization_dialog)
+        tools_layout.addWidget(harmonize_button)
+        
+        # Bouton de visualisation calendaire
+        view_calendar_button = QPushButton("Visualisation Calendaire")
+        view_calendar_button.setObjectName("viewCalendarButton")
+        view_calendar_button.setIcon(QIcon("icons/calendar.png"))
+        view_calendar_button.clicked.connect(self.show_calendar_view)
+        tools_layout.addWidget(view_calendar_button)
+        
+        tools_layout.addStretch()
+        header_layout.addLayout(tools_layout)
 
         layout.addLayout(header_layout)
 
@@ -464,6 +581,23 @@ class SpecificConfigWidget(QWidget):
         button_layout.addStretch()
         button_layout.addWidget(save_button)
         layout.addLayout(button_layout)
+
+    def show_harmonization_dialog(self):
+        """Affiche le dialogue d'harmonisation des configurations."""
+        from .harmonization_dialog import HarmonizationDialog
+        
+        try:
+            dialog = HarmonizationDialog(self.post_configuration, self)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                # Si des modifications ont été apportées, mettre à jour la table
+                self.update_table()
+        except Exception as e:
+            logger.error(f"Erreur lors de l'affichage du dialogue d'harmonisation: {e}", exc_info=True)
+            QMessageBox.critical(
+                self,
+                "Erreur",
+                f"Une erreur est survenue lors de l'affichage du dialogue d'harmonisation:\n{str(e)}"
+            )
 
     def update_table(self):
         """Met à jour la table avec les configurations spécifiques regroupées"""
@@ -742,6 +876,37 @@ class SpecificConfigWidget(QWidget):
                     logger.debug(f"Différence trouvée pour poste personnalisé {post_type}: {base_count} -> {new_count}")
         
         return differences
+    
+    def show_calendar_view(self):
+        """Affiche la vue calendaire des configurations spécifiques"""
+        from .calendar_view import CalendarView
+        
+        try:
+            calendar_dialog = CalendarView(
+                self.post_configuration,
+                self,
+                self.planning_start_date,
+                self.planning_end_date
+            )
+            
+            # Exécuter la boîte de dialogue de façon modale
+            result = calendar_dialog.exec()
+            
+            # Si des modifications ont été apportées, mettre à jour la table
+            if result == QDialog.DialogCode.Accepted:
+                self.update_table()
+            else:
+                # Même si Annuler est cliqué, des modifications ont pu être apportées
+                # donc on met à jour quand même
+                self.update_table()
+                
+        except Exception as e:
+            logger.error(f"Erreur lors de l'affichage de la vue calendaire: {e}", exc_info=True)
+            QMessageBox.critical(
+                self,
+                "Erreur",
+                f"Une erreur est survenue lors de l'affichage de la vue calendaire:\n{str(e)}"
+            )
 
     def _format_modifications(self, differences):
         """Formate les modifications pour l'affichage dans la table"""
@@ -768,7 +933,7 @@ class SpecificConfigWidget(QWidget):
         return "\n".join(lines)
 
     def _edit_group(self, row, group):
-        """Édite un groupe de configurations"""
+        """Édite un groupe de configurations avec amélioration de la sélection de date"""
         # Créer une liste de toutes les dates du groupe
         all_dates = []
         for config in group:
@@ -777,12 +942,20 @@ class SpecificConfigWidget(QWidget):
                 all_dates.append(current_date)
                 current_date += timedelta(days=1)
 
-        # Créer le dialogue avec les dates et la configuration
+        # Trier les dates et prendre la première comme date d'édition
+        if all_dates:
+            all_dates.sort()
+            edit_date = all_dates[0]
+        else:
+            edit_date = None
+
+        # Créer le dialogue avec les dates, la configuration et la date d'édition
         dialog = AddConfigDialog(
             self,
             self.post_configuration,
             existing_config=group[0],  # Configuration modèle
-            existing_dates=all_dates  # Toutes les dates du groupe
+            existing_dates=all_dates,  # Toutes les dates du groupe
+            edit_date=edit_date       # Date à éditer pour positionnement du calendrier
         )
         
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -892,11 +1065,12 @@ class DragSelectCalendar(QCalendarWidget):
         self.updateCells()
 
 class AddConfigDialog(QDialog):
-    def __init__(self, parent=None, post_configuration=None, existing_config=None, existing_dates=None):
+    def __init__(self, parent=None, post_configuration=None, existing_config=None, existing_dates=None, edit_date=None):
         super().__init__(parent)
         self.post_configuration = post_configuration
         self.existing_config = existing_config
         self.existing_dates = existing_dates or []
+        self.edit_date = edit_date  # Nouvelle propriété pour stocker la date à éditer
         self.config_results = []
         
         # Configuration de la fenêtre
@@ -998,25 +1172,41 @@ class AddConfigDialog(QDialog):
         calendar_group = QGroupBox("Sélection des jours")
         calendar_layout = QVBoxLayout(calendar_group)
         
-        # En-tête avec stats
+        # En-tête avec stats et information sur le jour en cours d'édition
         stats_widget = QWidget()
         stats_layout = QHBoxLayout(stats_widget)
+        
         self.selection_label = QLabel("0 jours sélectionnés")
         self.selection_label.setStyleSheet("color: #3498db; font-weight: bold;")
         stats_layout.addWidget(self.selection_label)
+        
+        # Ajouter une information sur le jour en cours d'édition si disponible
+        if self.edit_date:
+            cal = France()  # Calendrier français pour détecter les jours fériés
+            day_type = self.get_day_type_label(self.edit_date, cal)
+            edit_info = QLabel(f"Édition du {self.edit_date.strftime('%d/%m/%Y')} ({day_type})")
+            edit_info.setStyleSheet("color: #e74c3c; font-weight: bold; margin-left: 20px;")
+            stats_layout.addWidget(edit_info)
+        
+        stats_layout.addStretch()
         calendar_layout.addWidget(stats_widget)
         
-        # Calendrier
-        self.calendar = DragSelectCalendar()
+        # Calendrier amélioré
+        self.calendar = ImprovedDragSelectCalendar(self.edit_date)
         self.calendar.selectionChanged.connect(self.update_selection_count)
         calendar_layout.addWidget(self.calendar)
         
-        # Si on a des dates existantes, les pré-sélectionner
+        # Si on a des dates existantes ou une date d'édition, les pré-sélectionner
         if self.existing_dates:
             for date in self.existing_dates:
                 self.calendar.selected_dates.add(date)
             self.calendar.updateCells()
-            self.update_selection_count()
+        elif self.edit_date:
+            # Si c'est une édition d'une date spécifique
+            self.calendar.selected_dates.add(self.edit_date)
+            self.calendar.updateCells()
+        
+        self.update_selection_count()
         
         # Instructions
         instructions = QLabel(
@@ -1039,11 +1229,19 @@ class AddConfigDialog(QDialog):
         day_type_layout = QVBoxLayout(day_type_group)
         self.day_type_combo = QComboBox()
         self.day_type_combo.addItems(["Semaine", "Samedi", "Dimanche/Férié"])
-        # Si on édite une configuration existante, sélectionner le bon type de jour
-        if self.existing_config:
+        
+        # Si on a une date d'édition, sélectionner automatiquement le bon type de jour
+        if self.edit_date:
+            day_type = self.get_day_type(self.edit_date)
+            index = self.day_type_combo.findText(day_type)
+            if index >= 0:
+                self.day_type_combo.setCurrentIndex(index)
+        # Sinon, si on édite une configuration existante, sélectionner le bon type de jour
+        elif self.existing_config:
             index = self.day_type_combo.findText(self.existing_config.apply_to)
             if index >= 0:
                 self.day_type_combo.setCurrentIndex(index)
+        
         self.day_type_combo.currentIndexChanged.connect(self.on_day_type_changed)
         day_type_layout.addWidget(self.day_type_combo)
         
@@ -1077,13 +1275,66 @@ class AddConfigDialog(QDialog):
         main_layout.addWidget(left_panel, 1)
         main_layout.addWidget(right_panel, 1)
 
+    def get_day_type(self, date_obj):
+        """Détermine le type de jour (Semaine, Samedi, Dimanche/Férié) en fonction de la date"""
+        cal = France()  # Calendrier français pour détecter les jours fériés
+        
+        # Jour férié ou pont -> Dimanche/Férié
+        if cal.is_holiday(date_obj) or DayType.is_bridge_day(date_obj, cal):
+            return "Dimanche/Férié"
+        # Samedi -> Samedi
+        elif date_obj.weekday() == 5:  # 5 = samedi
+            return "Samedi"
+        # Dimanche -> Dimanche/Férié
+        elif date_obj.weekday() == 6:  # 6 = dimanche
+            return "Dimanche/Férié"
+        # Jour de semaine -> Semaine
+        else:
+            return "Semaine"
+    
+    def get_day_type_label(self, date_obj, cal=None):
+        """Retourne un libellé plus détaillé du type de jour pour l'affichage"""
+        if cal is None:
+            cal = France()
+            
+        if cal.is_holiday(date_obj):
+            return "Jour férié"
+        elif DayType.is_bridge_day(date_obj, cal):
+            return "Jour de pont"
+        elif date_obj.weekday() == 5:
+            return "Samedi"
+        elif date_obj.weekday() == 6:
+            return "Dimanche"
+        else:
+            return f"Jour de semaine ({['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'][date_obj.weekday()]})"
+
+    def update_selection_count(self):
+        """Met à jour le compteur de dates sélectionnées"""
+        count = len(self.calendar.selected_dates)
+        self.selection_label.setText(f"{count} jour{'s' if count > 1 else ''} sélectionné{'s' if count > 1 else ''}")
+        
+    def on_day_type_changed(self, index):
+        """Met à jour les valeurs par défaut selon le type de jour"""
+        day_type = self.day_type_combo.currentText()
+        default_config = None
+
+        if day_type == "Semaine":
+            default_config = self.post_configuration.weekday
+        elif day_type == "Samedi":
+            default_config = self.post_configuration.saturday
+        else:  # Dimanche/Férié
+            default_config = self.post_configuration.sunday_holiday
+
+        if default_config:
+            for post_type, spinbox in self.post_spinboxes.items():
+                spinbox.setValue(default_config.get(post_type, PostConfig()).total)
     def init_posts_grid(self):
-        """Initialise la grille des postes en colonnes"""
+        """Initialise la grille des postes en colonnes avec des spinboxes améliorées"""
         POSTS_PER_COLUMN = 6
         COLUMNS = 4
         
         # En-têtes
-        header_style = "font-weight: bold; color: #2c3e50; padding: 5px;"
+        header_style = "font-weight: bold; color: #2c3e50; padding: 5px; font-size: 14px;"
         for col in range(COLUMNS):
             header = QLabel("Type de poste")
             header.setStyleSheet(header_style)
@@ -1096,6 +1347,28 @@ class AddConfigDialog(QDialog):
         # Initialisation des spinboxes
         self.post_spinboxes = {}
         all_posts = ALL_POST_TYPES.copy()
+        
+        spinbox_style = """
+            QSpinBox {
+                min-height: 30px;
+                min-width: 80px;
+                padding: 5px;
+                font-size: 14px;
+                font-weight: bold;
+                background-color: white;
+                border: 1px solid #cccccc;
+                border-radius: 4px;
+            }
+            QSpinBox::up-button, QSpinBox::down-button {
+                width: 20px;
+                height: 15px;
+                border-radius: 2px;
+                background-color: #f0f0f0;
+            }
+            QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+                background-color: #e0e0e0;
+            }
+        """
         
         for index, post_type in enumerate(all_posts):
             col = (index // POSTS_PER_COLUMN) * 2
@@ -1112,14 +1385,18 @@ class AddConfigDialog(QDialog):
                 background-color: #f0f2f5;
                 border-radius: 3px;
                 color: #2c3e50;
+                font-size: 14px;
+                font-weight: bold;
             """)
             post_layout.addWidget(post_label)
             
             self.posts_layout.addWidget(post_widget, row, col)
             
-            # SpinBox avec style moderne
+            # SpinBox avec style moderne et taille augmentée
             spinbox = CustomSpinBox()
             spinbox.setRange(0, 20)
+            spinbox.setStyleSheet(spinbox_style)
+            
             # Si on édite une configuration existante, utiliser les valeurs existantes
             if self.existing_config and post_type in self.existing_config.post_counts:
                 spinbox.setValue(self.existing_config.post_counts[post_type])
@@ -1133,7 +1410,6 @@ class AddConfigDialog(QDialog):
                 else:  # Dimanche/Férié
                     default_config = self.post_configuration.sunday_holiday
                 spinbox.setValue(default_config.get(post_type, PostConfig()).total)
-            spinbox.setFixedWidth(80)
             
             self.post_spinboxes[post_type] = spinbox
             self.posts_layout.addWidget(spinbox, row, col + 1)
@@ -1215,7 +1491,57 @@ class AddConfigDialog(QDialog):
         
         
         
+class ImprovedDragSelectCalendar(DragSelectCalendar):
+    """Version améliorée du calendrier avec surlignage du jour en cours d'édition"""
+    
+    def __init__(self, edit_date=None, parent=None):
+        super().__init__(parent)
+        self.edit_date = edit_date
+        self.cal_france = France()  # Calendrier français pour détecter les jours fériés
         
+        # Si une date d'édition est fournie, régler le calendrier sur le mois correspondant
+        if edit_date:
+            self.setSelectedDate(QDate(edit_date.year, edit_date.month, edit_date.day))
+    
+    def paintCell(self, painter, rect, date):
+        """Affiche les cellules du calendrier avec des indicateurs visuels améliorés"""
+        # Récupérer la date Python
+        py_date = date.toPyDate()
+        
+        # Définir la couleur de fond en fonction du type de jour
+        if self.cal_france.is_holiday(py_date):
+            # Jour férié
+            background_color = QColor(252, 228, 236)  # Rose clair
+        elif DayType.is_bridge_day(py_date, self.cal_france):
+            # Jour de pont
+            background_color = QColor(255, 243, 224)  # Orange clair
+        elif date.dayOfWeek() == 7:  # 7 = dimanche dans Qt
+            # Dimanche
+            background_color = QColor(243, 229, 245)  # Violet clair
+        elif date.dayOfWeek() == 6:  # 6 = samedi dans Qt
+            # Samedi
+            background_color = QColor(232, 237, 245)  # Bleu clair
+        else:
+            # Jour normal
+            background_color = QColor(255, 255, 255)  # Blanc
+        
+        # Remplir le fond
+        painter.fillRect(rect, background_color)
+        
+        # Si c'est une date sélectionnée, ajouter une surcouche bleue semi-transparente
+        if py_date in self.selected_dates:
+            painter.fillRect(rect, QColor(173, 216, 230, 180))
+        
+        # Si c'est la date en cours d'édition, ajouter une bordure plus visible
+        if self.edit_date and py_date == self.edit_date:
+            pen = painter.pen()
+            painter.setPen(QColor(52, 152, 219))  # Bleu
+            painter.drawRect(rect.adjusted(1, 1, -1, -1))
+            painter.setPen(pen)
+        
+        # Dessiner le texte (jour)
+        text = str(date.day())
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
         
         
 class PostConfigurationWidget(QWidget):

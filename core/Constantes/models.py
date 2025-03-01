@@ -398,6 +398,8 @@ class SpecificPostConfig:
             'apply_to': self.apply_to,
             'post_counts': self.post_counts
         }
+    
+    
     @classmethod
     def normalize_day_type(cls, day_type: str) -> str:
         """Normalise le type de jour"""
