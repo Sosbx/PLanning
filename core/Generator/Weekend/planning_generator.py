@@ -1,4 +1,4 @@
-# core/planning_generator.py
+# core/Generator/Weekend/planning_generator.py
 
 """
 planning_generator.py

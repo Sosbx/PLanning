@@ -1,0 +1,36 @@
+{
+  "start_date": "2025-03-02",
+  "end_date": "2025-04-01",
+  "weekend_validated": false,
+  "nl_distributed": true,
+  "nl_validated": true,
+  "nam_distributed": true,
+  "nam_validated": true,
+  "combinations_distributed": true,
+  "generation_phase": "combinations",
+  "pre_attributions": {
+    "DOCTOR1": {
+      "2025-03-02|1": "ML",
+      "2025-03-03|2": "AC"
+    },
+    "DOCTOR2": {
+      "2025-03-02|3": "NL",
+      "2025-03-04|1": "MC"
+    }
+  },
+  "days": [
+    {
+      "date": "2025-03-02",
+      "slots": [
+        {
+          "start_time": "2025-03-02T08:00:20.057437",
+          "end_time": "2025-03-02T18:00:20.057441",
+          "site": "Site A",
+          "slot_type": "Regular",
+          "abbreviation": "ML",
+          "assignee": "DOCTOR1"
+        }
+      ]
+    }
+  ]
+}

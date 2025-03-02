@@ -83,26 +83,7 @@ class WeekdayGenerator:
                     'simple_posts': []
                 }
             
-            # 1. Compter d'abord tous les postes déjà attribués dans le planning
-            for day in self.planning.days:
-                if day.is_weekend or day.is_holiday_or_bridge:
-                    continue
-                    
-                for slot in day.slots:
-                    if not slot.assignee or slot.assignee not in self.weekday_counts:
-                        continue
-                        
-                    counts = self.weekday_counts[slot.assignee]
-                    
-                    # Incrémenter le compteur de poste
-                    counts['posts'][slot.abbreviation] += 1
-                    
-                    # Mettre à jour le groupe
-                    group = self._get_post_group(slot.abbreviation, day.date)
-                    if group:
-                        counts['groups'][group] += 1
-
-            # 2. Compter les pré-attributions qui ne sont pas encore dans le planning
+            # 1. Compter les pré-attributions
             for person_name, attributions in self.pre_attributions.items():
                 if person_name not in self.weekday_counts:
                     continue
@@ -113,51 +94,62 @@ class WeekdayGenerator:
                     if not day or day.is_weekend or day.is_holiday_or_bridge:
                         continue
                         
-                    # Vérifier si cette pré-attribution est déjà comptée dans le planning
-                    already_counted = False
-                    for slot in day.slots:
-                        if (slot.assignee == person_name and 
-                            slot.abbreviation == post_type and 
-                            self._get_slot_period(slot) == period):
-                            already_counted = True
-                            break
+                    # Incrémenter le compteur de poste
+                    counts['posts'][post_type] += 1
                     
-                    if not already_counted:
-                        # Incrémenter le compteur de poste
-                        counts['posts'][post_type] += 1
+                    # Mettre à jour le groupe si nécessaire
+                    group = self._get_post_group(post_type, date)
+                    if group:
+                        counts['groups'][group] += 1
                         
-                        # Mettre à jour le groupe
-                        group = self._get_post_group(post_type, date)
-                        if group:
-                            counts['groups'][group] += 1
-                        
-                        # Ajouter aux posts simples si nécessaire
-                        if post_type in ["ML", "CM", "CA", "CS", "NM", "NC"]:
-                            counts['simple_posts'].append({
-                                'date': date,
-                                'period': period,
-                                'post': post_type
-                            })
+                    # Ajouter aux posts simples si nécessaire
+                    if post_type in ["ML", "CM", "CA", "CS", "NM", "NC"]:
+                        counts['simple_posts'].append({
+                            'date': date,
+                            'period': period,
+                            'post': post_type
+                        })
 
-            # Log détaillé des compteurs initialisés
+            # 2. Compter les postes déjà attribués dans le planning
+            for day in self.planning.days:
+                if day.is_weekend or day.is_holiday_or_bridge:
+                    continue
+                    
+                for slot in day.slots:
+                    if not slot.assignee or slot.assignee not in self.weekday_counts:
+                        continue
+                        
+                    counts = self.weekday_counts[slot.assignee]
+                    
+                    # Ne pas compter deux fois les pré-attributions
+                    period = self._get_slot_period(slot)
+                    if self._is_pre_attribution(day.date, slot):
+                        continue
+                        
+                    # Incrémenter le compteur de poste
+                    counts['posts'][slot.abbreviation] += 1
+                    
+                    # Mettre à jour le groupe
+                    group = self._get_post_group(slot.abbreviation, day.date)
+                    if group:
+                        counts['groups'][group] += 1
+
+            # Log des compteurs initialisés
             logger.info("\nCompteurs initialisés:")
             for doctor_name, counts in self.weekday_counts.items():
                 if any(counts['posts'].values()) or counts['simple_posts']:
                     logger.info(f"\n{doctor_name}:")
-                    # Posts individuels avec détail des sources
+                    # Posts individuels
                     for post, count in counts['posts'].items():
                         if count > 0:
-                            # Compter séparément les pré-attributions et les attributions normales
-                            pre_attr_count = sum(1 for (d, p), pt in self.pre_attributions.get(doctor_name, {}).items()
-                                            if pt == post)
-                            logger.info(f"{post}: {count} total (dont {pre_attr_count} pré-attribués)")
-                    # Groupes avec détail
+                            logger.info(f"{post}: {count}")
+                    # Groupes
                     for group, count in counts['groups'].items():
                         if count > 0:
                             logger.info(f"Groupe {group}: {count}")
                     # Posts simples
                     if counts['simple_posts']:
-                        logger.info(f"Posts simples à compléter: {len(counts['simple_posts'])}")
+                        logger.info(f"Posts simples: {len(counts['simple_posts'])}")
                         
         except Exception as e:
             logger.error(f"Erreur initialisation compteurs: {e}")
@@ -639,123 +631,94 @@ class WeekdayGenerator:
         )
 
     def distribute_weekday_nl(self) -> bool:
-        """
-        Distribution des NL de semaine avec priorité aux CAT et gestion des pré-attributions.
-        """
         try:
             logger.info("\nDISTRIBUTION DES NL SEMAINE")
             logger.info("=" * 80)
 
-            # 1. Vérification de la pré-analyse
+            # 1. Get quotas from pre-analysis
             pre_analysis = self.planning.pre_analysis_results
             if not pre_analysis:
                 logger.error("Pré-analyse manquante")
                 return False
 
-            # 2. Collecte des slots NL disponibles
-            nl_slots = self._collect_weekday_nl_slots()
-            if not nl_slots:
-                logger.info("Aucun slot NL disponible")
-                return True
-
-            # 3. Calcul des quotas CAT en tenant compte des pré-attributions
-            cat_quotas = {}
-            total_pre_attributed_cat = 0
-
-            for cat in self.cats:
-                # Compter les NL déjà pré-attribués
-                pre_attributed = 0
-                if cat.name in self.pre_attributions:
-                    for (date, period), post_type in self.pre_attributions[cat.name].items():
-                        if post_type == "NL":
-                            day = self.planning.get_day(date)
-                            if day and not (day.is_weekend or day.is_holiday_or_bridge or date.weekday() == 4):
-                                pre_attributed += 1
-
-                cat_quotas[cat.name] = {
-                    'pre_attributed': pre_attributed,
-                    'remaining': max(0, 3 - pre_attributed)  # Base de 3 NL par CAT
-                }
-                total_pre_attributed_cat += pre_attributed
-
-            total_cat_quota = sum(quota['remaining'] for quota in cat_quotas.values())
-            logger.info("\nQuotas CAT:")
-            for cat_name, quota in cat_quotas.items():
-                logger.info(f"{cat_name}: {quota['pre_attributed']} pré-attribués, "
-                        f"{quota['remaining']} restants à attribuer")
-
-            # 4. Distribution aux CAT jusqu'à atteindre leurs quotas
-            if not self._distribute_nl_to_cats(nl_slots, cat_quotas):
-                logger.error("Échec de la distribution CAT - arrêt de la distribution")
-                return False
-
-            # 5. Calcul des quotas médecins avec les slots restants
+            # 2. Calculate adjusted quotas for each doctor
             doctor_nl_quotas = {}
             for doctor in self.doctors:
+                # Get intervals from pre-analysis
                 intervals = pre_analysis['ideal_distribution'].get(doctor.name, {})
                 nl_interval = intervals.get('weekday_posts', {}).get('NL', {})
                 
-                # Compter les pré-attributions
+                # Count pre-attributed NLs
                 pre_attributed = self.weekday_counts[doctor.name]['posts'].get('NL', 0)
                 
-                # Vérification du maximum
+                # Calculate remaining quota
+                min_required = nl_interval.get('min', 0)
                 max_allowed = nl_interval.get('max', float('inf'))
+                
+                # Important: Check if pre-attributions already exceed maximum
                 if pre_attributed > max_allowed:
                     logger.error(f"{doctor.name}: Pré-attributions ({pre_attributed}) "
                             f"dépassent le maximum autorisé ({max_allowed})")
                     return False
                 
                 doctor_nl_quotas[doctor.name] = {
-                    'min': max(0, nl_interval.get('min', 0) - pre_attributed),
+                    'min': max(0, min_required - pre_attributed),
                     'max': max(0, max_allowed - pre_attributed),
                     'current': pre_attributed,
-                    'absolute_max': max_allowed
+                    'absolute_max': max_allowed  # Store absolute maximum for verification
                 }
+                
+                logger.info(f"\n{doctor.name}:")
+                logger.info(f"NL pré-attribuées: {pre_attributed}")
+                logger.info(f"Maximum absolu: {max_allowed}")
+                logger.info(f"Quota restant: [{doctor_nl_quotas[doctor.name]['min']}-"
+                        f"{doctor_nl_quotas[doctor.name]['max']}]")
 
-            # 6. Distribution aux médecins uniquement si tous les CAT ont atteint leurs quotas
-            total_cat_attributed = sum(
-                sum(1 for slot in day.slots 
-                    if slot.abbreviation == "NL" and 
-                    any(cat.name == slot.assignee for cat in self.cats))
-                for day in self.planning.days
-                if not (day.is_weekend or day.is_holiday_or_bridge or day.date.weekday() == 4)
-            )
+            # 3. Collect available NL slots
+            nl_slots = []
+            for day in self.planning.days:
+                if day.is_weekend or day.is_holiday_or_bridge or day.date.weekday() == 4:
+                    continue
+                    
+                for slot in day.slots:
+                    if slot.abbreviation == "NL" and not slot.assignee:
+                        nl_slots.append((day.date, slot))
 
-            if total_cat_attributed + total_pre_attributed_cat < total_cat_quota:
-                logger.error("Distribution CAT incomplète - arrêt de la distribution")
-                self._log_cat_attribution_status(cat_quotas)
-                return False
+            logger.info(f"\nSlots NL disponibles: {len(nl_slots)}")
 
-            # 7. Distribution aux médecins
+            # 4. Priority distribution to doctors under minimum
             for doctor in sorted(self.doctors, 
                             key=lambda d: (doctor_nl_quotas[d.name]['min'], -d.half_parts),
                             reverse=True):
                 quotas = doctor_nl_quotas[doctor.name]
                 
-                if quotas['min'] <= 0:
+                if quotas['min'] <= 0:  # Minimum already reached
                     continue
                     
+                logger.info(f"\nDistribution minimum pour {doctor.name}")
                 nl_needed = quotas['min']
-                slots_tried = 0
                 
+                slots_tried = 0
                 while nl_needed > 0 and slots_tried < len(nl_slots):
                     date, slot = nl_slots[slots_tried]
                     
+                    # Strict maximum check
                     if quotas['current'] >= quotas['absolute_max']:
+                        logger.warning(f"{doctor.name}: Maximum absolu atteint ({quotas['absolute_max']})")
                         break
                     
                     if self.constraints.can_assign_to_assignee(doctor, date, slot, self.planning):
+                        # Attribution and counter update
                         slot.assignee = doctor.name
                         self.weekday_counts[doctor.name]['posts']['NL'] += 1
                         quotas['current'] += 1
                         nl_needed -= 1
                         nl_slots.pop(slots_tried)
-                        logger.info(f"NL attribuée à {doctor.name} le {date} "
-                                f"({quotas['current']}/{quotas['absolute_max']})")
+                        logger.info(f"NL attribuée le {date} ({quotas['current']}/{quotas['absolute_max']})")
                     else:
                         slots_tried += 1
 
-            # 8. Distribution équilibrée des slots restants
+            # 5. Balanced distribution of remaining slots
             while nl_slots:
                 random.shuffle(self.doctors)
                 assigned = False
@@ -763,6 +726,7 @@ class WeekdayGenerator:
                 for doctor in self.doctors:
                     quotas = doctor_nl_quotas[doctor.name]
                     
+                    # Strict maximum check
                     if quotas['current'] >= quotas['absolute_max']:
                         continue
                         
@@ -773,38 +737,26 @@ class WeekdayGenerator:
                         quotas['current'] += 1
                         nl_slots.pop(0)
                         assigned = True
-                        logger.info(f"NL supplémentaire attribuée à {doctor.name} le {date} "
+                        logger.info(f"{doctor.name}: NL attribuée le {date} "
                                 f"(total: {quotas['current']}/{quotas['absolute_max']})")
                         break
                         
                 if not assigned:
+                    logger.warning("Plus d'attribution possible")
                     break
+
+            # 6. Final verification
+            for doctor_name, quotas in doctor_nl_quotas.items():
+                if quotas['current'] > quotas['absolute_max']:
+                    logger.error(f"{doctor_name}: Maximum dépassé "
+                            f"({quotas['current']}/{quotas['absolute_max']})")
+                    return False
 
             return True
 
         except Exception as e:
             logger.error(f"Erreur distribution NL semaine: {e}", exc_info=True)
             return False
-
-    def _log_cat_attribution_status(self, cat_quotas: Dict) -> None:
-        """Log détaillé du statut des attributions CAT."""
-        logger.error("\nStatut des attributions CAT:")
-        for cat_name, quota in cat_quotas.items():
-            # Compter les attributions effectives
-            attributed = 0
-            for day in self.planning.days:
-                if day.is_weekend or day.is_holiday_or_bridge or day.date.weekday() == 4:
-                    continue
-                for slot in day.slots:
-                    if slot.abbreviation == "NL" and slot.assignee == cat_name:
-                        attributed += 1
-
-            logger.error(f"{cat_name}:")
-            logger.error(f"  Pré-attribués: {quota['pre_attributed']}")
-            logger.error(f"  Nouvellement attribués: {attributed}")
-            logger.error(f"  Total: {attributed + quota['pre_attributed']}/{quota['pre_attributed'] + quota['remaining']}")
-            if attributed + quota['pre_attributed'] < quota['pre_attributed'] + quota['remaining']:
-                logger.error(f"  MANQUANT: {quota['remaining'] - attributed}")
 
     def _collect_weekday_nl_slots(self) -> List[Tuple[date, TimeSlot]]:
         """Collecte tous les slots NL de semaine disponibles."""
@@ -823,189 +775,48 @@ class WeekdayGenerator:
         logger.info(f"\nSlots NL semaine disponibles: {len(nl_slots)}")
         return nl_slots
 
-    def _distribute_nl_to_cats(self, nl_slots: List[Tuple[date, TimeSlot]], cat_quotas: Dict) -> bool:
-        """
-        Distribution des NL de semaine aux CAT avec minimum mensuel garanti si possible.
-        
-        Args:
-            nl_slots: Liste des slots NL disponibles
-            cat_quotas: Dictionnaire des quotas par CAT avec pré-attributions
-            
-        Returns:
-            bool: True si la distribution est réussie
-        """
+    def _distribute_nl_to_cats(self, nl_slots: List[Tuple[date, TimeSlot]], 
+                             total_quota: int) -> bool:
+        """Distribution des NL de semaine aux CAT."""
         try:
             logger.info("\nDISTRIBUTION NL SEMAINE AUX CAT")
+            quota_per_cat = total_quota // len(self.cats)
+            available_slots = nl_slots.copy()
             
-            # Initialisation de la matrice de disponibilité
-            availability_matrix = AvailabilityMatrix(
-                self.planning.start_date,
-                self.planning.end_date,
-                self.doctors,
-                self.cats
-            )
-
-            # Analyse des mois disponibles
-            available_months = set()
-            for date, _ in nl_slots:
-                available_months.add((date.year, date.month))
-            available_months = sorted(available_months)
-            
-            logger.info(f"Mois disponibles: {len(available_months)}")
-
-            # Organisation des slots par mois et criticité
-            slots_by_month = self._organize_nl_slots_by_month_and_criticality(
-                nl_slots, availability_matrix
-            )
-
-            # Distribution pour chaque CAT
+            # Distribution par CAT
             for cat in self.cats:
-                if cat.name not in cat_quotas:
-                    logger.warning(f"Pas de quota défini pour {cat.name}")
-                    continue
-                    
-                quota = cat_quotas[cat.name]
-                slots_to_assign = quota['remaining']
-                
-                logger.info(f"\nDistribution pour {cat.name}:")
-                logger.info(f"Déjà pré-attribués: {quota['pre_attributed']}")
-                logger.info(f"À attribuer: {slots_to_assign}")
-
                 slots_assigned = 0
-                monthly_assignments = defaultdict(int)
-
-                # Phase 1: Assurer au moins un NL par mois si possible
-                for year, month in available_months:
-                    if slots_assigned >= slots_to_assign:
-                        break
-                        
-                    month_key = (year, month)
-                    monthly_slots = slots_by_month[month_key]
-                    
-                    # Essayer d'abord les slots critiques, puis standards
+                
+                while slots_assigned < quota_per_cat and available_slots:
+                    random.shuffle(available_slots)
                     assigned = False
-                    for criticality in ['critical', 'standard']:
-                        if assigned:
+                    
+                    for slot_index in range(len(available_slots)):
+                        date, slot = available_slots[slot_index]
+                        
+                        if self.constraints.can_assign_to_assignee(cat, date, slot, 
+                                                                 self.planning):
+                            slot.assignee = cat.name
+                            available_slots.pop(slot_index)
+                            slots_assigned += 1
+                            assigned = True
+                            logger.info(f"CAT {cat.name}: NL attribué le {date} "
+                                      f"({slots_assigned}/{quota_per_cat})")
                             break
                             
-                        available_slots = monthly_slots[criticality].copy()
-                        random.shuffle(available_slots)
-
-                        for date, slot in available_slots:
-                            if slot.assignee:  # Déjà attribué
-                                continue
-                                
-                            if self.constraints.can_assign_to_assignee(cat, date, slot, self.planning):
-                                slot.assignee = cat.name
-                                slots_assigned += 1
-                                monthly_assignments[month_key] += 1
-                                
-                                # Retirer le slot des listes disponibles
-                                monthly_slots[criticality].remove((date, slot))
-                                if (date, slot) in nl_slots:
-                                    nl_slots.remove((date, slot))
-                                    
-                                availability = availability_matrix.get_period_availability(
-                                    None, date, "all"
-                                )
-                                logger.info(
-                                    f"NL attribué le {date} "
-                                    f"(disponibilité médecins: {availability:.1f}%, "
-                                    f"mois: {year}-{month})"
-                                )
-                                assigned = True
-                                break
-
-                # Phase 2: Distribution des slots restants
-                while slots_assigned < slots_to_assign:
-                    best_slot = None
-                    best_criticality = None
-                    best_month = None
-                    
-                    # Chercher le meilleur slot restant
-                    for month_key in available_months:
-                        monthly_slots = slots_by_month[month_key]
-                        for criticality in ['critical', 'standard']:
-                            for date, slot in monthly_slots[criticality]:
-                                if slot.assignee:  # Déjà attribué
-                                    continue
-                                    
-                                if self.constraints.can_assign_to_assignee(cat, date, slot, self.planning):
-                                    best_slot = (date, slot)
-                                    best_criticality = criticality
-                                    best_month = month_key
-                                    break
-                            if best_slot:
-                                break
-                        if best_slot:
-                            break
-
-                    if not best_slot:
-                        logger.warning(f"Plus de slots disponibles pour {cat.name}")
+                    if not assigned:
+                        logger.warning(f"Impossible d'attribuer plus de NL à {cat.name}")
                         break
-
-                    # Attribution du meilleur slot trouvé
-                    date, slot = best_slot
-                    slot.assignee = cat.name
-                    slots_assigned += 1
-                    monthly_assignments[best_month] += 1
+                        
+                if slots_assigned < quota_per_cat:
+                    logger.warning(f"CAT {cat.name}: quota non atteint "
+                                 f"({slots_assigned}/{quota_per_cat})")
                     
-                    # Retirer le slot des listes
-                    slots_by_month[best_month][best_criticality].remove((date, slot))
-                    if (date, slot) in nl_slots:
-                        nl_slots.remove((date, slot))
-                    
-                    availability = availability_matrix.get_period_availability(None, date, "all")
-                    logger.info(
-                        f"NL supplémentaire attribué le {date} "
-                        f"(disponibilité médecins: {availability:.1f}%, "
-                        f"mois: {best_month[0]}-{best_month[1]})"
-                    )
-
-                # Log du résultat pour ce CAT
-                logger.info(f"\nRésultat pour {cat.name}:")
-                logger.info(f"Total attribué: {slots_assigned}/{slots_to_assign}")
-                for (year, month), count in sorted(monthly_assignments.items()):
-                    logger.info(f"Mois {year}-{month}: {count} NL")
-                    
-                if slots_assigned < slots_to_assign:
-                    return False
-
             return True
-
-        except Exception as e:
-            logger.error(f"Erreur distribution NL CAT: {e}", exc_info=True)
-            return False
-
-
-
-    def _organize_nl_slots_by_month_and_criticality(
-        self, 
-        nl_slots: List[Tuple[date, TimeSlot]], 
-        availability_matrix: AvailabilityMatrix
-    ) -> Dict[Tuple[int, int], Dict[str, List[Tuple[date, TimeSlot]]]]:
-        """
-        Organise les slots NL par mois et par niveau de criticité.
-        """
-        organized_slots = defaultdict(lambda: {'critical': [], 'standard': []})
-
-        for date, slot in nl_slots:
-            month_key = (date.year, date.month)
-            availability = availability_matrix.get_period_availability(None, date, "all")
             
-            if availability < 40:  # Période critique
-                organized_slots[month_key]['critical'].append((date, slot))
-            else:
-                organized_slots[month_key]['standard'].append((date, slot))
-
-        # Log de la répartition
-        logger.info("\nRépartition des slots NL par mois:")
-        for (year, month), slots in sorted(organized_slots.items()):
-            logger.info(f"Mois {year}-{month}:")
-            logger.info(f"  Périodes critiques: {len(slots['critical'])}")
-            logger.info(f"  Périodes standard: {len(slots['standard'])}")
-
-        return organized_slots
+        except Exception as e:
+            logger.error(f"Erreur distribution NL CAT: {e}")
+            return False
 
     def _distribute_nl_to_doctors(self, nl_slots: List[Tuple[date, TimeSlot]], 
                                 total_quota: int) -> bool:
@@ -3150,158 +2961,33 @@ class WeekdayGenerator:
             logger.error(f"Erreur récupération intervalles: {e}")
             return None
 
-    def _distribute_weekday_combinations_to_doctors(self, critical_dates: Set[date], 
-                                                normal_dates: List[date],
-                                                intervals: Dict, 
-                                                availability_matrix: AvailabilityMatrix) -> bool:
+    def _distribute_weekday_combinations_to_doctors(
+        self, critical_dates: Set[date], normal_dates: List[date],
+        intervals: Dict, availability_matrix: AvailabilityMatrix) -> bool:
         """
-        Distribution principale des combinaisons aux médecins avec gestion améliorée 
-        des pré-attributions.
+        Distribution principale des combinaisons aux médecins.
         """
         try:
-            logger.info("\nDISTRIBUTION DES COMBINAISONS SEMAINE AUX MÉDECINS")
-            logger.info("=" * 80)
-
-            # 1. Vérification initiale des pré-attributions et quotas
-            for doctor in self.doctors:
-                logger.info(f"\nAnalyse des quotas pour {doctor.name}:")
-                doctor_intervals = intervals[doctor.name]
-                
-                # Log des pré-attributions
-                pre_attrs = self.pre_attributions.get(doctor.name, {})
-                if pre_attrs:
-                    logger.info("Pré-attributions existantes:")
-                    for (date, period), post_type in pre_attrs.items():
-                        group = self._get_post_group(post_type, date)
-                        logger.info(f"  - {post_type} le {date} (groupe: {group})")
-
-                # Vérification des groupes
-                for group, counts in doctor_intervals['current_counts']['groups'].items():
-                    max_allowed = doctor_intervals['groups'].get(group, {}).get('max', float('inf'))
-                    logger.info(f"Groupe {group}: {counts}/{max_allowed}")
-
-            # 2. Distribution sur périodes critiques
+            # Phase 1: Distribution sur périodes critiques
             logger.info("\nDistribution périodes critiques")
             for date in sorted(critical_dates):
                 availability = availability_matrix.get_period_availability
-                progress_made = True
-                while progress_made:
-                    progress_made = self._distribute_day_combinations(
-                        date, intervals, availability, True
-                    )
+                self._distribute_day_combinations(date, intervals, availability, True)
 
-            # 3. Distribution sur périodes normales
+            # Phase 2: Distribution sur périodes normales
             logger.info("\nDistribution périodes normales")
-            remaining_dates = normal_dates.copy()
-            random.shuffle(remaining_dates)  # Mélange aléatoire pour plus d'équité
-
-            for date in remaining_dates:
+            for date in normal_dates:
                 availability = availability_matrix.get_period_availability
                 self._distribute_day_combinations(date, intervals, availability, False)
 
-            # 4. Distribution spéciale pour médecins sous leur minimum
-            remaining_combos = []
-            for date in remaining_dates:
-                combos = self._get_available_combinations(date)
-                if combos:
-                    remaining_combos.extend([(date, combo) for combo in combos])
-
-            if remaining_combos:
-                logger.info("\nDistribution complémentaire pour minimums non atteints")
-                doctors_under_min = self._identify_doctors_under_minimum(intervals)
-                
-                if doctors_under_min:
-                    self._distribute_remaining_to_minimum(
-                        doctors_under_min, 
-                        remaining_combos, 
-                        intervals
-                    )
-
-            # 5. Vérification finale
+            # Vérification finale
             return self._verify_doctor_distribution(intervals)
 
         except Exception as e:
-            logger.error(f"Erreur distribution médecins: {e}", exc_info=True)
+            logger.error(f"Erreur distribution médecins: {e}")
             return False
         
-    def _identify_doctors_under_minimum(self, intervals: Dict) -> List[Tuple[Doctor, Dict, float]]:
-        """
-        Identifie les médecins n'ayant pas atteint leurs minimums requis.
-        """
-        doctors_under_min = []
         
-        for doctor in self.doctors:
-            doctor_intervals = intervals[doctor.name]
-            missing_posts = {}
-            total_gap = 0
-            
-            # Vérification des minimums par type de poste
-            for post_type, interval in doctor_intervals['posts'].items():
-                current = doctor_intervals['current_counts']['posts'].get(post_type, 0)
-                min_required = interval.get('min', 0)
-                
-                # Ajustement selon les demi-parts
-                if doctor.half_parts == 1:
-                    min_required = max(1, min_required // 2)
-                    
-                if current < min_required:
-                    gap = min_required - current
-                    missing_posts[post_type] = gap
-                    total_gap += gap
-
-            # Vérification des minimums de groupe
-            for group, interval in doctor_intervals['groups'].items():
-                current = doctor_intervals['current_counts']['groups'].get(group, 0)
-                min_required = interval.get('min', 0)
-                
-                # Ajustement selon les demi-parts
-                if doctor.half_parts == 1:
-                    min_required = max(1, min_required // 2)
-                    
-                if current < min_required:
-                    gap = min_required - current
-                    total_gap += gap
-
-            if missing_posts:
-                doctors_under_min.append((doctor, doctor_intervals, total_gap))
-                logger.info(f"\n{doctor.name} sous minimum:")
-                for post_type, gap in missing_posts.items():
-                    logger.info(f"  {post_type}: manque {gap} postes")
-
-        # Tri par écart décroissant
-        return sorted(doctors_under_min, key=lambda x: x[2], reverse=True)
-
-    def _distribute_remaining_to_minimum(self, doctors_under_min: List[Tuple],
-                                    remaining_combos: List[Tuple],
-                                    intervals: Dict) -> None:
-        """
-        Distribution des combinaisons restantes aux médecins sous leur minimum.
-        """
-        for doctor, doctor_intervals, gap in doctors_under_min:
-            if not remaining_combos:
-                break
-                
-            logger.info(f"\nTentative attribution pour {doctor.name} (gap: {gap})")
-            
-            # Parcourir les combinaisons disponibles
-            combos_to_remove = []
-            for date, combo in remaining_combos:
-                if not self._is_doctor_available_for_weekday(doctor, date):
-                    continue
-                    
-                if self._can_assign_combination(doctor, date, combo, doctor_intervals):
-                    if self._assign_combination(doctor, date, combo, doctor_intervals):
-                        combos_to_remove.append((date, combo))
-                        logger.info(f"Attribution {combo['combo']} le {date}")
-                        
-                        # Vérifier si on a comblé le gap
-                        gap -= 1
-                        if gap <= 0:
-                            break
-
-            # Retirer les combinaisons attribuées
-            for combo in combos_to_remove:
-                remaining_combos.remove(combo)
 
     def _distribute_day_combinations(self, date: date, intervals: Dict,
                                     availability: float, is_critical: bool) -> None:
@@ -3419,7 +3105,7 @@ class WeekdayGenerator:
             logger.error(f"Erreur distribution jour {date}: {e}")
 
     
-    
+
     def _get_available_combinations_for_priority(self, date: date, 
                                             combinations: List[str],
                                             priority_level: str) -> List[Dict]:
@@ -3975,7 +3661,7 @@ class WeekdayGenerator:
                             combo_info: Dict, doctor_intervals: Dict) -> bool:
         """
         Vérifie si une combinaison peut être attribuée en respectant strictement
-        les limites de groupe pour chaque poste, en tenant compte des pré-attributions.
+        les limites de groupe pour chaque poste.
         """
         try:
             day = self.planning.get_day(date)
@@ -3985,70 +3671,43 @@ class WeekdayGenerator:
             first_post = combo_info['first_post']
             second_post = combo_info['second_post']
 
-            # 1. Récupérer les compteurs existants (incluant les pré-attributions)
-            existing_counts = self.weekday_counts.get(doctor.name, {
-                'posts': defaultdict(int),
-                'groups': defaultdict(int)
-            })
-
-            # 2. Vérification stricte des limites de groupe pour chaque poste
+            # 1. Vérification stricte des limites de groupe pour chaque poste
             first_group = self._get_post_group(first_post, date)
             second_group = self._get_post_group(second_post, date)
 
             # Vérifier le premier poste
             if first_group:
-                # Combiner les compteurs existants et actuels
-                current_first = (
-                    existing_counts['groups'].get(first_group, 0) +
-                    doctor_intervals['current_counts']['groups'].get(first_group, 0)
-                )
+                current_first = doctor_intervals['current_counts']['groups'].get(first_group, 0)
                 max_first = doctor_intervals['groups'].get(first_group, {}).get('max', float('inf'))
                 if current_first >= max_first:
-                    logger.debug(f"Limite de groupe {first_group} atteinte pour {doctor.name} "
-                            f"(existant: {existing_counts['groups'].get(first_group, 0)}, "
-                            f"actuel: {doctor_intervals['current_counts']['groups'].get(first_group, 0)})")
+                    logger.debug(f"Limite de groupe {first_group} atteinte pour {doctor.name}")
                     return False
 
             # Vérifier le second poste
             if second_group:
                 # Si même groupe que le premier poste, compter l'impact cumulé
                 if second_group == first_group:
-                    current = (
-                        existing_counts['groups'].get(second_group, 0) +
-                        doctor_intervals['current_counts']['groups'].get(second_group, 0)
-                    )
+                    current = doctor_intervals['current_counts']['groups'].get(second_group, 0)
                     max_allowed = doctor_intervals['groups'].get(second_group, {}).get('max', float('inf'))
                     if current + 2 > max_allowed:  # +2 car deux postes du même groupe
-                        logger.debug(f"Limite cumulée de groupe {second_group} dépassée pour {doctor.name} "
-                                f"(existant: {existing_counts['groups'].get(second_group, 0)}, "
-                                f"actuel: {doctor_intervals['current_counts']['groups'].get(second_group, 0)})")
+                        logger.debug(f"Limite cumulée de groupe {second_group} dépassée pour {doctor.name}")
                         return False
                 else:
-                    current_second = (
-                        existing_counts['groups'].get(second_group, 0) +
-                        doctor_intervals['current_counts']['groups'].get(second_group, 0)
-                    )
+                    current_second = doctor_intervals['current_counts']['groups'].get(second_group, 0)
                     max_second = doctor_intervals['groups'].get(second_group, {}).get('max', float('inf'))
                     if current_second >= max_second:
-                        logger.debug(f"Limite de groupe {second_group} atteinte pour {doctor.name} "
-                                f"(existant: {existing_counts['groups'].get(second_group, 0)}, "
-                                f"actuel: {doctor_intervals['current_counts']['groups'].get(second_group, 0)})")
+                        logger.debug(f"Limite de groupe {second_group} atteinte pour {doctor.name}")
                         return False
 
-            # 3. Vérifier les limites de poste individuels
+            # 2. Vérifier les limites de poste individuels
             for post in [first_post, second_post]:
-                current = (
-                    existing_counts['posts'].get(post, 0) +
-                    doctor_intervals['current_counts']['posts'].get(post, 0)
-                )
+                current = doctor_intervals['current_counts']['posts'].get(post, 0)
                 max_allowed = doctor_intervals['posts'].get(post, {}).get('max', float('inf'))
                 if current >= max_allowed:
-                    logger.debug(f"Limite de poste {post} atteinte pour {doctor.name} "
-                            f"(existant: {existing_counts['posts'].get(post, 0)}, "
-                            f"actuel: {doctor_intervals['current_counts']['posts'].get(post, 0)})")
+                    logger.debug(f"Limite de poste {post} atteinte pour {doctor.name}")
                     return False
 
-            # 4. Vérifier la disponibilité des slots
+            # 3. Vérifier la disponibilité des slots
             first_slot = next((s for s in day.slots 
                             if s.abbreviation == first_post and not s.assignee), None)
             second_slot = next((s for s in day.slots 
@@ -4057,7 +3716,7 @@ class WeekdayGenerator:
             if not (first_slot and second_slot):
                 return False
 
-            # 5. Vérifier les contraintes générales
+            # 4. Vérifier les contraintes générales
             return (self.constraints.can_assign_to_assignee(doctor, date, first_slot, self.planning) and
                     self.constraints.can_assign_to_assignee(doctor, date, second_slot, self.planning))
 
@@ -4117,7 +3776,6 @@ class WeekdayGenerator:
         """
         Attribue une combinaison à un médecin avec vérification stricte des limites de groupe.
         Double vérification avant attribution pour éviter tout dépassement.
-        Prend en compte les pré-attributions existantes.
         """
         try:
             # 1. Double vérification des limites avant attribution
@@ -4137,82 +3795,49 @@ class WeekdayGenerator:
             if not (first_slot and second_slot):
                 return False
 
-            # 3. Récupérer les compteurs existants
-            existing_counts = self.weekday_counts.get(doctor.name, {
-                'posts': defaultdict(int),
-                'groups': defaultdict(int)
-            })
-
-            # 4. Vérification finale des limites de groupe
+            # 3. Vérification finale des limites de groupe
             first_group = self._get_post_group(first_post, date)
             second_group = self._get_post_group(second_post, date)
 
-            # Vérifier une dernière fois les limites de groupe en incluant les pré-attributions
+            # Vérifier une dernière fois les limites de groupe
             current_counts = doctor_intervals['current_counts']['groups']
             if first_group:
-                current_first = (
-                    existing_counts['groups'].get(first_group, 0) +
-                    current_counts.get(first_group, 0)
-                )
+                current_first = current_counts.get(first_group, 0)
                 max_first = doctor_intervals['groups'].get(first_group, {}).get('max', float('inf'))
                 if current_first >= max_first:
-                    logger.debug(f"Limite finale de groupe {first_group} atteinte pour {doctor.name} "
-                            f"(existant: {existing_counts['groups'].get(first_group, 0)}, "
-                            f"actuel: {current_counts.get(first_group, 0)})")
+                    logger.debug(f"Limite finale de groupe {first_group} atteinte pour {doctor.name}")
                     return False
 
             if second_group:
                 if second_group == first_group:
                     # Vérification spéciale si même groupe
-                    current = (
-                        existing_counts['groups'].get(second_group, 0) +
-                        current_counts.get(second_group, 0)
-                    )
+                    current = current_counts.get(second_group, 0)
                     max_allowed = doctor_intervals['groups'].get(second_group, {}).get('max', float('inf'))
                     if current + 2 > max_allowed:
-                        logger.debug(f"Limite finale cumulée de groupe {second_group} dépassée pour {doctor.name} "
-                                f"(existant: {existing_counts['groups'].get(second_group, 0)}, "
-                                f"actuel: {current_counts.get(second_group, 0)})")
+                        logger.debug(f"Limite finale cumulée de groupe {second_group} dépassée pour {doctor.name}")
                         return False
                 else:
-                    current_second = (
-                        existing_counts['groups'].get(second_group, 0) +
-                        current_counts.get(second_group, 0)
-                    )
+                    current_second = current_counts.get(second_group, 0)
                     max_second = doctor_intervals['groups'].get(second_group, {}).get('max', float('inf'))
                     if current_second >= max_second:
-                        logger.debug(f"Limite finale de groupe {second_group} atteinte pour {doctor.name} "
-                                f"(existant: {existing_counts['groups'].get(second_group, 0)}, "
-                                f"actuel: {current_counts.get(second_group, 0)})")
+                        logger.debug(f"Limite finale de groupe {second_group} atteinte pour {doctor.name}")
                         return False
 
-            # 5. Attribution des slots
+            # 4. Attribution des slots
             first_slot.assignee = doctor.name
             second_slot.assignee = doctor.name
 
-            # 6. Mise à jour des compteurs de postes
+            # 5. Mise à jour des compteurs de postes
             doctor_intervals['current_counts']['posts'][first_post] = \
                 doctor_intervals['current_counts']['posts'].get(first_post, 0) + 1
             doctor_intervals['current_counts']['posts'][second_post] = \
                 doctor_intervals['current_counts']['posts'].get(second_post, 0) + 1
 
-            # 7. Mise à jour des compteurs de groupe
+            # 6. Mise à jour des compteurs de groupe
             if first_group:
                 current_counts[first_group] = current_counts.get(first_group, 0) + 1
             if second_group and second_group != first_group:
                 current_counts[second_group] = current_counts.get(second_group, 0) + 1
-
-            # 8. Mise à jour des compteurs de pré-attribution
-            self.weekday_counts[doctor.name]['posts'][first_post] = \
-                existing_counts['posts'].get(first_post, 0) + 1
-            self.weekday_counts[doctor.name]['posts'][second_post] = \
-                existing_counts['posts'].get(second_post, 0) + 1
-            if first_group:
-                self.weekday_counts[doctor.name]['groups'][first_group] = \
-                    existing_counts['groups'].get(first_group, 0) + 1
-            if second_group and second_group != first_group:
-                self.weekday_counts[doctor.name]['groups'][second_group] = \
-                    existing_counts['groups'].get(second_group, 0) + 1
 
             logger.info(f"Attribution à {doctor.name}: {combo_info['combo']} le {date} "
                     f"(groupes: {first_group}, {second_group})")
@@ -4235,7 +3860,7 @@ class WeekdayGenerator:
             return "XM"  # Consultation matin à partir de 9h
         elif post_type in ["MM", "SM", "RM"]:
             return "XmM"  # Consultation matin à partir de 7h
-        elif post_type in ["CA", "HA", "SA", "RA", "CT"]:  # CT est déjà correctement dans le groupe XA
+        elif post_type in ["CA", "HA", "SA", "RA", "CT"]:
             return "XA"  # Consultation après-midi
         elif post_type in ["CS", "HS", "SS", "RS"]:
             return "XS"  # Consultation soir
@@ -5044,8 +4669,8 @@ class WeekdayGenerator:
     
     def _initialize_doctor_intervals(self, intervals: Dict) -> Dict:
         """
-        Initialise les intervalles des médecins en prenant en compte tous les postes 
-        déjà attribués, incluant les pré-attributions.
+        Initialise les intervalles des médecins en comptant TOUS les postes déjà attribués,
+        y compris ceux des combinaisons et des phases précédentes.
         """
         try:
             for doctor_name, doctor_intervals in intervals.items():
@@ -5055,53 +4680,32 @@ class WeekdayGenerator:
                     'groups': defaultdict(int)
                 }
                 
-                # 1. Compter d'abord les pré-attributions
-                pre_attrs = self.pre_attributions.get(doctor_name, {})
-                for (date, period), post_type in pre_attrs.items():
-                    day = self.planning.get_day(date)
-                    if not day or day.is_weekend or day.is_holiday_or_bridge:
-                        continue
-                        
-                    doctor_intervals['current_counts']['posts'][post_type] += 1
-                    group = self._get_post_group(post_type, date)
-                    if group:
-                        doctor_intervals['current_counts']['groups'][group] += 1
-                
-                # 2. Compter ensuite les postes déjà attribués dans le planning
+                # Compter TOUS les postes de semaine attribués
                 for day in self.planning.days:
+                    # Ignorer les weekends et jours fériés
                     if day.is_weekend or day.is_holiday_or_bridge:
                         continue
                         
                     for slot in day.slots:
                         if slot.assignee == doctor_name:
                             post_type = slot.abbreviation
-                            # Vérifier si ce n'est pas déjà compté comme pré-attribution
-                            period = self._get_slot_period(slot)
-                            if (day.date, period) not in pre_attrs:
-                                doctor_intervals['current_counts']['posts'][post_type] += 1
-                                group = self._get_post_group(post_type, day.date)
-                                if group:
-                                    doctor_intervals['current_counts']['groups'][group] += 1
+                            doctor_intervals['current_counts']['posts'][post_type] += 1
+                            
+                            # Mettre à jour aussi les compteurs de groupe
+                            group = self._get_post_group(post_type, day.date)
+                            if group:
+                                doctor_intervals['current_counts']['groups'][group] += 1
 
-                # Log des compteurs pour vérification
-                logger.info(f"\nCompteurs initialisés pour {doctor_name}:")
-                
-                # Log des pré-attributions
-                pre_attr_count = len(pre_attrs)
-                if pre_attr_count > 0:
-                    logger.info(f"Pré-attributions: {pre_attr_count}")
-                    for (date, period), post_type in pre_attrs.items():
-                        logger.info(f"  - {post_type} le {date} (période {period})")
-                
-                # Log des compteurs de postes
+                # Log des compteurs initiaux pour vérification
+                logger.info(f"\nCompteurs initiaux pour {doctor_name}:")
+                logger.info("Postes:")
                 for post_type, count in doctor_intervals['current_counts']['posts'].items():
                     if count > 0:
-                        logger.info(f"Poste {post_type}: {count}")
-                
-                # Log des compteurs de groupe
+                        logger.info(f"  {post_type}: {count}")
+                logger.info("Groupes:")
                 for group, count in doctor_intervals['current_counts']['groups'].items():
                     if count > 0:
-                        logger.info(f"Groupe {group}: {count}")
+                        logger.info(f"  {group}: {count}")
 
             return intervals
 

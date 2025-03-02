@@ -651,11 +651,15 @@ class PlanningViewWidget(QWidget):
                 # Activer le bouton de validation seulement si la phase actuelle est distribuée
                 self.validate_button.setEnabled(enabled and hasattr(self.planning, 'nl_distributed') and self.planning.nl_distributed)
                 self.validate_button.setText("Valider les gardes NL")
+                # Mettre à jour le texte du bouton de génération
+                self.generate_button.setText("Générer les gardes NL")
             elif self.generation_phase == "nam":
                 # Pour NAM, vérifier aussi que NL est validé
                 if hasattr(self.planning, 'nl_validated') and self.planning.nl_validated:
                     self.validate_button.setEnabled(enabled and hasattr(self.planning, 'nam_distributed') and self.planning.nam_distributed)
                     self.validate_button.setText("Valider les gardes NA/NM")
+                    # Mettre à jour le texte du bouton de génération
+                    self.generate_button.setText("Générer les gardes NA/NM")
                 else:
                     self.validate_button.setEnabled(False)
             elif self.generation_phase == "combinations":
@@ -663,11 +667,15 @@ class PlanningViewWidget(QWidget):
                 if hasattr(self.planning, 'nam_validated') and self.planning.nam_validated:
                     self.validate_button.setEnabled(enabled and hasattr(self.planning, 'combinations_distributed') and self.planning.combinations_distributed)
                     self.validate_button.setText("Valider les weekends")
+                    # Mettre à jour le texte du bouton de génération
+                    self.generate_button.setText("Générer les postes restants")
                 else:
                     self.validate_button.setEnabled(False)
             elif hasattr(self.planning, 'weekend_validated') and self.planning.weekend_validated:
                 # Si les weekends sont validés, le bouton de validation reste désactivé
                 self.validate_button.setEnabled(False)
+                # Mettre à jour le texte du bouton de génération
+                self.generate_button.setText("Générer planning semaine")
             else:
                 self.validate_button.setEnabled(False)
 
@@ -909,10 +917,18 @@ class PlanningViewWidget(QWidget):
         # Récupérer les états de validation du planning
         if hasattr(updated_planning, 'weekend_validated'):
             self.weekend_validated = updated_planning.weekend_validated
+        if hasattr(updated_planning, 'nl_distributed'):
+            self.planning.nl_distributed = updated_planning.nl_distributed
         if hasattr(updated_planning, 'nl_validated'):
             self.nl_validated = updated_planning.nl_validated
+            self.planning.nl_validated = updated_planning.nl_validated
+        if hasattr(updated_planning, 'nam_distributed'):
+            self.planning.nam_distributed = updated_planning.nam_distributed
         if hasattr(updated_planning, 'nam_validated'):
             self.nam_validated = updated_planning.nam_validated
+            self.planning.nam_validated = updated_planning.nam_validated
+        if hasattr(updated_planning, 'combinations_distributed'):
+            self.planning.combinations_distributed = updated_planning.combinations_distributed
         
         # Déterminer la phase actuelle
         if self.weekend_validated:

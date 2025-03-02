@@ -155,12 +155,29 @@ class PlanningManagementWidget(QWidget):
                 return '|'.join(map(str, d))
             return d
 
+        # Convertir les pré-attributions en format sérialisable
+        pre_attributions_serializable = {}
+        for person_name, attributions in self.main_window.planning_tab.pre_attribution_tab.pre_attributions.items():
+            person_attributions = {}
+            for (date_obj, period), post in attributions.items():
+                # Créer une clé au format "date|période"
+                key = f"{date_obj.isoformat()}|{period}"
+                person_attributions[key] = post
+            pre_attributions_serializable[person_name] = person_attributions
+        
         data = {
             "start_date": planning.start_date,
             "end_date": planning.end_date,
             "pre_analysis_results": convert_dict_keys_to_iso(planning.pre_analysis_results),
             "weekend_validated": planning.weekend_validated,
-            "pre_attributions": self.main_window.planning_tab.pre_attribution_tab.pre_attributions,
+            # Save additional validation states
+            "nl_distributed": getattr(planning, 'nl_distributed', False),
+            "nl_validated": getattr(planning, 'nl_validated', False),
+            "nam_distributed": getattr(planning, 'nam_distributed', False),
+            "nam_validated": getattr(planning, 'nam_validated', False),
+            "combinations_distributed": getattr(planning, 'combinations_distributed', False),
+            "generation_phase": getattr(self.main_window.planning_tab, 'generation_phase', "init"),
+            "pre_attributions": pre_attributions_serializable,
             "days": [
                 {
                     "date": day.date,
@@ -242,12 +259,29 @@ class PlanningManagementWidget(QWidget):
                 return '|'.join(map(str, d))
             return d
 
+        # Convertir les pré-attributions en format sérialisable
+        pre_attributions_serializable = {}
+        for person_name, attributions in self.main_window.planning_tab.pre_attribution_tab.pre_attributions.items():
+            person_attributions = {}
+            for (date_obj, period), post in attributions.items():
+                # Créer une clé au format "date|période"
+                key = f"{date_obj.isoformat()}|{period}"
+                person_attributions[key] = post
+            pre_attributions_serializable[person_name] = person_attributions
+        
         data = {
             "start_date": planning.start_date,
             "end_date": planning.end_date,
             "pre_analysis_results": convert_dict_keys_to_iso(planning.pre_analysis_results),
             "weekend_validated": planning.weekend_validated,  # Save weekend validation state
-            "pre_attributions": self.main_window.planning_tab.pre_attribution_tab.pre_attributions,
+            # Save additional validation states
+            "nl_distributed": getattr(planning, 'nl_distributed', False),
+            "nl_validated": getattr(planning, 'nl_validated', False),
+            "nam_distributed": getattr(planning, 'nam_distributed', False),
+            "nam_validated": getattr(planning, 'nam_validated', False),
+            "combinations_distributed": getattr(planning, 'combinations_distributed', False),
+            "generation_phase": getattr(self.main_window.planning_tab, 'generation_phase', "init"),
+            "pre_attributions": pre_attributions_serializable,
             "days": [
                 {
                     "date": day.date,
@@ -307,25 +341,40 @@ class PlanningManagementWidget(QWidget):
             end_date=datetime.fromisoformat(data['end_date']).date(),
             filename=filename
         )
-        planning.weekend_validated = data.get('weekend_validated', False)  # Load weekend validation state
+        # Load all validation states
+        planning.weekend_validated = data.get('weekend_validated', False)
+        planning.nl_distributed = data.get('nl_distributed', False)
+        planning.nl_validated = data.get('nl_validated', False)
+        planning.nam_distributed = data.get('nam_distributed', False)
+        planning.nam_validated = data.get('nam_validated', False)
+        planning.combinations_distributed = data.get('combinations_distributed', False)
+        
+        # Set the generation phase in the planning view
+        generation_phase = data.get('generation_phase', "init")
+        self.main_window.planning_tab.generation_phase = generation_phase
         
         # Restaurer les pré-attributions
         if 'pre_attributions' in data:
-            converted_pre_attributions = {}
-            for person_name, attributions in data['pre_attributions'].items():
-                person_attributions = {}
-                for key, post in attributions.items():
-                    # La clé est au format "date|période"
-                    date_str, period_str = key.split('|')
-                    # Convertir la date string en objet date
-                    date_obj = datetime.fromisoformat(date_str).date()
-                    # Convertir la période en entier
-                    period = int(period_str)
-                    # Créer le tuple et stocker l'attribution
-                    person_attributions[(date_obj, period)] = post
-                converted_pre_attributions[person_name] = person_attributions
-            
-            self.main_window.planning_tab.pre_attribution_tab.pre_attributions = converted_pre_attributions
+            try:
+                converted_pre_attributions = {}
+                for person_name, attributions in data['pre_attributions'].items():
+                    person_attributions = {}
+                    for key, post in attributions.items():
+                        # La clé est au format "date|période"
+                        date_str, period_str = key.split('|')
+                        # Convertir la date string en objet date
+                        date_obj = datetime.fromisoformat(date_str).date()
+                        # Convertir la période en entier
+                        period = int(period_str)
+                        # Créer le tuple et stocker l'attribution
+                        person_attributions[(date_obj, period)] = post
+                    converted_pre_attributions[person_name] = person_attributions
+                
+                self.main_window.planning_tab.pre_attribution_tab.pre_attributions = converted_pre_attributions
+            except Exception as e:
+                print(f"Erreur lors de la conversion des pré-attributions: {e}")
+                # En cas d'erreur, initialiser avec un dictionnaire vide
+                self.main_window.planning_tab.pre_attribution_tab.pre_attributions = {}
 
         for day_data in data['days']:
             day_date = datetime.fromisoformat(day_data['date']).date()
