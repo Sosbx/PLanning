@@ -18,7 +18,7 @@ import logging
 import csv
 import codecs
 from datetime import datetime
-from gui.styles import color_system, ACTION_BUTTON_STYLE, ADD_BUTTON_STYLE, EDIT_DELETE_BUTTON_STYLE, GLOBAL_STYLE
+from gui.styles import color_system, ACTION_BUTTON_STYLE, ADD_BUTTON_STYLE, EDIT_DELETE_BUTTON_STYLE, GLOBAL_STYLE, DESIDERATA_TABLE_STYLE
 from PyQt6.QtWidgets import QFileDialog
 
 logger = logging.getLogger(__name__)
@@ -41,8 +41,8 @@ class DesiderataCalendarWidget(QTableWidget):
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
         
-        # Appliquer le style de base du tableau
-        self.setStyleSheet(color_system.styles['table']['base'])
+        # Appliquer le style spécifique pour les tableaux de desiderata au lieu du style de base
+        self.setStyleSheet(DESIDERATA_TABLE_STYLE)
         
         self.create_calendar()
         self.cellPressed.connect(self.on_cell_pressed)
@@ -82,8 +82,8 @@ class DesiderataCalendarWidget(QTableWidget):
             is_weekend = current_date.weekday() >= 5
             is_holiday = self.cal.is_holiday(current_date)
             is_bridge = self.is_bridge_day(current_date)
-            # Utiliser les mêmes couleurs que dans toggle_cell et reset_to_initial_state
-            background_color = QColor(220, 220, 220) if (is_weekend or is_holiday or is_bridge) else QColor(255, 255, 255)
+            # Utiliser les couleurs de color_system au lieu des valeurs codées en dur
+            background_color = color_system.colors['weekend'] if (is_weekend or is_holiday or is_bridge) else color_system.colors['weekday']
 
             # Colonne de jour pour chaque mois
             day_item = QTableWidgetItem(str(current_date.day))
@@ -176,7 +176,7 @@ class DesiderataCalendarWidget(QTableWidget):
         elif self.is_selecting:
             if self.is_deselecting:
                 # Mode désélection : retourner à la couleur de base
-                new_color = QColor(220, 220, 220) if is_weekend_or_holiday else QColor(255, 255, 255)
+                new_color = color_system.colors['weekend'] if is_weekend_or_holiday else color_system.colors['weekday']
             else:
                 # Mode sélection : appliquer la nouvelle couleur
                 new_color = color_system.colors['desiderata'][priority]['weekend' if is_weekend_or_holiday else 'normal']
@@ -184,7 +184,7 @@ class DesiderataCalendarWidget(QTableWidget):
             # Clic simple : inverser l'état
             if current_priority == priority:
                 # Retourner à la couleur de base
-                new_color = QColor(220, 220, 220) if is_weekend_or_holiday else QColor(255, 255, 255)
+                new_color = color_system.colors['weekend'] if is_weekend_or_holiday else color_system.colors['weekday']
             else:
                 # Appliquer la nouvelle couleur
                 new_color = color_system.colors['desiderata'][priority]['weekend' if is_weekend_or_holiday else 'normal']
@@ -352,8 +352,8 @@ class DesiderataCalendarWidget(QTableWidget):
                         is_weekend = date.weekday() >= 5
                         is_holiday = self.cal.is_holiday(date)
                         is_bridge = self.is_bridge_day(date)
-                        # Utiliser les mêmes couleurs que dans toggle_cell
-                        background_color = QColor(220, 220, 220) if (is_weekend or is_holiday or is_bridge) else QColor(255, 255, 255)
+                        # Utiliser les couleurs de color_system
+                        background_color = color_system.colors['weekend'] if (is_weekend or is_holiday or is_bridge) else color_system.colors['weekday']
                         item.setBackground(QBrush(background_color))
 
 

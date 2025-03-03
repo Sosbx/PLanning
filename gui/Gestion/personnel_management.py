@@ -270,11 +270,21 @@ class PersonnelManagementWidget(QWidget):
             # Boutons d'action
             edit_button = QPushButton()
             edit_button.setIcon(QIcon("icons/edition.png"))
-            edit_button.setIconSize(QSize(14, 14))
-            edit_button.setFixedSize(20, 20)
+            edit_button.setIconSize(QSize(16, 16))  # Taille d'icône légèrement augmentée
+            edit_button.setFixedSize(28, 28)        # Taille du bouton augmentée pour la lisibilité
             edit_button.setToolTip("Modifier")
-            edit_button.clicked.connect(lambda _, p=doctor: self.edit_personnel(p))
-            edit_button.setStyleSheet(EDIT_DELETE_BUTTON_STYLE)
+            edit_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #FFFFFF;
+                    border: 1px solid #CBD5E1;
+                    border-radius: 4px;
+                    padding: 2px;
+                }
+                QPushButton:hover {
+                    background-color: #EDF2F7;
+                    border-color: #1A5A96;
+                }
+            """)
             
             delete_button = QPushButton()
             delete_button.setIcon(QIcon("icons/supprimer.png"))

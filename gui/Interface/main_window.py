@@ -1,8 +1,10 @@
 # © 2024 HILAL Arkane. Tous droits réservés.
 # .gui/main_window.py
-from PyQt6.QtWidgets import QMainWindow, QTabWidget, QPushButton, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QMainWindow, QTabWidget, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QLabel
 from PyQt6.QtCore import Qt, QDate, QSize
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QAction, QFont
+
+from PyQt6.QtCore import pyqtSignal
 from ..Gestion.personnel_management import PersonnelManagementWidget
 from .planning_view import PlanningViewWidget
 from ..Desiderata.desiderata_management import DesiderataManagementWidget
@@ -23,6 +25,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 class MainWindow(QMainWindow):
+    # Signal pour retourner à la page d'accuei
+     # Ajouter un signal pour indiquer le retour à la landing page
+    return_to_landing = pyqtSignal()
     def __init__(self, doctors, cats, post_configuration, pre_attributions=None):
         super().__init__()
         self.doctors = doctors
@@ -51,11 +56,19 @@ class MainWindow(QMainWindow):
         self.tab_widget.setIconSize(QSize(32, 32))
         self.setCentralWidget(self.tab_widget)
         
-         # Initialiser le gestionnaire de post-attribution
+        # Initialiser le gestionnaire de post-attribution
         self.post_attribution_handler = PostAttributionHandler(self)
-
+        
+        # Ajouter l'onglet Accueil (icône maison) en premier avec une icône plus petite
+        home_widget = QWidget()  # Widget vide pour l'onglet Accueil
+        self.home_index = self.tab_widget.addTab(home_widget, self.create_tab_icon("icons/home.png", size=24), "")
+        
         # Style des onglets avec les nouvelles constantes
         self.tab_widget.setStyleSheet(f"""
+            QTabBar::tab:first {{
+                min-width: 50px;  /* Largeur minimale réduite pour l'onglet accueil */
+                max-width: 50px;  /* Largeur maximale réduite pour l'onglet accueil */
+            }}
             QTabWidget::pane {{
                 border: 1px solid {color_system.colors['container']['border'].name()};
                 background-color: {color_system.colors['container']['background'].name()};
@@ -87,6 +100,9 @@ class MainWindow(QMainWindow):
             }}
         """)
 
+        # Connecter le changement d'onglet à la fonction de retour à l'accueil
+        self.tab_widget.currentChanged.connect(self.handle_tab_change)
+        
         # Initialisation des onglets
         self._init_personnel_tab()
         self._init_desiderata_tab()
@@ -107,6 +123,20 @@ class MainWindow(QMainWindow):
         self.tab_widget.addTab(self.planning_tab, 
                             self.create_tab_icon("icons/planning.png"), "Planning")
 
+    def handle_tab_change(self, index):
+        """Gère le changement d'onglet"""
+        # Si l'onglet Accueil est sélectionné, retourner à la landing page
+        if index == self.home_index:
+            # Réinitialiser l'index à un autre onglet pour éviter de rester sur l'onglet Accueil
+            self.tab_widget.setCurrentIndex(1)  # Sélectionner le deuxième onglet
+            # Retourner à la landing page
+            self.return_to_landing_page()
+
+    # Méthode pour le retour à la landing page
+    def return_to_landing_page(self):
+        """Émet le signal pour retourner à la landing page"""
+        print("Retour à la landing page demandé")
+        self.return_to_landing.emit()
     def _init_personnel_tab(self):
         """Initialise l'onglet Gestion du personnel"""
         self.personnel_tab = PersonnelManagementWidget(self.doctors, self.cats,
@@ -317,6 +347,14 @@ class MainWindow(QMainWindow):
         # Action pour l'historique des post-attributions
         post_attr_history_action = self.planning_menu.addAction("Historique des Post-Attributions")
         post_attr_history_action.triggered.connect(self.show_post_attribution_history)
+        
+        # Menu Navigation
+        self.navigation_menu = self.menu_bar.addMenu("Navigation")
+        
+        # Action pour retourner à la page d'accueil
+        home_action = self.navigation_menu.addAction("Page d'accueil")
+        home_action.triggered.connect(self.return_to_landing_page)
+        home_action.setIcon(QIcon(resource_path("icons/logo_SOSplanning.png")))
         
     def show_post_attribution_history(self):
         """Affiche l'historique des post-attributions"""

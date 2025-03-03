@@ -213,6 +213,7 @@ class SpecificConfigDialog(QDialog):
         weekday_radio.setChecked(True)
         self.update_table()
 
+    
     def update_table(self):
         """Met à jour la table en fonction du type de jour sélectionné"""
         self.post_table.setRowCount(0)

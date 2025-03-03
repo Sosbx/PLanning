@@ -220,10 +220,29 @@ class StatsView(QWidget):
                 # Identifiant unique pour chaque table
                 table.setProperty("table_id", i)
                 self.sort_order[i] = {}
+                
+                # Ajustement de la hauteur des lignes
+                table.verticalHeader().setDefaultSectionSize(28)
+                
+                # Améliorer l'apparence des en-têtes
+                header = table.horizontalHeader()
+                header.setMinimumHeight(36)  # Hauteur minimale des en-têtes
+                header.setStyleSheet("""
+                    QHeaderView::section {
+                        background-color: #EDF2F7;
+                        color: #2C3E50;
+                        padding: 6px 8px;
+                        border: 1px solid #CBD5E1;
+                        border-top-left-radius: 4px;
+                        border-top-right-radius: 4px;
+                        font-weight: bold;
+                    }
+                """)
+                
             except Exception as e:
                 logger.error(f"Erreur lors de la configuration du tableau {i}: {e}")
         
-        # Conteneur des boutons de filtre
+        # Conteneur des boutons de filtre avec style amélioré
         filter_widget = QWidget()
         filter_layout = QHBoxLayout(filter_widget)
         filter_layout.setContentsMargins(0, 0, 0, 10)
@@ -249,35 +268,90 @@ class StatsView(QWidget):
         
         main_layout.addWidget(filter_widget)
         
-        # Configuration des onglets
+        # Configuration des onglets avec une apparence améliorée
         tab_widget = QTabWidget()
         tab_widget.setDocumentMode(True)
+        tab_widget.setStyleSheet("""
+            QTabWidget::pane {
+                border: 1px solid #CBD5E1;
+                background-color: #FFFFFF;
+                border-radius: 4px;
+            }
+            QTabBar::tab {
+                background-color: #F5F7FA;
+                color: #505A64;
+                padding: 8px 16px;
+                border: 1px solid #CBD5E1;
+                border-bottom: none;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                min-width: 150px;  /* Augmenter la largeur minimale des onglets */
+                font-size: 14px;
+            }
+            QTabBar::tab:selected {
+                background-color: #1A5A96;
+                color: white;
+                font-weight: bold;
+            }
+            QTabBar::tab:hover:!selected {
+                background-color: #D0E2F3;
+            }
+        """)
+        # Configuration des onglets avec une apparence améliorée
+        tab_widget = QTabWidget()
+        tab_widget.setDocumentMode(True)
+        tab_widget.setStyleSheet("""
+            QTabWidget::pane {
+                border: 1px solid #CBD5E1;
+                background-color: #FFFFFF;
+                border-radius: 4px;
+            }
+            QTabBar::tab {
+                background-color: #F5F7FA;
+                color: #505A64;
+                padding: 8px 16px;
+                border: 1px solid #CBD5E1;
+                border-bottom: none;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                min-width: 150px;  /* Augmenter la largeur minimale des onglets */
+                font-size: 14px;
+            }
+            QTabBar::tab:selected {
+                background-color: #1A5A96;
+                color: white;
+                font-weight: bold;
+            }
+            QTabBar::tab:hover:!selected {
+                background-color: #D0E2F3;
+            }
+        """)
         
         def setup_table_in_tab(table, title):
             container = QWidget()
             container_layout = QVBoxLayout(container)
-            container_layout.setContentsMargins(0, 0, 0, 0)
+            container_layout.setContentsMargins(8, 8, 8, 8)  # Ajouter des marges pour plus d'espace
             container_layout.addWidget(table)
             
             # Configuration commune des tableaux
             table.setHorizontalScrollMode(QTableWidget.ScrollMode.ScrollPerPixel)
             table.setVerticalScrollMode(QTableWidget.ScrollMode.ScrollPerPixel)
-            table.horizontalHeader().setFixedHeight(30)
+            table.horizontalHeader().setFixedHeight(36)  # Augmenter la hauteur de l'en-tête
             table.verticalHeader().setVisible(True)
             
-            # Style de la sélection
+            # Style de la sélection amélioré mais préservant les couleurs de fond
             table.setStyleSheet("""
                 QTableView::item:selected {
-                    background-color: rgba(128, 128, 128, 0.1);
-                    color: black;
+                    background-color: rgba(26, 90, 150, 0.15);
+                    color: #2C3E50;
                 }
                 QTableView::item:focus {
-                    background-color: rgba(128, 128, 128, 0.2);
-                    color: black;
+                    background-color: rgba(26, 90, 150, 0.25);
+                    color: #2C3E50;
                 }
                 QTableView::item:selected:focus {
-                    background-color: rgba(128, 128, 128, 0.3);
-                    color: black;
+                    background-color: rgba(26, 90, 150, 0.35);
+                    color: #2C3E50;
                 }
             """)
             
@@ -296,6 +370,10 @@ class StatsView(QWidget):
         setup_table_in_tab(self.weekday_group_stats_table, "Groupes semaine")
         
         main_layout.addWidget(tab_widget)
+    
+        # Connecter le signal de changement d'onglet pour optimiser les colonnes
+        tab_widget.currentChanged.connect(lambda: QTimer.singleShot(100, self.optimize_all_tables))
+        
         
         # Configuration de la synchronisation du défilement
         self.setup_scroll_sync()
@@ -489,7 +567,7 @@ class StatsView(QWidget):
         return combined_intervals
 
     def create_stats_table(self):
-        """Crée le tableau des statistiques générales avec un style uniformisé"""
+        """Crée le tableau des statistiques générales avec priorité pour la coloration conditionnelle"""
         stats = self.calculate_stats()
         self.stats_table.clear()
 
@@ -526,7 +604,7 @@ class StatsView(QWidget):
                 
             self.stats_table.setItem(row, 0, name_item)
 
-            # Pour les médecins, récupérer les intervalles combinés
+            # Récupérer les intervalles combinés pour tous les types d'utilisateurs
             combined_intervals = {}
             if hasattr(person, 'half_parts'):
                 combined_intervals = self._get_combined_intervals(person.name)
@@ -537,24 +615,31 @@ class StatsView(QWidget):
                 count = stats.get(person.name, {}).get(post_type, 0)
                 item = QTableWidgetItem(str(count))
                 
-                # Gestion de la coloration uniformisée
-                if is_cat:
-                    item.setBackground(QColor('#E8F5E9'))  # Vert clair pour CAT
-                elif is_half_time:
-                    item.setBackground(QColor(230, 230, 230, 255))  # Gris pour mi-temps
-                elif post_type in combined_intervals:
-                    # Coloration conditionnelle pour médecins plein temps
+                # MODIFICATION: Priorité à la coloration conditionnelle sur les couleurs d'utilisateur
+                color_applied = False
+                
+                # Vérifier d'abord les conditions min/max pour tous les utilisateurs
+                if post_type in combined_intervals:
                     min_val = combined_intervals[post_type]['min']
                     max_val = combined_intervals[post_type]['max']
+                    
                     if count < min_val:
                         item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
+                        color_applied = True
                     elif max_val != float('inf') and count > max_val:
                         item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
-                    
-                # Poste personnalisé
-                if post_type in self.custom_posts:
-                    if not is_cat and not is_half_time:  # Ne pas écraser les couleurs CAT/mi-temps
-                        item.setBackground(self.custom_posts[post_type].color)
+                        color_applied = True
+                
+                # Si aucune coloration conditionnelle n'a été appliquée, appliquer les couleurs par type d'utilisateur
+                if not color_applied:
+                    if is_cat:
+                        item.setBackground(QColor('#E8F5E9'))  # Vert clair pour CAT
+                    elif is_half_time:
+                        item.setBackground(QColor(230, 230, 230, 255))  # Gris pour mi-temps
+                
+                # Poste personnalisé - ne s'applique que si aucune autre coloration n'est prioritaire
+                if post_type in self.custom_posts and not color_applied:
+                    item.setBackground(self.custom_posts[post_type].color)
                     
                 self.stats_table.setItem(row, col, item)
                 row_total += count
@@ -576,13 +661,198 @@ class StatsView(QWidget):
         self.setup_highlighting(self.stats_table)
 
         # Configuration de l'affichage
-        self.stats_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.optimize_column_widths(self.stats_table)
+        
         self.stats_table.verticalHeader().setVisible(False)
-        self.stats_table.setAlternatingRowColors(False)
+        self.stats_table.setAlternatingRowColors(True)
 
         # Application du filtre actuel
         self._apply_filter_to_table(self.stats_table)
 
+    
+    # 3. Ajout d'une méthode pour optimiser l'affichage des colonnes
+    def optimize_column_widths(self, table):
+        """Optimise la largeur des colonnes en fonction du contenu avec un traitement spécial pour les groupes"""
+        # Première passe pour calculer les largeurs de contenu
+        content_widths = {}
+        font_metrics = QFontMetrics(table.font())
+        
+        # Largeur minimale garantie pour chaque type de colonne
+        min_widths = {
+            'name': 100,  # Colonne des noms
+            'group': 70,  # Colonnes de groupes
+            'post': 50,   # Colonnes de postes
+            'total': 60   # Colonne total
+        }
+        
+        # Vérifier s'il s'agit d'un tableau de groupes
+        is_group_table = table == self.detailed_stats_table or table == self.weekday_group_stats_table
+        
+        # Évaluer la largeur nécessaire pour chaque colonne
+        for col in range(table.columnCount()):
+            col_type = 'name' if col == 0 else ('total' if col == table.columnCount() - 1 else 
+                                            ('group' if is_group_table else 'post'))
+            
+            # Largeur de l'en-tête
+            header_item = table.horizontalHeaderItem(col)
+            if header_item:
+                header_text = header_item.text()
+                # Donner plus d'espace aux en-têtes de groupes qui peuvent être plus longs
+                padding = 30 if col_type == 'group' else 20
+                header_width = font_metrics.horizontalAdvance(header_text) + padding
+            else:
+                header_width = min_widths[col_type]
+            
+            # Largeur du contenu (échantillon des premières lignes pour performance)
+            sample_rows = min(30, table.rowCount())
+            content_width = header_width
+            
+            for row in range(sample_rows):
+                item = table.item(row, col)
+                if item:
+                    item_text = item.text()
+                    text_width = font_metrics.horizontalAdvance(item_text)
+                    # Ajouter de l'espace pour le padding et les icônes éventuelles
+                    padding = 20
+                    this_width = text_width + padding
+                    content_width = max(content_width, this_width)
+            
+            # Garantir une largeur minimale selon le type de colonne
+            content_width = max(content_width, min_widths[col_type])
+            
+            # Limiter la largeur maximale selon le type de colonne
+            max_width = 200 if col_type == 'name' else (120 if col_type == 'group' else 100)
+            content_widths[col] = min(content_width, max_width)
+        
+        # Calculer l'espace disponible et répartir proportionnellement
+        viewport_width = table.viewport().width()
+        margins = 20  # Marge pour les barres de défilement etc.
+        available_width = max(0, viewport_width - margins)
+        
+        # Calculer la largeur totale nécessaire
+        total_content_width = sum(content_widths.values())
+        
+        # Si le contenu est plus large que l'espace disponible
+        if total_content_width > available_width:
+            # Réduire les colonnes proportionnellement, en préservant les colonnes essentielles
+            # Calculer le facteur de réduction
+            reduction_factor = available_width / total_content_width
+            
+            # Appliquer le facteur aux colonnes, en respectant les minimums
+            for col in range(table.columnCount()):
+                col_type = 'name' if col == 0 else ('total' if col == table.columnCount() - 1 else 
+                                                ('group' if is_group_table else 'post'))
+                adjusted_width = max(min_widths[col_type], int(content_widths[col] * reduction_factor))
+                table.setColumnWidth(col, adjusted_width)
+        else:
+            # Si suffisamment d'espace, ajuster les colonnes en fonction de leur contenu
+            # Répartir l'espace supplémentaire proportionnellement
+            extra_space = available_width - total_content_width
+            for col in range(table.columnCount()):
+                col_type = 'name' if col == 0 else ('total' if col == table.columnCount() - 1 else 
+                                                ('group' if is_group_table else 'post'))
+                
+                # Proportion de l'espace supplémentaire à ajouter
+                proportion = content_widths[col] / total_content_width if total_content_width > 0 else 0
+                extra = int(extra_space * proportion)
+                
+                # Largeur finale avec bonus
+                final_width = content_widths[col] + extra
+                table.setColumnWidth(col, final_width)
+        
+        # Ajustement final pour garantir que toutes les colonnes sont visibles
+        # et que leur largeur est adaptée à leur importance
+        # CORRECTION: Convertir explicitement en int pour éviter l'erreur de type
+        name_col_width = int(max(table.columnWidth(0), min_widths['name'] * 1.5))
+        table.setColumnWidth(0, name_col_width)
+        
+        # Garantir que les groupes ont suffisamment d'espace
+        if is_group_table:
+            for col in range(1, table.columnCount() - 1):
+                table.setColumnWidth(col, max(table.columnWidth(col), min_widths['group']))
+
+    # Ajout d'une méthode pour optimiser tous les tableaux après un changement d'onglet
+    def optimize_all_tables(self):
+        """Optimise la largeur des colonnes de tous les tableaux"""
+        self.optimize_column_widths(self.stats_table)
+        self.optimize_column_widths(self.weekend_stats_table)
+        self.optimize_column_widths(self.detailed_stats_table)
+        self.optimize_column_widths(self.weekly_stats_table)
+        self.optimize_column_widths(self.weekday_group_stats_table)
+        
+    def _optimize_visible_tables(self):
+        """Optimise les tableaux actuellement visibles"""
+        # Identifier et optimiser uniquement les tableaux visibles
+        for table in [self.stats_table, self.weekend_stats_table, self.detailed_stats_table, 
+                    self.weekly_stats_table, self.weekday_group_stats_table]:
+            if table.isVisible():
+                self.optimize_column_widths(table)
+
+    # 5. Améliorer le rendu des tableaux avec une méthode de stylisation unifiée
+    def apply_unified_table_style(self, table, style_category=None):
+        """Applique un style unifié et amélioré au tableau"""
+        base_style = """
+            QTableView {
+                border: 1px solid #CBD5E1;
+                border-radius: 4px;
+                background-color: #FFFFFF;
+                gridline-color: #E2E8F0;
+                selection-background-color: rgba(26, 90, 150, 0.15);
+                selection-color: #2C3E50;
+            }
+            QHeaderView::section {
+                background-color: #EDF2F7;
+                color: #2C3E50;
+                padding: 6px 8px;
+                border: 1px solid #CBD5E1;
+                font-weight: bold;
+            }
+            QTableView::item {
+                padding: 4px 6px;
+                border-bottom: 1px solid #EDF2F7;
+            }
+        """
+        
+        # Styles spécifiques par catégorie
+        category_styles = {
+            'general': """
+                QHeaderView::section {
+                    background-color: #D0E2F3;
+                }
+            """,
+            'weekend': """
+                QHeaderView::section {
+                    background-color: #E2D4ED;
+                }
+            """,
+            'detailed': """
+                QHeaderView::section {
+                    background-color: #F8D57E;
+                }
+            """
+        }
+        
+        # Appliquer le style de base + le style spécifique si applicable
+        style = base_style
+        if style_category and style_category in category_styles:
+            style += category_styles[style_category]
+        
+        table.setStyleSheet(style)
+        
+        # Configurer les dimensions
+        table.verticalHeader().setDefaultSectionSize(28)  # Hauteur de ligne
+        table.horizontalHeader().setMinimumHeight(36)    # Hauteur minimale des en-têtes
+        
+        # Améliorer l'affichage des en-têtes (text wrap)
+        for col in range(table.columnCount()):
+            header_item = table.horizontalHeaderItem(col)
+            if header_item:
+                header_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                
+        # Optimiser les largeurs des colonnes
+        self.optimize_column_widths(table)
+        
+        
     def _apply_filter_to_table(self, table):
         """Applique le filtre actuel à un tableau donné"""
         if not table:
@@ -873,7 +1143,7 @@ class StatsView(QWidget):
         table.setItem(row_index, len(all_posts) + 1, final_total)
 
     def update_detailed_stats_table(self, detailed_stats):
-        """Mise à jour de l'onglet des groupes weekend avec fonctionnalité d'expansion et style uniformisé"""
+        """Mise à jour de l'onglet des groupes weekend avec priorité pour la coloration conditionnelle"""
         try:
             self.detailed_stats_table.clear()
             self.expanded_group = None
@@ -963,14 +1233,14 @@ class StatsView(QWidget):
                 # Déterminer le style de base pour la personne
                 is_cat = not hasattr(person, 'half_parts')
                 is_half_time = hasattr(person, 'half_parts') and person.half_parts == 1
-                base_color = QColor('#E8F5E9') if is_cat else (QColor('#F3F4F6') if is_half_time else None)
                 
                 # Nom avec distinction CAT/mi-temps
                 name_item = QTableWidgetItem(person.name)
                 if is_cat:
                     name_item.setFont(QFont("", -1, QFont.Weight.Bold))
-                if base_color:
-                    name_item.setBackground(base_color)
+                    name_item.setBackground(QColor('#E8F5E9'))
+                elif is_half_time:
+                    name_item.setBackground(QColor('#F3F4F6'))
                 self.detailed_stats_table.setItem(row, 0, name_item)
 
                 # Valeurs des groupes
@@ -979,29 +1249,37 @@ class StatsView(QWidget):
                     count = detailed_stats.get(person.name, {}).get(group, 0)
                     item = QTableWidgetItem(str(count))
                     
-                    # Appliquer la couleur de base pour CAT ou mi-temps
-                    if base_color:
-                        item.setBackground(base_color)
-                    # Pour les médecins à temps plein uniquement, appliquer la coloration conditionnelle
-                    elif hasattr(person, 'half_parts') and person.half_parts == 2:
-                        intervals = ideal_intervals.get(person.name, {}).get('weekend_groups', {}).get(group, {})
-                        if intervals:
-                            min_val = intervals.get('min', 0)
-                            max_val = intervals.get('max', float('inf'))
-                            if count < min_val:
-                                item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif pour Windows
-                            elif count > max_val:
-                                item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif pour Windows
-                            else:
-                                item.setBackground(QBrush())  # Blanc si dans l'intervalle
+                    # MODIFICATION: Priorité à la coloration conditionnelle
+                    color_applied = False
+                    
+                    # Vérifier d'abord les conditions min/max pour tous les utilisateurs
+                    intervals = ideal_intervals.get(person.name, {}).get('weekend_groups', {}).get(group, {})
+                    if intervals:
+                        min_val = intervals.get('min', 0)
+                        max_val = intervals.get('max', float('inf'))
+                        if count < min_val:
+                            item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
+                            color_applied = True
+                        elif max_val != float('inf') and count > max_val:
+                            item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                            color_applied = True
+                    
+                    # Si aucune coloration conditionnelle n'a été appliquée, appliquer les couleurs par type d'utilisateur
+                    if not color_applied:
+                        if is_cat:
+                            item.setBackground(QColor('#E8F5E9'))
+                        elif is_half_time:
+                            item.setBackground(QColor('#F3F4F6'))
                     
                     self.detailed_stats_table.setItem(row, col, item)
                     row_total += count
 
-                # Total de la ligne avec la même coloration de base
+                # Total de la ligne
                 total_item = QTableWidgetItem(str(row_total))
-                if base_color:
-                    total_item.setBackground(base_color)
+                if is_cat:
+                    total_item.setBackground(QColor('#E8F5E9'))
+                elif is_half_time:
+                    total_item.setBackground(QColor('#F3F4F6'))
                 self.detailed_stats_table.setItem(row, len(all_groups) + 1, total_item)
 
             # Ajout des lignes "Non attribué" et "Total"
@@ -1009,7 +1287,7 @@ class StatsView(QWidget):
             self._add_total_row_detailed(len(all_personnel) + 1, detailed_stats, all_groups)
 
             # Configuration de l'affichage
-            self.detailed_stats_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+            self.optimize_column_widths(self.detailed_stats_table)
             self.detailed_stats_table.verticalHeader().setVisible(False)
             self.detailed_stats_table.setAlternatingRowColors(False)
 
@@ -1320,7 +1598,7 @@ class StatsView(QWidget):
         self.update_detailed_stats_table(stats)
 
     def update_weekday_group_stats_table(self, weekday_group_stats):
-        """Met à jour le tableau des statistiques des groupes de semaine"""
+        """Met à jour le tableau des statistiques des groupes de semaine avec priorité de coloration et largeur optimisée"""
         self.weekday_group_stats_table.clear()
 
         # Configuration des colonnes et en-têtes
@@ -1348,6 +1626,15 @@ class StatsView(QWidget):
         self.weekday_group_stats_table.setColumnCount(len(all_groups) + 2)
         headers = ['Assigné à'] + all_groups + ['Total']
         self.weekday_group_stats_table.setHorizontalHeaderLabels(headers)
+        
+        # Améliorer l'apparence des en-têtes
+        for col, group_name in enumerate(all_groups, start=1):
+            header_item = self.weekday_group_stats_table.horizontalHeaderItem(col)
+            if header_item:
+                # Ajout d'un tooltip amélioré pour chaque groupe
+                tooltip = self.get_weekday_group_tooltip(group_name)
+                if tooltip:
+                    header_item.setToolTip(tooltip)
 
         # Tri et préparation du personnel
         sorted_doctors = sorted([d for d in self.doctors if d.half_parts == 2], key=lambda x: x.name)
@@ -1376,7 +1663,7 @@ class StatsView(QWidget):
                 name_item.setFont(QFont("", -1, QFont.Weight.Bold))
                 name_item.setBackground(QColor('#E8F5E9'))
             elif is_half_time:
-                name_item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
+                name_item.setBackground(QColor(230, 230, 230, 255))
                 
             self.weekday_group_stats_table.setItem(row, 0, name_item)
 
@@ -1387,12 +1674,31 @@ class StatsView(QWidget):
                 count = weekday_group_stats.get(person.name, {}).get(group, 0)
                 item = QTableWidgetItem(str(count))
                 
-                # Appliquer la coloration grise pour les médecins en demi-part
-                if is_half_time:
-                    item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
+                # MODIFICATION: Priorité à la coloration conditionnelle
+                color_applied = False
                 
-                # Appliquer la coloration selon les intervalles
-                self._apply_interval_coloring(item, count, intervals.get(group, {}), is_cat, group)
+                # Vérifier d'abord les conditions min/max pour tous les types d'utilisateurs
+                group_intervals = intervals.get(group, {})
+                if group_intervals:
+                    min_val = group_intervals.get('min', 0)
+                    max_val = group_intervals.get('max', float('inf'))
+                    if count < min_val:
+                        item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
+                        color_applied = True
+                    elif max_val != float('inf') and count > max_val:
+                        item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                        color_applied = True
+                
+                # Si aucune coloration conditionnelle n'a été appliquée, appliquer les couleurs par type d'utilisateur
+                if not color_applied:
+                    if is_cat:
+                        item.setBackground(QColor('#E8F5E9'))
+                    elif is_half_time:
+                        item.setBackground(QColor(230, 230, 230, 255))
+                
+                # Toujours ajouter le tooltip avec les informations d'intervalles
+                tooltip = self._get_tooltip_text(count, group_intervals, is_cat, group)
+                item.setToolTip(tooltip)
                 
                 self.weekday_group_stats_table.setItem(row, col, item)
                 row_total += count
@@ -1401,20 +1707,21 @@ class StatsView(QWidget):
             total_item = QTableWidgetItem(str(row_total))
             total_intervals = {"target": sum(intervals.get(g, {}).get('target', 0) for g in all_groups)}
             
-            # Appliquer la coloration grise pour les médecins en demi-part
-            if is_half_time:
-                total_item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
+            # Appliquer les couleurs de base seulement si pas de dépassement d'intervalles
+            if is_cat:
+                total_item.setBackground(QColor('#E8F5E9'))
+            elif is_half_time:
+                total_item.setBackground(QColor(230, 230, 230, 255))
                 
-            self._apply_interval_coloring(total_item, row_total, total_intervals, is_cat, "Total")
             self.weekday_group_stats_table.setItem(row, len(all_groups) + 1, total_item)
 
         # Ajout des lignes "Non attribué" et "Total"
         self._add_unassigned_row_weekday_groups(len(all_personnel), weekday_group_stats, all_groups)
         self._add_total_row_weekday_groups(len(all_personnel) + 1, weekday_group_stats, all_groups)
 
-        # Configuration de l'affichage
+        # Configuration de l'affichage avec largeur optimisée
+        self.optimize_column_widths(self.weekday_group_stats_table)
         self.setup_highlighting(self.weekday_group_stats_table)
-        self.weekday_group_stats_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.weekday_group_stats_table.verticalHeader().setVisible(False)
 
     def get_weekday_group_tooltip(self, group: str) -> str:
@@ -1451,7 +1758,7 @@ class StatsView(QWidget):
         self.add_total_row(self.weekday_group_stats_table, row_index, stats, all_groups)
 
     def update_weekly_stats_table(self, weekly_stats):
-        """Met à jour le tableau des statistiques de semaine avec une présentation améliorée"""
+        """Met à jour le tableau des statistiques de semaine avec priorité de coloration et largeur optimisée"""
         self.weekly_stats_table.clear()
 
         # Récupération des statistiques de semaine
@@ -1514,11 +1821,14 @@ class StatsView(QWidget):
         for row, person in enumerate(all_personnel):
             # Nom avec distinction CAT/mi-temps
             name_item = QTableWidgetItem(person.name)
-            if not hasattr(person, 'half_parts'):  # C'est un CAT
+            is_cat = not hasattr(person, 'half_parts')
+            is_half_time = hasattr(person, 'half_parts') and person.half_parts == 1
+            
+            if is_cat:
                 name_item.setFont(QFont("", -1, QFont.Weight.Bold))
                 name_item.setBackground(QColor('#E8F5E9'))
-            elif person.half_parts == 1:  # Mi-temps
-                name_item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
+            elif is_half_time:
+                name_item.setBackground(QColor(230, 230, 230, 255))
             self.weekly_stats_table.setItem(row, 0, name_item)
 
             # Valeurs des postes
@@ -1529,39 +1839,47 @@ class StatsView(QWidget):
                 count = stats.get(person.name, {}).get(post, 0)
                 item = QTableWidgetItem(str(count))
                 
-                # Gestion de la coloration
-                if hasattr(person, 'half_parts'):
-                    if person.half_parts == 1:  # Mi-temps
-                        item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
-                        
-                    # Coloration selon les intervalles pour les médecins
-                    intervals = person_intervals.get(post, {})
-                    if intervals:
-                        min_val = intervals.get('min', 0)
-                        max_val = intervals.get('max', float('inf'))
-                        if count < min_val:
-                            item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
-                        elif count > max_val:
-                            item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                # MODIFICATION: Priorité à la coloration conditionnelle
+                color_applied = False
                 
-                if post in self.custom_posts:
-                    item.setBackground(self.custom_posts[post].color)
-                    
+                # Vérifier d'abord les intervalles pour tous les types d'utilisateurs
+                intervals = person_intervals.get(post, {})
+                if intervals:
+                    min_val = intervals.get('min', 0)
+                    max_val = intervals.get('max', float('inf'))
+                    if count < min_val:
+                        item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
+                        color_applied = True
+                    elif max_val != float('inf') and count > max_val:
+                        item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                        color_applied = True
+                
+                # Si aucune coloration conditionnelle n'a été appliquée, appliquer les couleurs par type d'utilisateur
+                if not color_applied:
+                    if is_cat:
+                        item.setBackground(QColor('#E8F5E9'))
+                    elif is_half_time:
+                        item.setBackground(QColor(230, 230, 230, 255))
+                    elif post in self.custom_posts:
+                        item.setBackground(self.custom_posts[post].color)
+                        
                 self.weekly_stats_table.setItem(row, col, item)
                 row_total += count
 
             # Total de la ligne
             total_item = QTableWidgetItem(str(row_total))
-            if hasattr(person, 'half_parts') and person.half_parts == 1:
-                total_item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
+            if is_cat:
+                total_item.setBackground(QColor('#E8F5E9'))
+            elif is_half_time:
+                total_item.setBackground(QColor(230, 230, 230, 255))
             self.weekly_stats_table.setItem(row, len(all_posts) + 1, total_item)
 
         # Ajout des lignes "Non attribué" et "Total"
         self._add_unassigned_row_weekly(len(all_personnel), stats, all_posts)
         self._add_total_row_weekly(len(all_personnel) + 1, stats, all_posts)
 
-        # Configuration de l'affichage
-        self.weekly_stats_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        # Configuration de l'affichage avec largeur optimisée
+        self.optimize_column_widths(self.weekly_stats_table)
         self.weekly_stats_table.verticalHeader().setVisible(False)
         self.weekly_stats_table.setAlternatingRowColors(False)
 
@@ -1640,15 +1958,18 @@ class StatsView(QWidget):
         # Configuration des lignes du tableau
         self.weekend_stats_table.setRowCount(len(all_personnel) + 2)
 
-        # Remplissage des données
+        # Modification dans la boucle de remplissage des données
         for row, person in enumerate(all_personnel):
             # Configuration du nom
             name_item = QTableWidgetItem(person.name)
-            if not hasattr(person, 'half_parts'):  # CAT
+            is_cat = not hasattr(person, 'half_parts')
+            is_half_time = hasattr(person, 'half_parts') and person.half_parts == 1
+            
+            if is_cat:
                 name_item.setFont(QFont("", -1, QFont.Weight.Bold))
                 name_item.setBackground(QColor('#E8F5E9'))
-            elif person.half_parts == 1:  # Mi-temps
-                name_item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
+            elif is_half_time:
+                name_item.setBackground(QColor(230, 230, 230, 255))
             self.weekend_stats_table.setItem(row, 0, name_item)
 
             # Récupération des intervalles spécifiques à la personne
@@ -1660,35 +1981,45 @@ class StatsView(QWidget):
             nl_total = weekend_stats.get(person.name, {}).get('NL', 0)
 
             row_total = 0
-            for col, post in enumerate(all_posts, start=1):
-                count = weekend_stats.get(person.name, {}).get(post, 0)
+            for col, post_type in enumerate(all_posts, start=1):
+                count = weekend_stats.get(person.name, {}).get(post_type, 0)
                 item = QTableWidgetItem(str(count))
                 
-                # Gestion de la coloration
-                if hasattr(person, 'half_parts'):
-                    if person.half_parts == 1:  # Mi-temps
-                        item.setBackground(QColor(230, 230, 230, 255))  # Gris plus prononcé
-                    elif post == 'NL':  # Cas spécial pour NL
-                        nlw_intervals = weekend_group_intervals.get('NLw', {})
-                        min_val = nlw_intervals.get('min', 0)
-                        max_val = nlw_intervals.get('max', float('inf'))
-                        
-                        if nl_total < min_val:
-                            item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
-                        elif nl_total > max_val:
-                            item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
-                    else:  # Autres postes
-                        intervals = weekend_post_intervals.get(post, {})
-                        min_val = intervals.get('min', 0)
-                        max_val = intervals.get('max', float('inf'))
-                        if count < min_val:
-                            item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
-                        elif count > max_val:
-                            item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                # MODIFICATION: Priorité à la coloration conditionnelle
+                color_applied = False
                 
-                if post in self.custom_posts:
-                    item.setBackground(self.custom_posts[post].color)
+                # Vérifier les conditions min/max
+                if post_type == 'NL':  # Cas spécial pour NL
+                    nlw_intervals = weekend_group_intervals.get('NLw', {})
+                    min_val = nlw_intervals.get('min', 0)
+                    max_val = nlw_intervals.get('max', float('inf'))
                     
+                    if nl_total < min_val:
+                        item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
+                        color_applied = True
+                    elif nl_total > max_val:
+                        item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                        color_applied = True
+                else:  # Autres postes
+                    intervals = weekend_post_intervals.get(post_type, {})
+                    min_val = intervals.get('min', 0)
+                    max_val = intervals.get('max', float('inf'))
+                    if count < min_val:
+                        item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
+                        color_applied = True
+                    elif max_val != float('inf') and count > max_val:
+                        item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                        color_applied = True
+                
+                # Appliquer les couleurs de base seulement si pas de coloration conditionnelle
+                if not color_applied:
+                    if is_cat:
+                        item.setBackground(QColor('#E8F5E9'))
+                    elif is_half_time:
+                        item.setBackground(QColor(230, 230, 230, 255))
+                    elif post_type in self.custom_posts:
+                        item.setBackground(self.custom_posts[post_type].color)
+                
                 self.weekend_stats_table.setItem(row, col, item)
                 row_total += count
 
@@ -2001,33 +2332,39 @@ class StatsView(QWidget):
                             is_cat: bool = False, group: str = None):
         """
         Applique la coloration selon les intervalles ou quotas.
-        Pour les CAT, utilise la target de la pré-analyse comme quota.
-        Rouge si différent du quota prévu, blanc sinon.
+        Priorité à la coloration conditionnelle sur les couleurs d'utilisateur.
         """
         if not intervals:
             return
+            
+        # Variable pour suivre si une coloration a été appliquée
+        color_applied = False
 
+        # Pour les CATs, vérifier d'abord les quotas
         if is_cat:
             target = intervals.get('target', 0)
-            if target == 0:  # Pas de quota défini
-                item.setBackground(QBrush())  # Laisser en blanc
-                return
-                
-            if value != target:  # Différent du quota prévu
+            if target > 0 and value != target:  # Différent du quota prévu
                 item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
-            else:
-                item.setBackground(QBrush())  # Blanc si quota exact
+                color_applied = True
         else:
+            # Pour les médecins, vérifier les intervalles
             min_val = intervals.get('min', 0)
             max_val = intervals.get('max', float('inf'))
             
             if value < min_val:
                 item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
+                color_applied = True
             elif max_val != float('inf') and value > max_val:
                 item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
-            else:
-                item.setBackground(QBrush())  # Blanc si dans l'intervalle
-
+                color_applied = True
+        
+        # Si aucune coloration conditionnelle n'a été appliquée, appliquer la couleur de base
+        if not color_applied:
+            if is_cat:
+                item.setBackground(QColor('#E8F5E9'))
+            # Pour les médecins mi-temps, cela sera géré par l'appelant
+        
+        # Ajouter le tooltip dans tous les cas
         tooltip = self._get_tooltip_text(value, intervals, is_cat, group)
         item.setToolTip(tooltip)
             
