@@ -13,7 +13,9 @@ from core.utils import get_post_period
 from core.Constantes.models import Doctor, CAT, TimeSlot
 import logging
 from dateutil.relativedelta import relativedelta
+from gui.components.planning_table_component import PlanningTableComponent
 from ..styles import color_system, StyleConstants
+
 
 logger = logging.getLogger(__name__)
 
@@ -150,12 +152,63 @@ class DoctorPlanningView(QWidget):
         # Table du planning
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
-        self.table = QTableWidget()
-        self.table.setAlternatingRowColors(True)
-        self.table.cellClicked.connect(self._on_cell_clicked)
+
+        # Utiliser le nouveau composant PlanningTableComponent
+        self.table = PlanningTableComponent()
+
+        # Configurer les dimensions adaptatives
+        self.table.set_min_row_height(20)  # Augmenté pour accommoder des polices plus grandes
+        self.table.set_max_row_height(28)  # Augmenté pour accommoder des polices plus grandes
+        self.table.set_min_column_widths(
+            day_width=28,      # Augmenté pour accommoder des polices plus grandes
+            weekday_width=35,  # Augmenté pour accommoder des polices plus grandes
+            period_width=40    # Augmenté pour accommoder des polices plus grandes
+        )
+        self.table.set_max_column_widths(
+            day_width=40,
+            weekday_width=45,
+            period_width=80
+        )
+
+        # Configurer les paramètres de police - Tailles augmentées
+        from PyQt6.QtGui import QFontDatabase
+        available_fonts = QFontDatabase.families()
+        preferred_fonts = ["Segoe UI", "Arial", "Helvetica", "San Francisco", "Roboto", "-apple-system"]
+        selected_font = next((f for f in preferred_fonts if f in available_fonts), None)
+
+        self.table.set_font_settings(
+            font_family=selected_font,
+            base_size=12,       # Taille augmentée
+            header_size=14,     # Taille augmentée
+            weekday_size=10      # Taille augmentée
+        )
+
+        # Activer la mise en gras des postes
+        self.table.set_bold_posts(True)
+
+        # Configurer les couleurs du tableau
+        colors = {
+            "primary": {
+                "weekend": QColor(255, 150, 150),
+                "normal": QColor(255, 200, 200)
+            },
+            "secondary": {
+                "weekend": QColor(150, 200, 255),
+                "normal": QColor(180, 220, 255)
+            },
+            "base": {
+                "weekend": WEEKEND_COLOR,
+                "normal": WEEKDAY_COLOR
+            }
+        }
+        self.table.set_colors(colors)
+
+        # Connecter le signal de clic à notre méthode
+        self.table.cell_clicked.connect(self._on_cell_clicked_date_period)
+
         scroll_area.setWidget(self.table)
         left_layout.addWidget(scroll_area)
-
+        
         # Widget droit (détails) avec sections
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
@@ -196,77 +249,105 @@ class DoctorPlanningView(QWidget):
         self.splitter.setSizes([700, 300])
         
         layout.addWidget(self.splitter)
+    
+    def resizeEvent(self, event):
+        """Réajuste les dimensions du tableau lors du redimensionnement de la fenêtre"""
+        super().resizeEvent(event)
+        if hasattr(self, 'table') and isinstance(self.table, PlanningTableComponent):
+            # Réoptimiser les dimensions après le redimensionnement
+            QTimer.singleShot(50, self.table.optimize_dimensions)
 
-    def _on_cell_clicked(self, row: int, col: int):
+    def configure_font_size(self, size_adjustment=0):
         """
-        Gère le clic sur une cellule du planning et affiche les postes.
-        Si la colonne est 'J', affiche tous les postes du jour.
-        Sinon, affiche les postes de la période correspondante.
+        Ajuste la taille de police du tableau
+        
+        Args:
+            size_adjustment: Ajustement relatif de la taille (+1 pour augmenter, -1 pour diminuer)
         """
-        try:
-            # Récupérer la date correspondante
-            current_date = self._get_date_from_row_col(row, col)
-            if not current_date:
-                return
-
-            # Déterminer le type de jour
-            day_type = self._get_day_type(current_date)
-            period = self._get_period_from_column(col)
-
-            # Récupérer le jour du planning
-            day_planning = next((day for day in self.planning.days if day.date == current_date), None)
+        if not hasattr(self, 'table') or not isinstance(self.table, PlanningTableComponent):
+            return
+        
+        # Récupérer les paramètres actuels
+        current_settings = self.table._font_settings
+        
+        # Appliquer l'ajustement
+        self.table.set_font_settings(
+            base_size=max(7, current_settings['base_size'] + size_adjustment),
+            header_size=max(8, current_settings['header_size'] + size_adjustment),
+            weekday_size=max(6, current_settings['weekday_size'] + size_adjustment)
+        )
+        
+        # Réoptimiser les dimensions
+        self.table.optimize_dimensions()
+        
+    def _on_cell_clicked_date_period(self, current_date, period):
+        """
+        Gère le clic sur une cellule du planning avec la nouvelle interface
+        
+        Args:
+            current_date: Date correspondante
+            period: Période (1=Matin, 2=Après-midi, 3=Soir, None=Jour)
+        """
+        if not current_date:
+            return
             
-            # Récupérer la configuration des postes pour ce type de jour
-            post_config = self._get_post_config_for_day(day_type)
-            if not post_config:
-                return
+        # Le reste du code est similaire à _on_cell_clicked mais utilise directement
+        # current_date et period plutôt que de les calculer à partir de row et col
+        
+        # Déterminer le type de jour
+        day_type = self._get_day_type(current_date)
 
-            # Obtenir les slots du jour actuel
-            slots_by_type = defaultdict(list)
-            if day_planning:
-                for slot in day_planning.slots:
-                    if period is None:  # Tous les postes du jour
+        # Récupérer le jour du planning
+        day_planning = next((day for day in self.planning.days if day.date == current_date), None)
+        
+        # Récupérer la configuration des postes pour ce type de jour
+        post_config = self._get_post_config_for_day(day_type)
+        if not post_config:
+            return
+
+        # Obtenir les slots du jour actuel
+        slots_by_type = defaultdict(list)
+        if day_planning:
+            for slot in day_planning.slots:
+                if period is None:  # Tous les postes du jour
+                    slots_by_type[slot.abbreviation].append(slot)
+                else:
+                    slot_period = get_post_period(slot)
+                    if slot_period == period:  # Les périodes sont maintenant alignées
                         slots_by_type[slot.abbreviation].append(slot)
-                    else:
-                        slot_period = get_post_period(slot)
-                        if slot_period == period:  # Les périodes sont maintenant alignées
-                            slots_by_type[slot.abbreviation].append(slot)
 
-            # Préparer la liste d'affichage
-            display_posts = []
-            for post_type, slots in slots_by_type.items():
-                for slot in sorted(slots, key=lambda x: x.abbreviation):
-                    display_posts.append((
-                        slot.abbreviation,
-                        slot.assignee if slot.assignee else "Non assigné"
-                    ))
+        # Préparer la liste d'affichage
+        display_posts = []
+        for post_type, slots in slots_by_type.items():
+            for slot in sorted(slots, key=lambda x: x.abbreviation):
+                display_posts.append((
+                    slot.abbreviation,
+                    slot.assignee if slot.assignee else "Non assigné"
+                ))
 
-            # Mettre à jour les titres des sections
-            period_names = {1: "Matin", 2: "Après-midi", 3: "Soir"}
-            day_type_names = {
-                "weekday": "Semaine",
-                "saturday": "Samedi",
-                "sunday_holiday": "Dimanche/Férié"
-            }
-            day_type_name = day_type_names.get(day_type, '')
+        # Mettre à jour les titres des sections
+        period_names = {1: "Matin", 2: "Après-midi", 3: "Soir"}
+        day_type_names = {
+            "weekday": "Semaine",
+            "saturday": "Samedi",
+            "sunday_holiday": "Dimanche/Férié"
+        }
+        day_type_name = day_type_names.get(day_type, '')
 
-            if period is None:
-                title = f"Postes du {current_date.strftime('%d/%m/%Y')} ({day_type_name})"
-            else:
-                period_name = period_names.get(period, '')
-                title = f"Postes du {current_date.strftime('%d/%m/%Y')} - {period_name} ({day_type_name})"
+        if period is None:
+            title = f"Postes du {current_date.strftime('%d/%m/%Y')} ({day_type_name})"
+        else:
+            period_name = period_names.get(period, '')
+            title = f"Postes du {current_date.strftime('%d/%m/%Y')} - {period_name} ({day_type_name})"
 
-            self.assigned_section.title_label.setText(f"Détails des postes - {title}")
-            self.available_section.title_label.setText(f"Médecins disponibles - {title}")
-            self.secondary_section.title_label.setText(f"Médecins avec desiderata secondaire - {title}")
+        self.assigned_section.title_label.setText(f"Détails des postes - {title}")
+        self.available_section.title_label.setText(f"Médecins disponibles - {title}")
+        self.secondary_section.title_label.setText(f"Médecins avec desiderata secondaire - {title}")
 
-            # Mettre à jour les tables
-            self._update_assigned_section(display_posts)
-            self._update_available_doctors(current_date, period, day_type)
-            self._update_secondary_desiderata(current_date, period, day_type)
-
-        except Exception as e:
-            logger.error(f"Erreur lors de l'affichage des détails: {e}")
+        # Mettre à jour les tables
+        self._update_assigned_section(display_posts)
+        self._update_available_doctors(current_date, period, day_type)
+        self._update_secondary_desiderata(current_date, period, day_type)
 
     def _update_assigned_section(self, display_posts):
         """Met à jour la section des postes attribués"""
@@ -499,91 +580,9 @@ class DoctorPlanningView(QWidget):
 
         return sorted(configured_posts)
             
-    def _get_date_from_row_col(self, row: int, col: int) -> Optional[date]:
-        """Calcule la date correspondant à une cellule."""
-        try:
-            if not self.planning:
-                return None
-                
-            # La première colonne est pour les jours
-            if col < 1:
-                return None
-                
-            # Le numéro du jour est dans la première colonne
-            day = int(self.table.item(row, 0).text())
-            
-            # Calculer le mois à partir de la colonne
-            month_col = (col - 1) // 4
-            current_date = self.planning.start_date
-            target_date = current_date.replace(day=1) + relativedelta(months=month_col)
-            
-            return target_date.replace(day=day)
-            
-        except Exception as e:
-            logger.error(f"Erreur calcul date: {e}")
-            return None
-
-    def _get_period_from_column(self, col: int) -> Optional[int]:
-        """
-        Détermine la période à partir de la colonne.
-        Returns:
-            - None pour la colonne J (tous les postes)
-            - 1 pour la colonne M (matin)
-            - 2 pour la colonne AM (après-midi)
-            - 3 pour la colonne S (soir)
-        """
-        if col < 1:
-            return None
-            
-        # Calculer l'index dans le groupe de colonnes (J, M, AM, S)
-        column_in_group = (col - 1) % 4
-        
-        # column_in_group peut être:
-        # 0 -> J (jour)
-        # 1 -> M (matin)
-        # 2 -> AM (après-midi)
-        # 3 -> S (soir)
-        
-        if column_in_group == 0:  # Colonne J
-            return None
-        else:
-            return column_in_group  # Les autres colonnes correspondent directement aux périodes
     
-    def update_selector(self):
-        """Mise à jour sécurisée du sélecteur avec vérification de l'état"""
-        if not hasattr(self, 'selector') or not self.selector:
-            return
-            
-        current_text = self.selector.currentText()
-        
-        self.selector.blockSignals(True)
-        try:
-            self.selector.clear()
-            
-            # Ajout des médecins
-            if self.doctors:
-                for doctor in self.doctors:
-                    self.selector.addItem(doctor.name)
-                    
-            # Ajout des CAT
-            if self.cats:
-                for cat in self.cats:
-                    self.selector.addItem(cat.name)
-            
-            # S'assurer qu'il y a au moins un élément
-            if self.selector.count() == 0:
-                self.selector.addItem("Aucun médecin/CAT")
-                return
-                
-            # Restaurer la sélection précédente si possible
-            index = self.selector.findText(current_text)
-            if index >= 0:
-                self.selector.setCurrentIndex(index)
-            else:
-                self.selector.setCurrentIndex(0)  # Sélectionner le premier élément par défaut
-                
-        finally:
-            self.selector.blockSignals(False)
+
+    
 
     def _safe_process_update(self):
         """Traitement sécurisé des mises à jour"""
@@ -682,7 +681,7 @@ class DoctorPlanningView(QWidget):
         return super().eventFilter(obj, event)
 
     def update_table(self):
-        """Mise à jour sécurisée de la table"""
+        """Mise à jour de la table avec le nouveau composant"""
         if self._destroyed or not hasattr(self, 'table') or not self.table:
             return
             
@@ -691,71 +690,95 @@ class DoctorPlanningView(QWidget):
             self.clear_table()
             return
 
-        # Configuration des couleurs
-        colors = {
-            "primary": {
-                "weekend": QColor(255, 150, 150),
-                "normal": QColor(255, 200, 200)
-            },
-            "secondary": {
-                "weekend": QColor(150, 200, 255),
-                "normal": QColor(180, 220, 255)
-            },
-            "base": {
-                "weekend": WEEKEND_COLOR,
-                "normal": WEEKDAY_COLOR
-            }
-        }
-
-        # Désactiver les mises à jour pendant le traitement
-        self.table.setUpdatesEnabled(False)
-        try:
-            if not self.planning or not self.planning.days:
-                self.clear_table()
-                return
-
-            selected_name = self.selector.currentText()
-            start_date = self.planning.start_date
-            end_date = self.planning.end_date
+        # Configuration des couleurs (déjà fait dans init_ui)
+        selected_name = self.selector.currentText()
+        start_date = self.planning.start_date
+        end_date = self.planning.end_date
+        
+        # Configurer les dates du planning
+        self.table.setup_planning_dates(start_date, end_date)
+        
+        # Remplir les jours de base
+        self.table.populate_days()
+        
+        # Mettre à jour les cellules pour le médecin/CAT sélectionné
+        self._update_cells_for_selected(selected_name)
+    
+    def _update_cells_for_selected(self, selected_name):
+        """
+        Met à jour les cellules pour un médecin/CAT sélectionné
+        
+        Args:
+            selected_name: Nom du médecin/CAT sélectionné
+        """
+        if not self.planning or not self.planning.days:
+            return
             
-            # Calcul des mois
-            total_months = (end_date.year - start_date.year) * 12 + end_date.month - start_date.month + 1
-
-            # Configuration initiale
-            self.table.clear()
-            self.table.setRowCount(31)
-            self.table.setColumnCount(total_months * 4 + 1)
-
-            # En-têtes
-            headers = ["Jour"]
-            current_date = date(start_date.year, start_date.month, 1)
-            for _ in range(total_months):
-                month_name = current_date.strftime("%b")
-                headers.extend([f"{month_name}\nJ", f"{month_name}\nM", f"{month_name}\nAM", f"{month_name}\nS"])
-                current_date = (current_date.replace(day=28) + timedelta(days=4)).replace(day=1)
+        # Récupérer la personne sélectionnée pour les desiderata
+        selected_person = next((p for p in self.doctors + self.cats if p.name == selected_name), None)
+        
+        # Parcourir tous les jours du planning
+        for day_planning in self.planning.days:
+            current_date = day_planning.date
+            is_weekend_or_holiday = day_planning.is_weekend or day_planning.is_holiday_or_bridge
             
-            self.table.setHorizontalHeaderLabels(headers)
-
-            # Remplissage des données
-            current_date = start_date
-            while current_date <= end_date:
-                self._populate_day_row(current_date, selected_name, colors)
-                current_date += timedelta(days=1)
-
-            # Ajustement final
-            self._adjust_table_dimensions()
+            # Récupération et tri des slots par période pour la personne sélectionnée
+            slots = [slot for slot in day_planning.slots if slot.assignee == selected_name]
+            periods = [[] for _ in range(3)]  # 3 périodes : matin, après-midi, soir
             
-        except RuntimeError as e:
-            if "wrapped C/C++ object" in str(e):
-                # Recréer la table en cas d'erreur
-                self.table = None
-                QTimer.singleShot(100, self.init_ui)
-                return
-            raise
-        finally:
-            if hasattr(self, 'table') and self.table:
-                self.table.setUpdatesEnabled(True)
+            for slot in slots:
+                period_index = get_post_period(slot)  # Utilise la fonction existante
+                if 0 <= period_index <= 3:  # Vérifie que l'index est valide (1-3)
+                    periods[period_index - 1].append(slot)  # -1 car periods est indexé de 0 à 2
+                    
+            # Mise à jour des cellules pour chaque période
+            for i in range(3):
+                period = i + 1
+                post_list = periods[i]
                 
+                # Texte de la cellule
+                text = ", ".join(slot.abbreviation for slot in post_list)
+                
+                # Déterminer la couleur de fond en fonction des desiderata
+                background_color = self.table.current_colors["base"]["weekend" if is_weekend_or_holiday else "normal"]
+                
+                if selected_person:
+                    for desiderata in selected_person.desiderata:
+                        if (desiderata.start_date <= current_date <= desiderata.end_date and 
+                            desiderata.period == period):
+                            priority = getattr(desiderata, 'priority', 'primary')
+                            background_color = self.table.current_colors[priority]["weekend" if is_weekend_or_holiday else "normal"]
+                            break
+                
+                # Vérifier si c'est une post-attribution
+                has_post_attribution = False
+                foreground_color = None
+                font = None
+                
+                for slot in post_list:
+                    if hasattr(slot, 'is_post_attribution') and slot.is_post_attribution:
+                        has_post_attribution = True
+                        break
+                
+                # Appliquer le style pour les post-attributions
+                if has_post_attribution and hasattr(self, 'main_window') and hasattr(self.main_window, 'post_attribution_handler'):
+                    foreground_color = self.main_window.post_attribution_handler.get_post_color()
+                    font = self.main_window.post_attribution_handler.get_post_font()
+                
+                # Optimiser le texte si nécessaire
+                display_text, tooltip = self.table.optimize_cell_text(text)
+                
+                # Mettre à jour la cellule
+                self.table.update_cell(
+                    current_date, period, display_text,
+                    background_color=background_color,
+                    foreground_color=foreground_color,
+                    font=font,
+                    tooltip=tooltip,
+                    custom_data={"slots": post_list}  # Stocker les slots pour usage ultérieur
+                )
+                
+            
     def closeEvent(self, event):
         """Nettoyage amélioré lors de la fermeture"""
         self._destroyed = True
@@ -779,18 +802,16 @@ class DoctorPlanningView(QWidget):
         super().showEvent(event)
                 
    
-    
     def set_context_menu_policy(self):
         """Définit la politique de menu contextuel pour la table."""
         self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self.show_context_menu)
-
     def show_context_menu(self, position):
         """Affiche le menu contextuel pour gérer les post-attributions."""
         if not hasattr(self, 'main_window') or not self.main_window:
             print("Erreur: main_window n'est pas défini dans DoctorPlanningView")
             return
-            
+                
         if not hasattr(self.main_window, 'post_attribution_handler'):
             print("Erreur: post_attribution_handler n'est pas disponible dans main_window")
             return
@@ -800,38 +821,27 @@ class DoctorPlanningView(QWidget):
             print("Aucun planning disponible")
             return
         
+        # Récupérer la cellule cliquée
         item = self.table.itemAt(position)
         if not item:
             return
         
-        row = self.table.row(item)
-        col = self.table.column(item)
-        
-        date = self._get_date_from_row_col(row, col)
-        if not date:
+        # Récupérer les données de la cellule
+        data = item.data(Qt.ItemDataRole.UserRole)
+        if not data or not isinstance(data, dict):
             return
         
-        # Calculer la base de la colonne et la période
-        if col <= 0:
-            return
-            
-        base_col = (col - 1) // 4 * 4 + 1
-        if col not in [base_col + 1, base_col + 2, base_col + 3]:
-            return
+        date = data.get("date")
+        period = data.get("period")
         
-        period_index = col - base_col - 1  # 0-based: 0=Matin, 1=Après-midi, 2=Soir
-        ui_period = period_index + 1        # 1-based: 1=Matin, 2=Après-midi, 3=Soir
-        
-        current_person = self.get_current_person()
-        if not current_person:
+        if not date or not period or period not in [1, 2, 3]:
             return
-        
-        # Créer le menu contextuel
-        from PyQt6.QtWidgets import QMenu
-        menu = QMenu(self)
         
         # Vérifier si le planning a été généré pour cette date
         is_date_generated = self._is_date_generated(date)
+        
+        # Créer le menu contextuel
+        menu = QMenu(self)
         
         # Si la date n'est pas générée, afficher une option désactivée
         if not is_date_generated:
@@ -848,6 +858,10 @@ class DoctorPlanningView(QWidget):
             menu.exec(self.table.viewport().mapToGlobal(position))
             return
         
+        current_person = self.get_current_person()
+        if not current_person:
+            return
+        
         # Vérifier dans post_attributions directement s'il y a une post-attribution
         # pour cette personne, date et période
         has_post_attr = False
@@ -857,23 +871,23 @@ class DoctorPlanningView(QWidget):
         if hasattr(handler, 'post_attributions'):
             if date in handler.post_attributions:
                 if current_person.name in handler.post_attributions[date]:
-                    if ui_period in handler.post_attributions[date][current_person.name]:
+                    if period in handler.post_attributions[date][current_person.name]:
                         has_post_attr = True
-                        post_type = handler.post_attributions[date][current_person.name][ui_period]
+                        post_type = handler.post_attributions[date][current_person.name][period]
         
         # Si une post-attribution existe, ajouter UNIQUEMENT l'option de suppression
         if has_post_attr and post_type:
             action = menu.addAction(f"Supprimer post-attribution: {post_type}")
             action.triggered.connect(
                 lambda checked=False: handler.remove_post_attribution(
-                    date, ui_period, current_person.name, self.table
+                    date, period, current_person.name, self.table
                 )
             )
         else:
             # UNIQUEMENT si aucune post-attribution n'existe déjà, proposer l'ajout
             day_type = self._get_day_type(date)
             available_posts = handler._get_available_posts(
-                date, period_index, day_type, current_person.name
+                date, period-1, day_type, current_person.name
             )
             
             if available_posts:
@@ -882,7 +896,7 @@ class DoctorPlanningView(QWidget):
                     action = add_menu.addAction(post_type)
                     action.triggered.connect(
                         lambda checked=False, pt=post_type: handler.add_post_attribution(
-                            date, ui_period, current_person.name, pt, self.table
+                            date, period, current_person.name, pt, self.table
                         )
                     )
             else:
@@ -926,107 +940,40 @@ class DoctorPlanningView(QWidget):
         """Retourne la personne actuellement sélectionnée."""
         name = self.selector.currentText()
         return next((p for p in self.doctors + self.cats if p.name == name), None)
-    def _populate_day_row(self, current_date, selected_name, colors):
-        """Remplit une ligne du tableau pour un jour donné"""
-        day_row = current_date.day - 1
-        month_col = (current_date.year - self.planning.start_date.year) * 12 + current_date.month - self.planning.start_date.month
-        col_offset = month_col * 4 + 1
-
-        # Configuration de base de la ligne
-        self._set_basic_row_items(day_row, col_offset, current_date)
-
-        # Traitement des postes
-        day_planning = next((day for day in self.planning.days if day.date == current_date), None)
-        if day_planning:
-            is_weekend_or_holiday = day_planning.is_weekend or day_planning.is_holiday_or_bridge
-            background_color = colors["base"]["weekend" if is_weekend_or_holiday else "normal"]
-            
-            # Récupération et tri des slots par période
-            slots = [slot for slot in day_planning.slots if slot.assignee == selected_name]
-            periods = [[] for _ in range(3)]  # 3 périodes : matin, après-midi, soir
-            
-            for slot in slots:
-                period_index = get_post_period(slot)  # Utilise la fonction existante
-                if 0 <= period_index <= 3:  # Vérifie que l'index est valide (1-3)
-                    periods[period_index - 1].append(slot)  # -1 car periods est indexé de 0 à 2
-
-            # Obtention de la personne sélectionnée
-            selected_person = next((p for p in self.doctors + self.cats if p.name == selected_name), None)
-            
-            # Remplissage des cellules pour chaque période
-            for i in range(3):
-                item = QTableWidgetItem()
-                post_list = periods[i]
-                
-                # Texte de la cellule
-                text = ", ".join(slot.abbreviation for slot in post_list)
-                item.setText(text)
-                
-                # Coloration selon desiderata
-                current_color = background_color
-                
-                if selected_person:
-                    for desiderata in selected_person.desiderata:
-                        if (desiderata.start_date <= current_date <= desiderata.end_date and 
-                            desiderata.period == i + 1):  # Périodes alignées avec PostPeriod
-                            priority = getattr(desiderata, 'priority', 'primary')
-                            current_color = colors[priority]["weekend" if is_weekend_or_holiday else "normal"]
-                            break
-                
-                item.setBackground(QBrush(current_color))
-                
-                # Vérification pour les post-attributions
-                has_post_attribution = False
-                for slot in post_list:
-                    if hasattr(slot, 'is_post_attribution') and slot.is_post_attribution:
-                        has_post_attribution = True
-                        break
-                
-                # Appliquer le style pour les post-attributions
-                if has_post_attribution and hasattr(self, 'main_window') and hasattr(self.main_window, 'post_attribution_handler'):
-                    post_attr_color = self.main_window.post_attribution_handler.get_post_color()
-                    post_attr_font = self.main_window.post_attribution_handler.get_post_font()
-                    item.setForeground(QBrush(post_attr_color))
-                    item.setFont(post_attr_font)
-                
-                self.table.setItem(day_row, col_offset + i + 1, item)
-
-    def _set_basic_row_items(self, day_row, col_offset, current_date):
-        """Configure les cellules de base d'une ligne (jour et jour de la semaine)"""
-        # Jour
-        day_item = QTableWidgetItem(str(current_date.day))
-        day_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.table.setItem(day_row, 0, day_item)
+    
+    def _optimize_cell_display(self, item, text, max_length=15):
+        """
+        Optimise l'affichage des cellules avec beaucoup de contenu
         
-        # Jour de la semaine
-        weekday_names = ["L", "M", "M", "J", "V", "S", "D"]
-        weekday_item = QTableWidgetItem(weekday_names[current_date.weekday()])
-        weekday_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-        weekday_item.setForeground(QBrush(WEEKDAY_TEXT_COLOR))
-        font = QFont()
-        font.setPointSize(8)
-        weekday_item.setFont(font)
-        self.table.setItem(day_row, col_offset, weekday_item)
+        Args:
+            item: QTableWidgetItem à configurer
+            text: Texte à afficher
+            max_length: Longueur maximale avant troncature
+        """
+        if len(text) > max_length:
+            # Si le texte est trop long, le tronquer et ajouter une ellipse
+            shortened_text = text[:max_length] + "..."
+            item.setText(shortened_text)
+            
+            # Ajouter un tooltip avec le texte complet
+            item.setToolTip(text)
+        else:
+            item.setText(text)
+        
+        # Ajuster le style pour rendre plus lisible
+        item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # On pourrait aussi ajuster la taille de police pour les textes longs
+        if len(text) > 10:
+            font = item.font()
+            font.setPointSize(7)  # Police plus petite pour les textes longs
+            item.setFont(font)
 
-    def _adjust_table_dimensions(self):
-        """Ajuste les dimensions finales du tableau"""
-        for row in range(self.table.rowCount()):
-            self.table.setRowHeight(row, 20)
-
-        for col in range(self.table.columnCount()):
-            if col == 0:
-                self.table.setColumnWidth(col, 40)  # Colonne des jours
-            elif (col - 1) % 4 == 0:
-                self.table.setColumnWidth(col, 30)  # Colonnes J
-            else:
-                self.table.setColumnWidth(col, 50)  # Colonnes M, AM, S
-
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-
+    
     def clear_table(self):
         """Nettoie la table"""
         if hasattr(self, 'table') and self.table:
-            self.table.clearContents()
+            self.table.clear()
             self.table.setRowCount(0)
             self.table.setColumnCount(0)
 

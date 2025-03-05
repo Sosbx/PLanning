@@ -145,8 +145,8 @@ class PlanningManagementWidget(QWidget):
             if isinstance(d, dict):
                 return {
                     (k.isoformat() if isinstance(k, (date, datetime))
-                     else '|'.join(map(str, k)) if isinstance(k, tuple)
-                     else k): convert_dict_keys_to_iso(v)
+                    else '|'.join(map(str, k)) if isinstance(k, tuple)
+                    else k): convert_dict_keys_to_iso(v)
                     for k, v in d.items()
                 }
             elif isinstance(d, list):
@@ -157,13 +157,19 @@ class PlanningManagementWidget(QWidget):
 
         # Convertir les pré-attributions en format sérialisable
         pre_attributions_serializable = {}
-        for person_name, attributions in self.main_window.planning_tab.pre_attribution_tab.pre_attributions.items():
-            person_attributions = {}
-            for (date_obj, period), post in attributions.items():
-                # Créer une clé au format "date|période"
-                key = f"{date_obj.isoformat()}|{period}"
-                person_attributions[key] = post
-            pre_attributions_serializable[person_name] = person_attributions
+        
+        # Vérifier que pre_attributions est bien un dictionnaire avant d'appeler items()
+        pre_attributions = getattr(self.main_window.planning_tab.pre_attribution_tab, 'pre_attributions', {})
+        if isinstance(pre_attributions, dict):
+            for person_name, attributions in pre_attributions.items():
+                person_attributions = {}
+                for (date_obj, period), post in attributions.items():
+                    # Créer une clé au format "date|période"
+                    key = f"{date_obj.isoformat()}|{period}"
+                    person_attributions[key] = post
+                pre_attributions_serializable[person_name] = person_attributions
+        else:
+            print(f"Avertissement: pre_attributions n'est pas un dictionnaire ({type(pre_attributions)})")
         
         data = {
             "start_date": planning.start_date,
@@ -221,6 +227,7 @@ class PlanningManagementWidget(QWidget):
         with open(self.auto_save_filename, 'w') as f:
             json.dump(converted_data, f, cls=DateTimeEncoder)
 
+
     def save_planning(self):
         if not self.main_window.planning_tab.planning:
             QMessageBox.warning(self, "Erreur", "Aucun planning à sauvegarder.")
@@ -249,8 +256,8 @@ class PlanningManagementWidget(QWidget):
             if isinstance(d, dict):
                 return {
                     (k.isoformat() if isinstance(k, (date, datetime))
-                     else '|'.join(map(str, k)) if isinstance(k, tuple)
-                     else k): convert_dict_keys_to_iso(v)
+                    else '|'.join(map(str, k)) if isinstance(k, tuple)
+                    else k): convert_dict_keys_to_iso(v)
                     for k, v in d.items()
                 }
             elif isinstance(d, list):
@@ -261,13 +268,19 @@ class PlanningManagementWidget(QWidget):
 
         # Convertir les pré-attributions en format sérialisable
         pre_attributions_serializable = {}
-        for person_name, attributions in self.main_window.planning_tab.pre_attribution_tab.pre_attributions.items():
-            person_attributions = {}
-            for (date_obj, period), post in attributions.items():
-                # Créer une clé au format "date|période"
-                key = f"{date_obj.isoformat()}|{period}"
-                person_attributions[key] = post
-            pre_attributions_serializable[person_name] = person_attributions
+        
+        # Vérifier que pre_attributions est bien un dictionnaire avant d'appeler items()
+        pre_attributions = getattr(self.main_window.planning_tab.pre_attribution_tab, 'pre_attributions', {})
+        if isinstance(pre_attributions, dict):
+            for person_name, attributions in pre_attributions.items():
+                person_attributions = {}
+                for (date_obj, period), post in attributions.items():
+                    # Créer une clé au format "date|période"
+                    key = f"{date_obj.isoformat()}|{period}"
+                    person_attributions[key] = post
+                pre_attributions_serializable[person_name] = person_attributions
+        else:
+            print(f"Avertissement: pre_attributions n'est pas un dictionnaire ({type(pre_attributions)})")
         
         data = {
             "start_date": planning.start_date,

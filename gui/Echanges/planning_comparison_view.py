@@ -2,7 +2,7 @@
 # gui/planning_comparison_view.py
 
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton, QHeaderView, QMessageBox,
-                             QTableWidget, QTableWidgetItem, QDialog, QLabel, QScrollArea, QTextEdit,QGridLayout)
+                             QTableWidget, QTableWidgetItem, QDialog, QLabel, QScrollArea, QTextEdit, QGridLayout)
 
 from PyQt6.QtCore import Qt, QDate, pyqtSignal
 from PyQt6.QtGui import QColor, QBrush, QFont, QTextCharFormat
@@ -12,9 +12,8 @@ from core.Constantes.models import TimeSlot, Doctor, CAT
 from dateutil.relativedelta import relativedelta
 from core.Constantes.constraints import PlanningConstraints
 from gui.Echanges.post_filter_component import PostFilterComponent
+from gui.components.planning_table_component import PlanningTableComponent
 from workalendar.europe import France
-
-
 
 from ..styles import color_system, StyleConstants
 
@@ -154,15 +153,63 @@ class PlanningComparisonView(QWidget):
         scroll_area2.setWidgetResizable(True)
 
         # Création et configuration des tableaux
-        self.table1 = FullPlanningTable(self)
-        self.table2 = FullPlanningTable(self)
+        self.table1 = PlanningTableComponent(self)
+        self.table2 = PlanningTableComponent(self)
+        
+        # Configuration des couleurs pour les deux tables - Définition explicite
+        colors = {
+            "primary": {
+                "weekend": QColor(255, 150, 150),  # Rouge vif pour weekend
+                "normal": QColor(255, 200, 200)    # Rouge clair pour jour normal
+            },
+            "secondary": {
+                "weekend": QColor(150, 200, 255),  # Bleu vif pour weekend
+                "normal": QColor(180, 220, 255)    # Bleu clair pour jour normal
+            },
+            "base": {
+                "weekend": WEEKEND_COLOR,
+                "normal": WEEKDAY_COLOR
+            }
+        }
+
+        # Appliquer directement ces couleurs
+        self.table1.set_colors(colors)
+        self.table2.set_colors(colors)
+        
+        # Configuration des dimensions adaptatives
+        for table in [self.table1, self.table2]:
+            table.set_min_row_height(18)
+            table.set_max_row_height(25)
+            table.set_min_column_widths(
+                day_width=25,
+                weekday_width=30,
+                period_width=35
+            )
+            table.set_max_column_widths(
+                day_width=35,
+                weekday_width=40,
+                period_width=70
+            )
+            
+            # Configuration des polices
+            table.set_font_settings(
+                base_size=12,
+                header_size=14,
+                weekday_size=10
+            )
+            
+        # Connecter les signaux
+        self.table1.cell_clicked.connect(self.update_selected_cell)
+        self.table1.cell_double_clicked.connect(self.on_cell_double_clicked)
+        self.table2.cell_clicked.connect(self.update_selected_cell)
+        self.table2.cell_double_clicked.connect(self.on_cell_double_clicked)
         
         scroll_area1.setWidget(self.table1)
         scroll_area2.setWidget(self.table2)
 
         tables_layout.addWidget(scroll_area1)
         tables_layout.addWidget(scroll_area2)
-        layout.addLayout(tables_layout, 1)  # Le 1 donne plus d'importance à la zone des tableaux
+        layout.addLayout(tables_layout, 1)
 
         # Section du bas
         self.bottom_section = ComparisonBottomSection(self)
@@ -186,29 +233,10 @@ class PlanningComparisonView(QWidget):
         # Synchronisation des barres de défilement
         self.synchronize_scrollbars()
 
-
-    def update_table_style(self, table):
-        """Applique un style cohérent à une table."""
-        table.setAlternatingRowColors(True)
-        table.verticalHeader().setVisible(False)
-        table.horizontalHeader().setMinimumHeight(StyleConstants.SPACING['xl'])
-        
-        # Style des en-têtes
-        header_font = QFont(StyleConstants.FONT['family']['primary'])
-        header_font.setPointSize(int(StyleConstants.FONT['size']['md'].replace('px', '')))
-        header_font.setWeight(StyleConstants.FONT['weight']['medium'])
-        table.horizontalHeader().setFont(header_font)
-        
-        # Hauteur des lignes
-        table.verticalHeader().setDefaultSectionSize(StyleConstants.SPACING['xl'])
-        
-        # Ajustement des colonnes
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
-        table.horizontalHeader().setStretchLastSection(True)
-
     def synchronize_scrollbars(self):
         """
-        Synchronise les barres de défilement des deux tables pour un défilement horizontal et vertical simultané.
+        Synchronise les barres de défilement des deux tables pour un défilement simultané.
+        Adapté pour fonctionner avec PlanningTableComponent.
         """
         # Synchronisation du défilement vertical
         self.table1.verticalScrollBar().valueChanged.connect(self.sync_scroll_vertical_table2)
@@ -246,24 +274,14 @@ class PlanningComparisonView(QWidget):
             self.is_syncing_horizontal = False
     
     def apply_filters(self, table, filters):
-        """
-        Applique les filtres de postes à la table spécifiée.
-        
-        Args:
-            table: Table à filtrer (table1 ou table2)
-            filters: Liste des types de postes à afficher
-        """
+        """Applique les filtres de postes à la table spécifiée."""
         # Mise à jour des filtres actifs
         if table == self.table1:
             self.active_filters1 = filters
+            self.populate_table(self.table1, self.selector1.currentText(), filters)
         else:
             self.active_filters2 = filters
-        
-        # Mise à jour de la table avec les filtres
-        if table == self.table1:
-            self.table1.populate_table(self.selector1.currentText(), self.active_filters1)
-        else:
-            self.table2.populate_table(self.selector2.currentText(), self.active_filters2)
+            self.populate_table(self.table2, self.selector2.currentText(), filters)
 
     def get_doctor_parts(self, doctor_name):
         """
@@ -313,15 +331,17 @@ class PlanningComparisonView(QWidget):
         self.selector2.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
     def on_selector_changed(self):
+        """Gère le changement de sélection dans les listes déroulantes"""
         sender = self.sender()
         if sender == self.selector1:
             self.current_selection1 = sender.currentText()
-            self.table1.populate_table(self.current_selection1, self.active_filters1)
+            self.populate_table(self.table1, self.current_selection1, self.active_filters1)
         elif sender == self.selector2:
             self.current_selection2 = sender.currentText()
-            self.table2.populate_table(self.current_selection2, self.active_filters2)
+            self.populate_table(self.table2, self.current_selection2, self.active_filters2)
 
     def update_comparison(self, preserve_selection=False):
+        """Met à jour les deux tableaux de comparaison"""
         if preserve_selection and hasattr(self, 'current_selection1') and hasattr(self, 'current_selection2'):
             selected1 = self.current_selection1
             selected2 = self.current_selection2
@@ -329,13 +349,14 @@ class PlanningComparisonView(QWidget):
             selected1 = self.selector1.currentText()
             selected2 = self.selector2.currentText()
         
-        self.table1.populate_table(selected1, self.active_filters1)
-        self.table2.populate_table(selected2, self.active_filters2)
+        # Appeler la méthode de la classe pour peupler les tableaux
+        self.populate_table(self.table1, selected1, self.active_filters1)
+        self.populate_table(self.table2, selected2, self.active_filters2)
         
         if preserve_selection:
             self.selector1.setCurrentText(selected1)
             self.selector2.setCurrentText(selected2)
-    
+
     def reset_selectors(self):
         self.selector1.setCurrentIndex(0)
         self.selector2.setCurrentIndex(0)
@@ -358,8 +379,8 @@ class PlanningComparisonView(QWidget):
         self.update_selectors(preserve_selection=True, allow_new_selection=True)
         
         # Mettre à jour les tables
-        self.table1.populate_table(self.current_selection1)
-        self.table2.populate_table(self.current_selection2)
+        self.populate_table(self.table1, self.current_selection1, self.active_filters1)
+        self.populate_table(self.table2, self.current_selection2, self.active_filters2)
         
         # Ajouter à l'historique des échanges
         self.add_exchange_to_history(old_assignee, new_assignee, post_type)
@@ -385,21 +406,6 @@ class PlanningComparisonView(QWidget):
             self.bottom_section.show_exchange_history(self.bottom_section.left_content)
         if (self.bottom_section.right_selector.currentText() == "Historique des échanges"):
             self.bottom_section.show_exchange_history(self.bottom_section.right_content)
-        
-    
-
-    def update_exchange_history(self, old_assignee, new_assignee, post_type):
-        exchange = f"{old_assignee} donne {post_type} à {new_assignee}"
-        self.exchange_history.append(exchange)
-
-        cursor = self.exchange_history_widget.textCursor()
-        format = QTextCharFormat()
-        format.setForeground(QBrush(QColor(0, 0, 0)))  # Noir pour tous les échanges
-        cursor.movePosition(cursor.MoveOperation.End)
-        cursor.insertText(exchange + "\n", format)
-
-       
- 
 
     def update_post_balance(self, old_assignee, new_assignee, post_type):
         """
@@ -636,51 +642,336 @@ class PlanningComparisonView(QWidget):
 
         return assigned_doctors
 
-    def _get_slot_period(self, slot):
-        """
-        Détermine la période d'un slot.
-        
-        Args:
-            slot: Le slot à vérifier
-        
-        Returns:
-            int: 1 pour matin, 2 pour après-midi, 3 pour soir
-        """
-        start_hour = slot.start_time.hour
-        
-        if slot.abbreviation == "CT":
-            # Pour CT, calculer la période dominante
-            total_hours = (slot.end_time.hour - start_hour + 24) % 24
-            morning_hours = sum(1 for h in range(start_hour, start_hour + total_hours) if 7 <= h % 24 < 13)
-            afternoon_hours = sum(1 for h in range(start_hour, start_hour + total_hours) if 13 <= h % 24 < 18)
-            
-            if morning_hours > afternoon_hours:
-                return 1
-            else:
-                return 2
-        
-        if 7 <= start_hour < 13:
-            return 1  # Matin
-        elif 13 <= start_hour < 18:
-            return 2  # Après-midi
-        else:
-            return 3  # Soir
-
-    def update_selected_cell(self, row, col):
+    def update_selected_cell(self, date_val, period):
         """
         Met à jour la cellule sélectionnée et rafraîchit les informations associées.
+        Maintenant compatible avec PlanningTableComponent qui envoie directement date et période.
         """
         # Mettre à jour la date et la période sélectionnées
-        self.selected_date = self._get_date_from_row_col(row, col)
-        self.selected_period = self._get_period_from_column(col)
+        self.selected_date = date_val
+        self.selected_period = period
         
-        # Rafraîchir les sections du bas avec la nouvelle logique
+        # Rafraîchir les sections du bas
         if self.selected_date:
             self.bottom_section.selected_date = self.selected_date
             self.bottom_section.selected_period = self.selected_period
             self.bottom_section.update_all_views()
+    
+    def get_post_period(self, post):
+        """Détermine la période d'un type de poste"""
+        if post in ["ML", "MC", "MM", "CM", "HM", "SM", "RM"]:
+            return 1  # Matin
+        elif post in ["CA", "HA", "SA", "RA", "AL", "AC", "CT"]:
+            return 2  # Après-midi
+        else:
+            return 3  # Soir
+
+    def has_desiderata(self, person, date, period, priority=None):
+        """
+        Vérifie si une personne a un desiderata pour une date et période spécifiques.
+        
+        Args:
+            person: Médecin ou CAT à vérifier
+            date: Date à vérifier
+            period: Période à vérifier (1: Matin, 2: Après-midi, 3: Soir)
+            priority: Priorité à vérifier ('primary', 'secondary', ou None pour les deux)
+            
+        Returns:
+            bool: True si la personne a un desiderata correspondant, False sinon
+        """
+        if not person or not hasattr(person, 'desiderata'):
+            return False
+        
+        for desiderata in person.desiderata:
+            if (desiderata.start_date <= date <= desiderata.end_date and 
+                desiderata.period == period):
+                # Si une priorité spécifique est demandée, vérifier
+                if priority is not None:
+                    if getattr(desiderata, 'priority', 'primary') == priority:
+                        return True
+                else:
+                    # Sinon, tout desiderata correspond
+                    return True
+        
+        return False
+
+    def prepare_cell_parameters(self, current_date, period, filtered_posts, selected_name, table):
+        """
+        Prépare tous les paramètres nécessaires pour update_cell
+        
+        Args:
+            current_date: Date de la cellule
+            period: Période (1=Matin, 2=Après-midi, 3=Soir)
+            filtered_posts: Liste des postes filtrés pour cette cellule
+            selected_name: Nom du médecin/CAT sélectionné
+            table: Table concernée
+            
+        Returns:
+            dict: Paramètres à utiliser pour update_cell
+        """
+        # Trouver le jour dans le planning
+        day_planning = next((day for day in self.planning.days if day.date == current_date), None)
+        
+        # Valeurs par défaut
+        params = {
+            'display_text': "",
+            'background_color': None,
+            'foreground_color': None,
+            'font': None,
+            'tooltip': None,
+            'custom_data': {
+                'slots': filtered_posts,
+                'date': current_date,
+                'period': period
+            }
+        }
+        
+        if not day_planning:
+            return params
+        
+        is_weekend_or_holiday = day_planning.is_weekend or day_planning.is_holiday_or_bridge
+        
+        # Texte à afficher
+        text = ", ".join(slot.abbreviation for slot in filtered_posts)
+        
+        # Optimiser le texte si nécessaire
+        if len(text) > 15:
+            params['display_text'] = text[:15] + "..."
+            params['tooltip'] = text
+        else:
+            params['display_text'] = text
+        
+        # Couleur de base
+        base_color_key = "weekend" if is_weekend_or_holiday else "normal"
+        params['background_color'] = table.current_colors["base"][base_color_key]
+        
+        # IMPORTANT: Vérification des desiderata même s'il n'y a pas de posts assignés
+        # Ne pas utiliser "Non attribué" pour les désidératas
+        if selected_name != "Non attribué":
+            selected_person = next((p for p in self.doctors + self.cats if p.name == selected_name), None)
+            
+            if selected_person and hasattr(selected_person, 'desiderata'):
+                has_primary_desiderata = False
+                has_secondary_desiderata = False
+                
+                for desiderata in selected_person.desiderata:
+                    # Vérifier si le désidérata correspond à la date et à la période
+                    if (desiderata.start_date <= current_date <= desiderata.end_date and 
+                        desiderata.period == period):
+                        # Déterminer la priorité (primary par défaut)
+                        priority = getattr(desiderata, 'priority', 'primary')
+                        
+                        # Mettre à jour les flags
+                        if priority == 'primary':
+                            has_primary_desiderata = True
+                        else:
+                            has_secondary_desiderata = True
+                        
+                        # Appliquer la couleur correspondante
+                        color_key = "weekend" if is_weekend_or_holiday else "normal"
+                        if priority in table.current_colors and color_key in table.current_colors[priority]:
+                            params['background_color'] = table.current_colors[priority][color_key]
+                        break  # Arrêter après avoir trouvé le premier désidérata correspondant
+                
+                # Stocker les informations sur les désidératas dans les données personnalisées
+                params['custom_data']['has_primary_desiderata'] = has_primary_desiderata
+                params['custom_data']['has_secondary_desiderata'] = has_secondary_desiderata
+        
+        # Vérifier les post-attributions
+        has_post_attribution = False
+        for slot in filtered_posts:
+            if hasattr(slot, 'is_post_attribution') and slot.is_post_attribution:
+                has_post_attribution = True
+                break
+        
+        # Appliquer le style pour les post-attributions
+        if has_post_attribution and hasattr(self.main_window, 'post_attribution_handler'):
+            params['foreground_color'] = self.main_window.post_attribution_handler.get_post_color()
+            params['font'] = self.main_window.post_attribution_handler.get_post_font()
+        
+        return params
+
+   
+    def populate_table(self, table, selected_name, active_filters=None):
+        """
+        Remplit le tableau avec les données du planning.
+        Version corrigée basée sur doctor_planning_view qui fonctionne.
+        """
+        if not self.planning or not self.planning.days:
+            return
+
+        # Si aucun filtre n'est spécifié, utiliser tous les types de postes
+        if active_filters is None:
+            active_filters = [
+                "ML", "MC", "MM", "CM", "HM", "RM", "SM", 
+                "CA", "HA", "RA", "SA", "AL", "AC", "CT",
+                "CS", "HS", "RS", "SS", "NC", "NA", "NM", "NL"
+            ]
+        
+        # Configurer les dates du planning
+        start_date = self.planning.start_date
+        end_date = self.planning.end_date
+        table.setup_planning_dates(start_date, end_date)
+        
+        # Remplir les jours de base
+        table.populate_days()
+        
+        # Récupérer la personne sélectionnée pour les desiderata
+        selected_person = None
+        if selected_name != "Non attribué":
+            selected_person = next((p for p in self.doctors + self.cats if p.name == selected_name), None)
+        
+        # Parcourir chaque jour du planning
+        for day_planning in self.planning.days:
+            current_date = day_planning.date
+            is_weekend_or_holiday = day_planning.is_weekend or day_planning.is_holiday_or_bridge
+            
+            # Récupération et tri des slots par période pour la personne sélectionnée
+            slots_by_period = [[] for _ in range(3)]  # 3 périodes : matin, après-midi, soir
+            
+            # Filtrer les slots selon la personne sélectionnée et les filtres actifs
+            if selected_name == "Non attribué":
+                filtered_slots = [
+                    slot for slot in day_planning.slots 
+                    if slot.assignee is None and slot.abbreviation in active_filters
+                ]
+            else:
+                filtered_slots = [
+                    slot for slot in day_planning.slots 
+                    if slot.assignee == selected_name and slot.abbreviation in active_filters
+                ]
+            
+            # Trier les slots par période
+            for slot in filtered_slots:
+                period_index = self.get_post_period(slot.abbreviation) - 1  # -1 car l'index commence à 0
+                if 0 <= period_index < 3:  # Vérifier que l'index est valide (0-2)
+                    slots_by_period[period_index].append(slot)
+            
+            # Mise à jour des cellules pour chaque période
+            for i in range(3):
+                period = i + 1
+                post_list = slots_by_period[i]
+                
+                # Texte de la cellule
+                text = ", ".join(slot.abbreviation for slot in post_list)
+                
+                # Optimiser le texte si nécessaire
+                display_text, tooltip = table.optimize_cell_text(text)
+                
+                # Déterminer la couleur de fond en fonction des desiderata
+                background_color = table.current_colors["base"]["weekend" if is_weekend_or_holiday else "normal"]
+                
+                # IMPORTANT: Cette partie est critique pour les désidératas
+                if selected_person:
+                    for desiderata in selected_person.desiderata:
+                        if (desiderata.start_date <= current_date <= desiderata.end_date and 
+                            desiderata.period == period):
+                            priority = getattr(desiderata, 'priority', 'primary')
+                            background_color = table.current_colors[priority]["weekend" if is_weekend_or_holiday else "normal"]
+                            break  # S'arrêter au premier désidérata trouvé
+                
+                # Vérifier si c'est une post-attribution
+                foreground_color = None
+                font = None
+                has_post_attribution = any(
+                    hasattr(slot, 'is_post_attribution') and slot.is_post_attribution 
+                    for slot in post_list
+                )
+                
+                # Appliquer le style pour les post-attributions
+                if has_post_attribution and hasattr(self.main_window, 'post_attribution_handler'):
+                    foreground_color = self.main_window.post_attribution_handler.get_post_color()
+                    font = self.main_window.post_attribution_handler.get_post_font()
+                
+                # Mettre à jour la cellule
+                table.update_cell(
+                    current_date, period, display_text,
+                    background_color=background_color,
+                    foreground_color=foreground_color,
+                    font=font,
+                    tooltip=tooltip,
+                    custom_data={"slots": post_list}  # Stocker les slots pour usage ultérieur
+                )
+    def on_cell_double_clicked(self, date_val, period):
+        """
+        Gère le double-clic sur une cellule pour ouvrir le dialogue d'échange.
+        Version adaptée pour PlanningTableComponent.
+        
+        Args:
+            date_val: Date correspondant à la cellule
+            period: Période (1=matin, 2=après-midi, 3=soir, None=jour)
+        """
+        if not date_val or not period or period not in [1, 2, 3]:
+            return
+        
+        # Déterminer quelle table a été double-cliquée
+        sender = self.sender()
+        if not isinstance(sender, PlanningTableComponent):
+            return
+        
+        # Déterminer l'assigné actuel et comparé
+        if sender == self.table1:
+            current_assignee = self.selector1.currentText()
+            compared_assignee = self.selector2.currentText()
+        else:
+            current_assignee = self.selector2.currentText()
+            compared_assignee = self.selector1.currentText()
+        
+        # Vérifier si un échange est possible
+        if current_assignee == compared_assignee:
+            QMessageBox.warning(self, "Échange impossible", "Impossible d'échanger avec le même assigné.")
+            return
+        
+        # Obtenir le jour et les slots
+        day = next((d for d in self.planning.days if d.date == date_val), None)
+        if not day:
+            return
+        
+        # Filtrer les slots par période et assigné
+        if current_assignee == "Non attribué":
+            available_slots = [
+                slot for slot in day.slots 
+                if slot.assignee is None and self.get_post_period(slot.abbreviation) == period
+            ]
+        else:
+            available_slots = [
+                slot for slot in day.slots 
+                if slot.assignee == current_assignee and self.get_post_period(slot.abbreviation) == period
+            ]
+        
+        # Obtenir les abréviations de postes disponibles
+        available_posts = [slot.abbreviation for slot in available_slots]
+        
+        if not available_posts:
+            QMessageBox.warning(self, "Échange impossible", "Aucun poste disponible pour l'échange.")
+            return
+        
+        # Créer et afficher le dialogue d'échange
+        period_names = ["Matin", "Après-midi", "Soir"]
+        period_name = period_names[period - 1]
+        
+        dialog = PostAssignmentDialog(day, current_assignee, self.doctors, self.cats, compared_assignee, available_posts, period_name)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            new_assignee = dialog.get_selected_assignee()
+            selected_post = dialog.get_selected_post()
+            
+            # Mettre à jour l'assignation
+            for slot in day.slots:
+                if (slot.abbreviation == selected_post and 
+                    ((current_assignee == "Non attribué" and slot.assignee is None) or 
+                     (current_assignee != "Non attribué" and slot.assignee == current_assignee))):
+                    slot.assignee = None if new_assignee == "Non attribué" else new_assignee
+                    
+                    # Notification du changement
+                    self.on_assignment_changed(current_assignee, new_assignee, selected_post)
+                    break
+
             
 class ComparisonBottomSection(QWidget):
+    """
+    Section du bas de PlanningComparisonView qui affiche des informations supplémentaires
+    comme l'historique des échanges, le bilan des postes, les médecins disponibles, etc.
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
@@ -693,27 +984,27 @@ class ComparisonBottomSection(QWidget):
         layout.setContentsMargins(0, 10, 0, 0)
         layout.setSpacing(10)
 
-        self.setStyleSheet("""
-            QComboBox {
-                background-color: white;
-                border: 1px solid #c0d0e0;
-                border-radius: 4px;
-                padding: 6px;
-                color: #2d3748;
-            }
-            QComboBox:hover {
-                border-color: #2c5282;
-            }
-            QTextEdit {
-                background-color: white;
-                border: 1px solid #c0d0e0;
-                border-radius: 4px;
-                padding: 6px;
-                color: #2d3748;
-            }
-            QTextEdit:focus {
-                border-color: #2c5282;
-            }
+        self.setStyleSheet(f"""
+            QComboBox {{
+                background-color: {color_system.colors['container']['background'].name()};
+                border: 1px solid {color_system.colors['container']['border'].name()};
+                border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
+                padding: {StyleConstants.SPACING['xs']}px;
+                color: {color_system.colors['text']['primary'].name()};
+            }}
+            QComboBox:hover {{
+                border-color: {color_system.colors['primary'].name()};
+            }}
+            QTextEdit {{
+                background-color: {color_system.colors['container']['background'].name()};
+                border: 1px solid {color_system.colors['container']['border'].name()};
+                border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
+                padding: {StyleConstants.SPACING['xs']}px;
+                color: {color_system.colors['text']['primary'].name()};
+            }}
+            QTextEdit:focus {{
+                border-color: {color_system.colors['primary'].name()};
+            }}
         """)
 
         # Section gauche
@@ -766,15 +1057,15 @@ class ComparisonBottomSection(QWidget):
         self.right_selector.currentIndexChanged.connect(
             lambda: self.update_content(self.right_selector, self.right_content))
 
-    
-
     def show_exchange_history(self, widget):
+        """Affiche l'historique des échanges dans le widget spécifié."""
         content = ""
         for exchange in self.parent.exchange_history:
             content += f"{exchange}\n"
         widget.setText(content)
 
     def show_post_balance(self, widget):
+        """Affiche le bilan des postes dans le widget spécifié."""
         content = ""
         for assignee, balance in self.parent.post_balance.items():
             non_zero_posts = {post: count for post, count in balance["posts"].items() 
@@ -802,7 +1093,7 @@ class ComparisonBottomSection(QWidget):
         self.update_content(self.right_selector, self.right_content)
 
     def show_available_doctors(self, widget):
-        """Affiche les médecins disponibles avec la nouvelle logique."""
+        """Affiche les médecins disponibles pour la date et période sélectionnée."""
         if not self.selected_date:
             widget.setText("Sélectionnez une cellule pour voir les médecins disponibles")
             return
@@ -870,378 +1161,11 @@ class ComparisonBottomSection(QWidget):
             self.show_assigned_doctors(content_widget)
 
 
-class FullPlanningTable(QTableWidget):
-    def __init__(self, parent):
-        super().__init__()
-        self.parent = parent
-        self.colors = {
-            "primary": {
-                "weekend": color_system.get_color('desiderata', 'primary', 'weekend'),
-                "normal": color_system.get_color('desiderata', 'primary', 'normal')
-            },
-            "secondary": {
-                "weekend": color_system.get_color('desiderata', 'secondary', 'weekend'),
-                "normal": color_system.get_color('desiderata', 'secondary', 'normal')
-            },
-            "base": {
-                "weekend": color_system.get_color('weekend'),
-                "normal": color_system.get_color('weekday')
-            }
-        }
-        self.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.verticalHeader().setVisible(False)
-        
-        self.itemClicked.connect(self.on_item_clicked)
-        self.cellDoubleClicked.connect(self.on_item_double_clicked)
-
-    def get_cell_color(self, date, is_weekend, person, slot):
-        """Détermine la couleur de la cellule en fonction des desiderata"""
-        if not person:
-            return self.colors["base"]["weekend" if is_weekend else "normal"]
-
-        for desiderata in person.desiderata:
-            if (desiderata.start_date <= date <= desiderata.end_date and
-                desiderata.overlaps_with_slot(slot)):
-                priority = getattr(desiderata, 'priority', 'primary')
-                return self.colors[priority]["weekend" if is_weekend else "normal"]
-
-        return self.colors["base"]["weekend" if is_weekend else "normal"]
-
-
-   
-    def populate_table(self, selected, active_filters=None):
-        """
-        Remplit le tableau avec les données du planning, en filtrant par les types de postes actifs.
-        
-        Args:
-            selected: Nom du médecin/CAT sélectionné ou "Non attribué"
-            active_filters: Liste des types de postes à afficher (None = tous les postes)
-        """
-        if not self.parent.planning or not self.parent.planning.days:
-            return
-
-        # Si aucun filtre n'est spécifié, utiliser tous les types de postes
-        if active_filters is None:
-            active_filters = [
-                "ML", "MC", "MM", "CM", "HM", "RM", "SM", 
-                "CA", "HA", "RA", "SA", "AL", "AC", "CT",
-                "CS", "HS", "RS", "SS", "NC", "NA", "NM", "NL"
-            ]
-
-        self.clear()
-
-        start_date = self.parent.planning.start_date
-        end_date = self.parent.planning.end_date
-        
-        # Calcul du nombre de mois
-        total_months = (end_date.year - start_date.year) * 12 + end_date.month - start_date.month + 1
-
-        # Configuration du tableau
-        self.setRowCount(31)
-        self.setColumnCount(total_months * 4 + 1)
-
-        # En-têtes avec police en gras
-        headers = ["Jour"]
-        current_date = start_date.replace(day=1)
-        for _ in range(total_months):
-            month_name = current_date.strftime("%b")
-            headers.extend([f"{month_name}\nJ", f"{month_name}\nM", f"{month_name}\nAM", f"{month_name}\nS"])
-            current_date = (current_date.replace(day=28) + timedelta(days=4)).replace(day=1)
-        
-        # Appliquer le style aux en-têtes
-        header_font = QFont()
-        header_font.setBold(True)
-        header_font.setPointSize(10)
-        
-        for col, text in enumerate(headers):
-            header_item = QTableWidgetItem(text)
-            header_item.setFont(header_font)
-            header_item.setForeground(QBrush(QColor(40, 40, 40)))
-            self.setHorizontalHeaderItem(col, header_item)
-
-        # Définition des couleurs par défaut
-        default_colors = {
-            "primary": {
-                "weekend": QColor(255, 150, 150),     # Rouge plus foncé pour weekend
-                "normal": QColor(255, 200, 200)       # Rouge clair pour jours normaux
-            },
-            "secondary": {
-                "weekend": QColor(150, 200, 255),     # Bleu plus foncé pour weekend
-                "normal": QColor(180, 220, 255)       # Bleu clair pour jours normaux
-            },
-            "base": {
-                "weekend": QColor(220, 220, 220),     # Gris pour weekend
-                "normal": QColor(255, 255, 255)       # Blanc pour jours normaux
-            }
-        }
-
-        # Remplissage des données
-        current_date = start_date
-        while current_date <= end_date:
-            day_row = current_date.day - 1
-            month_col = (current_date.year - start_date.year) * 12 + current_date.month - start_date.month
-            col_offset = month_col * 4 + 1
-
-            # Police en gras pour toutes les cellules
-            bold_font = QFont()
-            bold_font.setBold(True)
-            bold_font.setPointSize(10)
-            
-            # Configuration du jour et du jour de la semaine
-            day_item = QTableWidgetItem(str(current_date.day))
-            day_item.setFont(bold_font)
-            day_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            day_item.setForeground(QBrush(QColor(40, 40, 40)))
-            self.setItem(day_row, 0, day_item)
-            
-            weekday_item = QTableWidgetItem(self.get_weekday_abbr(current_date.weekday()))
-            weekday_item.setFont(bold_font)
-            weekday_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            weekday_item.setForeground(QBrush(QColor(40, 40, 40)))
-            self.setItem(day_row, col_offset, weekday_item)
-
-            # Traitement du planning du jour
-            day_planning = next((day for day in self.parent.planning.days if day.date == current_date), None)
-            if day_planning:
-                is_weekend_or_holiday = day_planning.is_weekend or day_planning.is_holiday_or_bridge
-
-                # Récupération des posts filtrés
-                if selected == "Non attribué":
-                    # Pour "Non attribué", filtrer les slots sans assignation
-                    all_posts = [slot for slot in day_planning.slots if slot.assignee is None]
-                    filtered_posts = [p for p in all_posts if p.abbreviation in active_filters]
-                else:
-                    # Pour un médecin/CAT sélectionné, filtrer par son nom et les types de postes actifs
-                    all_posts = [slot for slot in day_planning.slots if slot.assignee == selected]
-                    filtered_posts = [p for p in all_posts if p.abbreviation in active_filters]
-                
-                # Tri par période
-                morning_posts = [p for p in filtered_posts if self.get_post_period(p.abbreviation) == 1]
-                afternoon_posts = [p for p in filtered_posts if self.get_post_period(p.abbreviation) == 2]
-                evening_posts = [p for p in filtered_posts if self.get_post_period(p.abbreviation) == 3]
-
-                # Création des cellules pour chaque période
-                for i, post_list in enumerate([morning_posts, afternoon_posts, evening_posts]):
-                    posts_text = ", ".join([p.abbreviation for p in post_list])
-                    
-                    item = QTableWidgetItem(posts_text)
-                    item.setFont(bold_font)
-                    item.setData(Qt.ItemDataRole.UserRole, day_planning)
-                    item.setForeground(QBrush(QColor(40, 40, 40)))
-                    
-                    # Couleur de base
-                    base_color = default_colors["base"]["weekend" if is_weekend_or_holiday else "normal"]
-                    item.setBackground(QBrush(base_color))
-                    
-                    # Vérification des desiderata
-                    selected_person = next((p for p in self.parent.doctors + self.parent.cats if p.name == selected), None)
-                    if selected_person:
-                        for desiderata in selected_person.desiderata:
-                            if desiderata.start_date <= current_date <= desiderata.end_date:
-                                if desiderata.period == i + 1:
-                                    priority = getattr(desiderata, 'priority', 'primary')
-                                    color = default_colors[priority]["weekend" if is_weekend_or_holiday else "normal"]
-                                    item.setBackground(QBrush(color))
-                    
-                    # Vérification pour les post-attributions
-                    has_post_attribution = False
-                    for slot in post_list:
-                        if hasattr(slot, 'is_post_attribution') and slot.is_post_attribution:
-                            has_post_attribution = True
-                            break
-                    
-                    # Appliquer le style pour les post-attributions
-                    if has_post_attribution and hasattr(self.parent.main_window, 'post_attribution_handler'):
-                        post_attr_color = self.parent.main_window.post_attribution_handler.get_post_color()
-                        post_attr_font = self.parent.main_window.post_attribution_handler.get_post_font()
-                        item.setForeground(QBrush(post_attr_color))
-                        item.setFont(post_attr_font)
-                    
-                    self.setItem(day_row, col_offset + i + 1, item)
-
-            current_date += timedelta(days=1)
-
-        # Ajustement de la taille des cellules
-        for row in range(self.rowCount()):
-            self.setRowHeight(row, 20)
-
-        for col in range(self.columnCount()):
-            if col == 0:
-                self.setColumnWidth(col, 30)
-            elif (col - 1) % 4 == 0:
-                self.setColumnWidth(col, 30)
-            else:
-                self.setColumnWidth(col, 40)
-
-        self.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-                
-    def toggle_cell(self, item):
-        current_color = item.background().color()
-        is_weekend_or_holiday = current_color == WEEKEND_COLOR
-        
-        if current_color == WEEKEND_COLOR:
-            new_color = WEEKEND_DESIDERATA_COLOR
-        elif current_color == WEEKEND_DESIDERATA_COLOR:
-            new_color = WEEKEND_COLOR
-        elif current_color == WEEKDAY_COLOR:
-            new_color = DESIDERATA_COLOR
-        else:
-            new_color = WEEKDAY_COLOR
-        
-        item.setBackground(QBrush(new_color))
-
-    def get_weekday_abbr(self, weekday):
-        return ["L", "M", "M", "J", "V", "S", "D"][weekday]
-
-
-    def get_post_period(self, post):
-        if post in ["ML","MC","MM", "CM", "HM", "SM", "RM"]:
-            return 1  # Matin (MORNING)
-        elif post in ["CA", "HA", "SA", "RA", "AL", "AC", "CT"]:
-            return 2  # Après-midi (AFTERNOON)
-        else:
-            return 3  # Soir (EVENING)
-
-
-    def on_item_clicked(self, item):
-        """Gère le clic sur une cellule de la table."""
-        if not item or item.column() <= 0:
-            return
-
-        row = item.row()
-        column = item.column()
-
-        # Mettre à jour la cellule sélectionnée dans l'autre table
-        if self == self.parent.table1:
-            other_table = self.parent.table2
-        else:
-            other_table = self.parent.table1
-        
-        other_table.setCurrentCell(row, column)
-
-        # Mettre à jour les informations de la cellule sélectionnée
-        selected_date = self.get_date_from_cell(row, column)
-        selected_period = self.get_period_from_column(column)
-        
-        # Mettre à jour les attributs du parent
-        self.parent.selected_date = selected_date
-        self.parent.selected_period = selected_period
-        
-        # Mettre à jour les sections du bas
-        if selected_date:
-            self.parent.bottom_section.selected_date = selected_date
-            self.parent.bottom_section.selected_period = selected_period
-            self.parent.bottom_section.update_all_views()
-    
-    def get_date_from_cell(self, row, column):
-        """Obtient la date correspondant à une cellule."""
-        try:
-            if column <= 0:
-                return None
-                
-            # Le numéro du jour est dans la première colonne
-            day = int(self.item(row, 0).text())
-            
-            # Calculer le mois et l'année
-            month_col = (column - 1) // 4
-            current_date = self.parent.planning.start_date
-            month_date = current_date.replace(day=1) + relativedelta(months=month_col)
-            
-            # Créer la date complète
-            try:
-                return month_date.replace(day=day)
-            except ValueError:  # Pour gérer les fins de mois
-                return None
-                
-        except (ValueError, AttributeError, TypeError):
-            return None
-
-    def get_period_from_column(self, column):
-        """Obtient la période correspondant à une colonne."""
-        if column <= 0:
-            return None
-            
-        column_in_group = (column - 1) % 4
-        
-        # 0 -> J (jour complet)
-        # 1 -> M (matin)
-        # 2 -> AM (après-midi)
-        # 3 -> S (soir)
-        if column_in_group == 0:
-            return None
-        else:
-            return column_in_group
-
-    def on_item_double_clicked(self, row, column):
-        if column > 1 and (column - 1) % 4 != 0:
-            item = self.item(row, column)
-            if item and item.data(Qt.ItemDataRole.UserRole):
-                day = item.data(Qt.ItemDataRole.UserRole)
-                
-                if self == self.parent.table1:
-                    current_assignee = self.parent.selector1.currentText()
-                    compared_assignee = self.parent.selector2.currentText()
-                else:
-                    current_assignee = self.parent.selector2.currentText()
-                    compared_assignee = self.parent.selector1.currentText()
-
-                # Vérifier si un échange est possible
-                if current_assignee == compared_assignee:
-                    QMessageBox.warning(self, "Échange impossible", "Impossible d'échanger avec le même assigné.")
-                    return
-
-                period = ((column - 1) % 4) - 1
-                period_names = ["Matin", "Après-midi", "Soir"]
-                period_name = period_names[period]
-
-                if current_assignee == "Non attribué":
-                    available_posts = [slot.abbreviation for slot in day.slots 
-                                    if slot.assignee is None and self.get_post_period(slot.abbreviation) == period + 1]
-                else:
-                    available_posts = [slot.abbreviation for slot in day.slots 
-                                    if slot.assignee == current_assignee and self.get_post_period(slot.abbreviation) == period + 1]
-
-                if not available_posts:
-                    QMessageBox.warning(self, "Échange impossible", "Aucun poste disponible pour l'échange.")
-                    return
-
-                dialog = PostAssignmentDialog(day, current_assignee, self.parent.doctors, self.parent.cats, compared_assignee, available_posts, period_name)
-                if dialog.exec() == QDialog.DialogCode.Accepted:
-                    new_assignee = dialog.get_selected_assignee()
-                    selected_post = dialog.get_selected_post()
-                    self.update_assignment(day, current_assignee, new_assignee, selected_post)
-
-    def update_assignment(self, day, current_assignee, new_assignee, selected_post):
-        """
-        Met à jour l'assignation d'un seul poste, même s'il y en a plusieurs du même type.
-        
-        Args:
-            day: Jour concerné
-            current_assignee: Assigné actuel
-            new_assignee: Nouvel assigné
-            selected_post: Type de poste à échanger
-        """
-        if current_assignee == new_assignee:
-            return  # Pas de changement nécessaire
-
-        # Trouver le premier slot correspondant
-        target_slot = None
-        for slot in day.slots:
-            if slot.abbreviation == selected_post:
-                if (current_assignee == "Non attribué" and slot.assignee is None) or \
-                (current_assignee != "Non attribué" and slot.assignee == current_assignee):
-                    target_slot = slot
-                    break  # On s'arrête au premier slot trouvé
-        
-        # Si un slot a été trouvé, le modifier
-        if target_slot:
-            target_slot.assignee = None if new_assignee == "Non attribué" else new_assignee
-            self.parent.on_assignment_changed(current_assignee, new_assignee, selected_post)
-
-    def get_selected_slot(self):
-        return self.slot_list.currentData()
-
 class PostAssignmentDialog(QDialog):
+    """
+    Dialogue d'échange de poste qui permet de choisir un nouvel assigné
+    et un poste à échanger.
+    """
     def __init__(self, day, current_assignee, doctors, cats, compared_assignee, available_posts, period_name):
         super().__init__()
         self.day = day
@@ -1250,62 +1174,81 @@ class PostAssignmentDialog(QDialog):
         self.cats = cats
         self.compared_assignee = compared_assignee
         self.available_posts = available_posts
+        self.period_name = period_name
         self.init_ui()
-
+        
     def init_ui(self):
         layout = QVBoxLayout(self)
         layout.setSpacing(10)
         layout.setContentsMargins(10, 10, 10, 10)
-
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #f8fafc;
-            }
-            QLabel {
-                color: #2d3748;
-                font-size: 10pt;
-            }
-            QComboBox {
+        
+        # Utilisez les couleurs du système pour une meilleure cohérence
+        bg_color = color_system.colors['container']['background'].name()
+        border_color = color_system.colors['container']['border'].name()
+        text_color = color_system.colors['text']['primary'].name()
+        primary_color = color_system.colors['primary'].name()
+        
+        self.setStyleSheet(f"""
+            QDialog {{
+                background-color: {bg_color};
+            }}
+            QLabel {{
+                color: {text_color};
+                font-size: {StyleConstants.FONT['size']['md']};
+            }}
+            QComboBox {{
                 background-color: white;
-                border: 1px solid #c0d0e0;
-                border-radius: 4px;
-                padding: 6px;
+                border: 1px solid {border_color};
+                border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
+                padding: {StyleConstants.SPACING['xs']}px;
                 min-width: 200px;
-                color: #2d3748;
-            }
-            QComboBox:hover {
-                border-color: #2c5282;
-            }
-            QPushButton {
-                background-color: #2c5282;
+                color: {text_color};
+            }}
+            QComboBox:hover {{
+                border-color: {primary_color};
+            }}
+            QPushButton {{
+                background-color: {primary_color};
                 color: white;
                 border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
+                padding: {StyleConstants.SPACING['xs']}px {StyleConstants.SPACING['md']}px;
+                border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
                 font-weight: bold;
                 min-width: 100px;
-                font-size: 10pt;
-            }
-            QPushButton:hover {
-                background-color: #1a365d;
-            }
+                font-size: {StyleConstants.FONT['size']['md']};
+            }}
+            QPushButton:hover {{
+                background-color: {color_system.colors['primary'].darker(125).name()};
+            }}
         """)
-
-        # Affichage du nom de l'assigné par défaut (comparé)
-        layout.addWidget(QLabel(f"Nouvel assigné pour le {self.day.date}:"))
         
-        # Sélecteur pour l'assigné (docteurs et CAT)
+        # Affichage du titre avec informations sur l'échange
+        title_label = QLabel(f"Échange de poste - {self.day.date.strftime('%d/%m/%Y')} - {self.period_name}")
+        title_font = QFont(StyleConstants.FONT['family']['primary'])
+        title_font.setPointSize(int(StyleConstants.FONT['size']['lg'].replace('px', '')))
+        title_font.setBold(True)
+        title_label.setFont(title_font)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title_label)
+        
+        # Informations sur l'assigné actuel
+        current_info = f"Assigné actuel: {self.current_assignee if self.current_assignee != 'Non attribué' else 'Non attribué'}"
+        layout.addWidget(QLabel(current_info))
+        
+        # Sélecteur pour le nouvel assigné
+        layout.addWidget(QLabel(f"Nouvel assigné:"))
         self.assignee_selector = QComboBox()
         options = ["Non attribué"] + [d.name for d in self.doctors] + [c.name for c in self.cats]
         options = [option for option in options if option != self.current_assignee]  # Exclure l'assigné actuel
         self.assignee_selector.addItems(options)
         
         # Définir l'assigné par défaut comme celui comparé, sauf s'il est identique à l'actuel
-        if self.compared_assignee != self.current_assignee:
+        if self.compared_assignee != self.current_assignee and self.compared_assignee in options:
             self.assignee_selector.setCurrentText(self.compared_assignee)
+        layout.addWidget(self.assignee_selector)
 
         # Sélecteur pour les postes disponibles (seulement les postes présents dans la case)
-        layout.addWidget(QLabel("Choisir les postes à échanger :"))
+        layout.addWidget(QLabel("Poste à échanger:"))
         self.post_selector = QComboBox()
         self.post_selector.addItems(self.available_posts)
         layout.addWidget(self.post_selector)
@@ -1316,193 +1259,20 @@ class PostAssignmentDialog(QDialog):
         save_button.clicked.connect(self.accept)
         cancel_button = QPushButton("Annuler")
         cancel_button.clicked.connect(self.reject)
+        
+        # Ajouter de l'espace pour que les boutons ne soient pas collés
+        buttons.addStretch()
         buttons.addWidget(save_button)
         buttons.addWidget(cancel_button)
+        buttons.addStretch()
+        
+        layout.addSpacing(10)  # Espace avant les boutons
         layout.addLayout(buttons)
-
         
-        
-        layout.addWidget(self.assignee_selector)
-
     def get_selected_assignee(self):
+        """Retourne le nouvel assigné sélectionné."""
         return self.assignee_selector.currentText()
 
     def get_selected_post(self):
+        """Retourne le poste sélectionné pour l'échange."""
         return self.post_selector.currentText()
-    
-
-
-class PostFilterComponent(QWidget):
-    """
-    Composant pour filtrer les types de postes dans les plannings.
-    Permet de sélectionner/désélectionner visuellement les types de postes à afficher.
-    """
-    filter_changed = pyqtSignal(list)  # Signal émis lorsque les filtres changent
-    
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.post_types = [
-            # Postes du matin
-            "ML", "MC", "MM", "CM", "HM", "SM", "RM",
-            # Postes d'après-midi
-            "CA", "HA", "SA", "RA", "AL", "AC", "CT",
-            # Postes du soir
-            "CS", "HS", "SS", "RS", "NA", "NM", "NC", "NL"
-        ]
-        self.post_groups = {
-            "Matin": ["ML", "MC", "MM", "CM", "HM", "SM", "RM"],
-            "Après-midi": ["CA", "HA", "SA", "RA", "AL", "AC", "CT"],
-            "Soir/Nuit": ["CS", "HS", "SS", "RS", "NA", "NM", "NC", "NL"]
-        }
-        self.post_colors = {
-            "Matin": "#D8E1ED",      # Bleu clair
-            "Après-midi": "#E6D4B8",  # Orange clair
-            "Soir/Nuit": "#DFD8ED"    # Violet clair
-        }
-        
-        # État des filtres (True = affiché, False = masqué)
-        self.filters = {post_type: True for post_type in self.post_types}
-        
-        self.init_ui()
-    
-    def init_ui(self):
-        """Initialise l'interface utilisateur du composant de filtrage."""
-        main_layout = QHBoxLayout(self)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(2)
-        
-        # Créer un widget défilable
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        scroll_area.setMaximumHeight(80)  # Hauteur maximale pour éviter de prendre trop de place
-        
-        # Conteneur pour les boutons
-        filter_container = QWidget()
-        grid_layout = QGridLayout(filter_container)
-        grid_layout.setContentsMargins(2, 2, 2, 2)
-        grid_layout.setSpacing(2)
-        
-        # Créer les groupes de boutons
-        self.button_groups = {}
-        self.group_toggle_buttons = {}
-        self.filter_buttons = {}
-        
-        # Créer un bouton pour tout sélectionner/désélectionner
-        select_all_button = QPushButton("Tout")
-        select_all_button.setCheckable(True)
-        select_all_button.setChecked(True)
-        select_all_button.clicked.connect(self.toggle_all_filters)
-        select_all_button.setFixedWidth(40)
-        select_all_button.setStyleSheet("""
-            QPushButton {
-                background-color: #B8C7DB;
-                border-radius: 3px;
-                padding: 2px;
-                font-size: 8pt;
-            }
-            QPushButton:checked {
-                background-color: #7691B4;
-                color: white;
-            }
-        """)
-        grid_layout.addWidget(select_all_button, 0, 0)
-        
-        col_offset = 1
-        
-        # Créer les boutons de groupe et les boutons de filtre
-        for group_idx, (group_name, post_types) in enumerate(self.post_groups.items()):
-            # Bouton de groupe
-            group_button = QPushButton(group_name)
-            group_button.setCheckable(True)
-            group_button.setChecked(True)
-            group_button.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {self.post_colors[group_name]};
-                    border-radius: 3px;
-                    padding: 2px;
-                    font-size: 8pt;
-                }}
-                QPushButton:checked {{
-                    background-color: {self.darker_color(self.post_colors[group_name])};
-                    color: white;
-                }}
-            """)
-            group_button.clicked.connect(lambda checked, g=group_name: self.toggle_group(g, checked))
-            grid_layout.addWidget(group_button, 0, group_idx + col_offset)
-            self.group_toggle_buttons[group_name] = group_button
-            
-            # Boutons pour chaque type de poste dans le groupe
-            for i, post_type in enumerate(post_types):
-                post_button = QPushButton(post_type)
-                post_button.setCheckable(True)
-                post_button.setChecked(True)
-                post_button.setStyleSheet(f"""
-                    QPushButton {{
-                        background-color: {self.post_colors[group_name]};
-                        border-radius: 3px;
-                        padding: 2px;
-                        font-size: 8pt;
-                    }}
-                    QPushButton:checked {{
-                        background-color: {self.darker_color(self.post_colors[group_name])};
-                        color: white;
-                    }}
-                """)
-                post_button.clicked.connect(lambda checked, pt=post_type: self.toggle_filter(pt, checked))
-                grid_layout.addWidget(post_button, 1, i + group_idx + col_offset)
-                self.filter_buttons[post_type] = post_button
-            
-            col_offset += len(post_types) - 1
-        
-        scroll_area.setWidget(filter_container)
-        main_layout.addWidget(scroll_area)
-    
-    def darker_color(self, hex_color, factor=0.7):
-        """Retourne une version plus foncée de la couleur."""
-        color = QColor(hex_color)
-        darker = color.darker(int(100/factor))
-        return darker.name()
-    
-    def toggle_filter(self, post_type, checked):
-        """Active ou désactive l'affichage d'un type de poste spécifique."""
-        self.filters[post_type] = checked
-        
-        # Mettre à jour l'état du bouton de groupe
-        for group_name, posts in self.post_groups.items():
-            if post_type in posts:
-                # Vérifier si tous les posts de ce groupe sont dans le même état
-                all_same = all(self.filters[pt] == checked for pt in posts)
-                if all_same:
-                    self.group_toggle_buttons[group_name].setChecked(checked)
-        
-        # Émettre le signal de changement
-        self.filter_changed.emit(self.get_active_filters())
-    
-    def toggle_group(self, group_name, checked):
-        """Active ou désactive l'affichage de tous les postes d'un groupe."""
-        for post_type in self.post_groups[group_name]:
-            self.filters[post_type] = checked
-            self.filter_buttons[post_type].setChecked(checked)
-        
-        # Émettre le signal de changement
-        self.filter_changed.emit(self.get_active_filters())
-    
-    def toggle_all_filters(self, checked):
-        """Active ou désactive l'affichage de tous les postes."""
-        # Mettre à jour tous les filtres
-        for post_type in self.post_types:
-            self.filters[post_type] = checked
-            self.filter_buttons[post_type].setChecked(checked)
-        
-        # Mettre à jour tous les boutons de groupe
-        for group_name in self.post_groups:
-            self.group_toggle_buttons[group_name].setChecked(checked)
-        
-        # Émettre le signal de changement
-        self.filter_changed.emit(self.get_active_filters())
-    
-    def get_active_filters(self):
-        """Retourne la liste des types de postes actifs."""
-        return [post_type for post_type, active in self.filters.items() if active]
