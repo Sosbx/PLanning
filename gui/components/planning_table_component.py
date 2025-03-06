@@ -14,7 +14,7 @@ from ..styles import StyleConstants, PlatformHelper
 class PlanningTableComponent(QTableWidget):
     """
     Composant réutilisable pour l'affichage d'un tableau de planning
-    avec en-têtes de mois au-dessus des colonnes
+    avec en-têtes de mois au-dessus des colonnes - Version compatible multiplateforme
     """
     # Signaux
     cell_clicked = pyqtSignal(date, int)  # Date, période (1=matin, 2=après-midi, 3=soir, None=jour)
@@ -25,42 +25,52 @@ class PlanningTableComponent(QTableWidget):
         # Initialisation du calendrier français pour les jours fériés
         self._calendar = France()
         
+        # Détection de la plateforme
+        self.platform = PlatformHelper.get_platform()
+        self.force_explicit_colors = self.platform == 'Windows'
+        
         # Variables d'état
         self.start_date = None
         self.end_date = None
         self.current_colors = {}
         self.cell_renderer = None  # Fonction pour personnaliser le rendu des cellules
         
-        # Dimensions des cellules
-        self.min_row_height = 20    # Hauteur minimale des lignes en pixels
-        self.max_row_height = 30    # Hauteur maximale des lignes en pixels
+        # Dimensions des cellules (ajustées par plateforme)
+        dpi_scale = PlatformHelper.get_dpi_scale_factor()
+        scale_factor = 1.0 if self.platform != 'Windows' else min(dpi_scale, 1.2)
+        
+        self.min_row_height = int(20 * scale_factor)    # Hauteur minimale des lignes en pixels
+        self.max_row_height = int(30 * scale_factor)    # Hauteur maximale des lignes en pixels
+        
         self.min_col_widths = {
-            "day": 30,             # Largeur minimale pour la colonne des jours
-            "weekday": 35,         # Largeur minimale pour les colonnes des jours de la semaine
-            "period": 40           # Largeur minimale pour les colonnes des périodes (M, AM, S)
+            "day": int(30 * scale_factor),      # Largeur minimale pour la colonne des jours
+            "weekday": int(35 * scale_factor),  # Largeur minimale pour les colonnes des jours de la semaine
+            "period": int(40 * scale_factor)    # Largeur minimale pour les colonnes des périodes (M, AM, S)
         }
+        
         self.max_col_widths = {
-            "day": 40,             # Largeur maximale pour la colonne des jours
-            "weekday": 50,         # Largeur maximale pour les colonnes des jours de la semaine
-            "period": 80           # Largeur maximale pour les colonnes des périodes (M, AM, S)
+            "day": int(40 * scale_factor),      # Largeur maximale pour la colonne des jours
+            "weekday": int(50 * scale_factor),  # Largeur maximale pour les colonnes des jours de la semaine
+            "period": int(80 * scale_factor)    # Largeur maximale pour les colonnes des périodes (M, AM, S)
         }
         
         # Paramètres de police avec ajustements spécifiques à la plateforme
-        font_adjustments = StyleConstants.FONT_ADJUSTMENTS
+        font_adjustments = PlatformHelper.get_platform_font_adjustments()
         self._font_settings = {
             'family': None,        # Police utilisée (None = police système par défaut)
             'base_size': int(12 * font_adjustments['base_size_factor']),       # Taille du texte des postes dans les cellules 
             'header_size': int(14 * font_adjustments['header_size_factor']),   # Taille des en-têtes de mois
             'period_size': int(10 * font_adjustments['period_size_factor']),   # Taille des en-têtes de période (J, M, AM, S)
             'weekday_size': int(9 * font_adjustments['weekday_size_factor']),  # Taille des jours de la semaine (L, M, M, J, V, S, D)
-            'bold_posts': True     # Activation/désactivation du gras pour les postes
+            'bold_posts': True,     # Activation/désactivation du gras pour les postes
+            'force_pixel_size': font_adjustments.get('force_pixel_size', False)  # Utiliser PixelSize au lieu de PointSize
         }
         
         # Configuration de base
         self.init_table()
         
     def init_table(self):
-        """Initialise les propriétés de base du tableau"""
+        """Initialise les propriétés de base du tableau avec compatibilité multiplateforme"""
         self.setAlternatingRowColors(True)
         self.verticalHeader().setVisible(False)
         
@@ -69,9 +79,57 @@ class PlanningTableComponent(QTableWidget):
         
         self.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         
+        # Appliquer un style spécifique à la plateforme
+        if self.platform == 'Windows':
+            # Sur Windows, définir des styles plus explicites pour garantir le bon rendu
+            self.setStyleSheet("""
+                QTableWidget {
+                    background-color: white;
+                    gridline-color: #B4C2D3;
+                    border: 1px solid #B4C2D3;
+                }
+                QHeaderView::section {
+                    background-color: rgb(198, 209, 225); /* #C6D1E1 */
+                    color: rgb(44, 62, 80); /* #2C3E50 */
+                    border: 1px solid rgb(180, 194, 211); /* #B4C2D3 */
+                    padding: 4px;
+                    font-weight: bold;
+                }
+                QTableWidget::item:alternate {
+                    background-color: rgb(237, 242, 247); /* #EDF2F7 */
+                }
+            """)
+        
         # Connecter les signaux d'événements
         self.cellClicked.connect(self._on_cell_clicked)
         self.cellDoubleClicked.connect(self._on_cell_double_clicked)
+        
+    def set_colors(self, colors: Dict[str, Dict[str, QColor]]):
+        """
+        Définit les couleurs à utiliser pour le tableau avec compatibilité multiplateforme
+        
+        Args:
+            colors: Dictionnaire de couleurs {type: {contexte: couleur}}
+                   Doit inclure les clés "base", "primary", "secondary"
+                   Chaque type doit avoir les contextes "normal" et "weekend"
+        """
+        # Appliquer les ajustements de couleur spécifiques à la plateforme
+        adjusted_colors = {}
+        for color_type, contexts in colors.items():
+            adjusted_colors[color_type] = {}
+            for context, color in contexts.items():
+                adjusted_color = PlatformHelper.adjust_color_for_platform(color)
+                adjusted_colors[color_type][context] = adjusted_color
+                
+                # Pour Windows, stocker également des chaînes RGB explicites
+                if self.force_explicit_colors:
+                    if not hasattr(self, 'explicit_colors'):
+                        self.explicit_colors = {}
+                    if color_type not in self.explicit_colors:
+                        self.explicit_colors[color_type] = {}
+                    self.explicit_colors[color_type][context] = f"rgb({adjusted_color.red()}, {adjusted_color.green()}, {adjusted_color.blue()})"
+        
+        self.current_colors = adjusted_colors
         
     def adapt_dimensions_to_date_range(self):
         """
@@ -142,6 +200,7 @@ class PlanningTableComponent(QTableWidget):
         """
         Configure les en-têtes du tableau avec un regroupement visuel par mois.
         Crée deux lignes d'en-têtes distinctes: une pour les mois et une pour les périodes.
+        Version compatible avec toutes les plateformes.
         """
         # Configurer l'en-tête horizontal pour avoir une hauteur réduite
         self.horizontalHeader().setMinimumHeight(32)  # Réduit de 48 à 32 pixels
@@ -154,10 +213,17 @@ class PlanningTableComponent(QTableWidget):
         # Définir les étiquettes des colonnes (périodes)
         self.setHorizontalHeaderLabels(headers)
         
-        # Style des en-têtes de période (J, M, AM, S)
+        # Style des en-têtes de période (J, M, AM, S) avec compatibilité multiplateforme
         period_font = QFont()
+        if self._font_settings.get('family'):
+            period_font.setFamily(self._font_settings['family'])
         period_font.setBold(True)
-        period_font.setPointSize(self._font_settings['period_size'])  # Taille réduite pour les périodes
+        
+        # Définir la taille de la police selon la méthode appropriée
+        if self._font_settings.get('force_pixel_size', False):
+            period_font.setPixelSize(int(self._font_settings['period_size'] * 1.33))
+        else:
+            period_font.setPointSize(self._font_settings['period_size'])
         
         # Appliquer le style aux en-têtes de période
         for col in range(self.columnCount()):
@@ -167,17 +233,32 @@ class PlanningTableComponent(QTableWidget):
                 
                 # Appliquer une couleur de fond légère pour les en-têtes de période
                 if col > 0:  # Toutes les colonnes sauf "Jour"
-                    header_item.setBackground(QBrush(QColor(245, 245, 245)))  # Gris très clair
+                    header_color = QColor(245, 245, 245)  # Gris très clair
+                    if self.force_explicit_colors:
+                        header_color = PlatformHelper.adjust_color_for_platform(header_color)
+                        header_item.setData(
+                            Qt.ItemDataRole.BackgroundRole,
+                            QBrush(header_color)
+                        )
+                    else:
+                        header_item.setBackground(QBrush(header_color))
         
-        # Style des en-têtes de mois
+        # Style des en-têtes de mois avec compatibilité multiplateforme
         month_font = QFont()
+        if self._font_settings.get('family'):
+            month_font.setFamily(self._font_settings['family'])
         month_font.setBold(True)
-        month_font.setPointSize(self._font_settings['header_size'])
+        
+        # Définir la taille de la police selon la méthode appropriée
+        if self._font_settings.get('force_pixel_size', False):
+            month_font.setPixelSize(int(self._font_settings['header_size'] * 1.33))
+        else:
+            month_font.setPointSize(self._font_settings['header_size'])
         
         # Créer une première ligne pour les mois (utiliser la première ligne du tableau)
-        # Réserver la première ligne du tableau pour les en-têtes de mois
         current_date = self.start_date.replace(day=1)
-        month_color = QColor(230, 230, 240)  # Couleur bleutée claire pour les mois
+        month_color_base = QColor(230, 230, 240)  # Couleur bleutée claire pour les mois
+        month_color = PlatformHelper.adjust_color_for_platform(month_color_base)
         
         # Vérifier si la ligne d'en-tête des mois existe déjà
         header_row_exists = False
@@ -196,7 +277,13 @@ class PlanningTableComponent(QTableWidget):
         
         # Cellule vide pour la colonne "Jour"
         month_header_item = QTableWidgetItem("")
-        month_header_item.setBackground(QBrush(QColor(255, 255, 255)))  # Blanc
+        if self.force_explicit_colors:
+            month_header_item.setData(
+                Qt.ItemDataRole.BackgroundRole,
+                QBrush(QColor(255, 255, 255))
+            )
+        else:
+            month_header_item.setBackground(QBrush(QColor(255, 255, 255)))  # Blanc
         self.setItem(0, 0, month_header_item)
         
         # Pour chaque mois, créer une cellule fusionnée
@@ -207,7 +294,15 @@ class PlanningTableComponent(QTableWidget):
             # Créer l'item pour l'en-tête de mois
             month_header_item = QTableWidgetItem(month_name)
             month_header_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            month_header_item.setBackground(QBrush(month_color))
+            
+            if self.force_explicit_colors:
+                month_header_item.setData(
+                    Qt.ItemDataRole.BackgroundRole,
+                    QBrush(month_color)
+                )
+            else:
+                month_header_item.setBackground(QBrush(month_color))
+                
             month_header_item.setFont(month_font)
             
             # Colonne de début pour ce mois
@@ -228,11 +323,17 @@ class PlanningTableComponent(QTableWidget):
                     for row in range(1, self.rowCount()):
                         border_cell = self.item(row, end_col)
                         if border_cell:
-                            # Utiliser un style de bordure via une feuille de style
-                            border_cell.setData(
-                                Qt.ItemDataRole.UserRole + 1,  # Rôle personnalisé pour le style
-                                "border-right: 1px solid #999999;"  # Bordure grise
-                            )
+                            # Utiliser un style de bordure compatible avec toutes les plateformes
+                            if self.force_explicit_colors:
+                                border_cell.setData(
+                                    Qt.ItemDataRole.UserRole + 1,  # Rôle personnalisé pour le style
+                                    "border-right: 1px solid rgb(153, 153, 153);"  # Bordure grise
+                                )
+                            else:
+                                border_cell.setData(
+                                    Qt.ItemDataRole.UserRole + 1,  # Rôle personnalisé pour le style
+                                    "border-right: 1px solid #999999;"  # Bordure grise
+                                )
             
             # Passer au mois suivant
             current_date = (current_date.replace(day=28) + timedelta(days=4)).replace(day=1)
@@ -242,23 +343,8 @@ class PlanningTableComponent(QTableWidget):
         for col in range(1, self.columnCount()):
             self.horizontalHeader().setSectionResizeMode(col, QHeaderView.ResizeMode.Interactive)
 
-    def set_colors(self, colors: Dict[str, Dict[str, QColor]]):
-        """
-        Définit les couleurs à utiliser pour le tableau
-        
-        Args:
-            colors: Dictionnaire de couleurs {type: {contexte: couleur}}
-                   Doit inclure les clés "base", "primary", "secondary"
-                   Chaque type doit avoir les contextes "normal" et "weekend"
-        """
-        # Appliquer les ajustements de couleur spécifiques à la plateforme
-        adjusted_colors = {}
-        for color_type, contexts in colors.items():
-            adjusted_colors[color_type] = {}
-            for context, color in contexts.items():
-                adjusted_colors[color_type][context] = PlatformHelper.adjust_color_for_platform(color)
-        
-        self.current_colors = adjusted_colors
+
+    
         
     def set_cell_renderer(self, renderer: Callable[[date, int, Any], Tuple[str, Dict]]):
         """
@@ -287,7 +373,7 @@ class PlanningTableComponent(QTableWidget):
         self.optimize_dimensions()
         
     def _add_day_to_table(self, day_date: date):
-        """Ajoute un jour au tableau"""
+        """Ajoute un jour au tableau avec compatibilité multiplateforme"""
         # Décaler l'indice de ligne pour tenir compte de la ligne d'en-tête des mois
         day_row = day_date.day - 1 + 1  # +1 pour la ligne d'en-tête des mois
         if day_row >= self.rowCount():
@@ -313,11 +399,20 @@ class PlanningTableComponent(QTableWidget):
                 if col < self.columnCount():  # Vérifier que la colonne existe
                     item = QTableWidgetItem("")
                     is_weekend = day_date.weekday() >= 5 or self._calendar.is_holiday(day_date)
-                    background_color = self.current_colors.get("base", {}).get(
-                        "weekend" if is_weekend else "normal", 
-                        QColor(220, 220, 220) if is_weekend else QColor(255, 255, 255)
-                    )
-                    item.setBackground(QBrush(background_color))
+                    
+                    # Obtenir la couleur de fond appropriée avec compatibilité plateforme
+                    if is_weekend:
+                        background_color = self.current_colors.get("base", {}).get("weekend", QColor(220, 220, 220))
+                    else:
+                        background_color = self.current_colors.get("base", {}).get("normal", QColor(255, 255, 255))
+                    
+                    # Définir la couleur de fond selon la méthode appropriée à la plateforme
+                    if self.force_explicit_colors:
+                        # Sur Windows, utiliser setData avec BackgroundRole
+                        item.setData(Qt.ItemDataRole.BackgroundRole, QBrush(background_color))
+                    else:
+                        # Sur macOS et autres plateformes
+                        item.setBackground(QBrush(background_color))
                     
                     # Stocker la date et la période dans les données de l'élément
                     item.setData(Qt.ItemDataRole.UserRole, {"date": day_date, "period": period})
@@ -332,9 +427,7 @@ class PlanningTableComponent(QTableWidget):
         
     def _set_weekday_cell(self, row: int, col: int, text: str, day_date: date):
         """
-        Configure une cellule de jour de la semaine avec le numéro du jour en gras
-        
-        Format exemple: L15 où L est le jour de la semaine et 15 est le jour du mois en gras
+        Configure une cellule de jour de la semaine avec compatibilité multiplateforme
         """
         # Créer un QTableWidgetItem
         item = QTableWidgetItem()
@@ -343,9 +436,16 @@ class PlanningTableComponent(QTableWidget):
         # Appliquer le texte formaté
         item.setText(text)
         
-        # Police pour le jour de la semaine
+        # Police pour le jour de la semaine - ajustée pour la plateforme
         font = QFont()
-        font.setPointSize(self._font_settings['weekday_size'])
+        if self._font_settings.get('family'):
+            font.setFamily(self._font_settings['family'])
+        
+        # Définir la taille de la police selon la méthode appropriée à la plateforme
+        if self._font_settings.get('force_pixel_size', False):
+            font.setPixelSize(int(self._font_settings['weekday_size'] * 1.33))
+        else:
+            font.setPointSize(self._font_settings['weekday_size'])
         
         # Coloration spécifique pour les week-ends et jours fériés
         is_weekend = day_date.weekday() >= 5
@@ -356,9 +456,19 @@ class PlanningTableComponent(QTableWidget):
             item.setFont(font)
             
             if is_holiday:
-                item.setForeground(QBrush(QColor(180, 0, 0)))  # Rouge pour les jours fériés
+                # Rouge pour les jours fériés
+                holiday_color = QColor(180, 0, 0)
+                if self.force_explicit_colors:
+                    item.setData(Qt.ItemDataRole.ForegroundRole, QBrush(holiday_color))
+                else:
+                    item.setForeground(QBrush(holiday_color))
             else:
-                item.setForeground(QBrush(QColor(0, 0, 180)))  # Bleu pour les week-ends
+                # Bleu pour les week-ends
+                weekend_color = QColor(0, 0, 180)
+                if self.force_explicit_colors:
+                    item.setData(Qt.ItemDataRole.ForegroundRole, QBrush(weekend_color))
+                else:
+                    item.setForeground(QBrush(weekend_color))
         else:
             font.setBold(True)  # Mettre toute la cellule en gras pour simplifier
             item.setFont(font)
@@ -405,17 +515,7 @@ class PlanningTableComponent(QTableWidget):
                     tooltip: Optional[str] = None,
                     custom_data: Optional[Any] = None):
         """
-        Met à jour une cellule spécifique du tableau
-        
-        Args:
-            day_date: Date du jour
-            period: Période (1=Matin, 2=Après-midi, 3=Soir)
-            text: Texte à afficher
-            background_color: Couleur de fond (optionnel)
-            foreground_color: Couleur du texte (optionnel)
-            font: Police du texte (optionnel)
-            tooltip: Info-bulle (optionnel)
-            custom_data: Données personnalisées à stocker (optionnel)
+        Met à jour une cellule spécifique du tableau avec compatibilité multiplateforme
         """
         if not self.start_date or not self.end_date:
             return
@@ -448,19 +548,32 @@ class PlanningTableComponent(QTableWidget):
         item.setText(text)
         item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         
-        # Mettre à jour les couleurs si spécifiées
+        # Mettre à jour les couleurs si spécifiées - avec compatibilité multiplateforme
         if background_color:
-            item.setBackground(QBrush(background_color))
+            adjusted_bg = PlatformHelper.adjust_color_for_platform(background_color)
+            if self.force_explicit_colors:
+                item.setData(Qt.ItemDataRole.BackgroundRole, QBrush(adjusted_bg))
+            else:
+                item.setBackground(QBrush(adjusted_bg))
         
         if foreground_color:
-            item.setForeground(QBrush(foreground_color))
+            adjusted_fg = PlatformHelper.adjust_color_for_platform(foreground_color)
+            if self.force_explicit_colors:
+                item.setData(Qt.ItemDataRole.ForegroundRole, QBrush(adjusted_fg))
+            else:
+                item.setForeground(QBrush(adjusted_fg))
             
         # Mettre à jour la police avec les paramètres de base si aucune police n'est spécifiée
         if not font:
             custom_font = QFont()
             if self._font_settings.get('family'):
                 custom_font.setFamily(self._font_settings['family'])
-            custom_font.setPointSize(self._font_settings['base_size'])
+            
+            # Définir la taille selon la méthode appropriée à la plateforme
+            if self._font_settings.get('force_pixel_size', False):
+                custom_font.setPixelSize(int(self._font_settings['base_size'] * 1.33))
+            else:
+                custom_font.setPointSize(self._font_settings['base_size'])
             
             # Mettre les postes en gras si l'option est activée
             if self._font_settings.get('bold_posts', True) and text.strip():
@@ -468,7 +581,9 @@ class PlanningTableComponent(QTableWidget):
                 
             item.setFont(custom_font)
         else:
-            item.setFont(font)
+            # Ajuster la police fournie pour la plateforme
+            adjusted_font = PlatformHelper.adjust_font(font)
+            item.setFont(adjusted_font)
                 
         # Mettre à jour l'infobulle si spécifiée
         if tooltip:
@@ -665,26 +780,40 @@ class PlanningTableComponent(QTableWidget):
         self._apply_font_settings()
 
     def _apply_font_settings(self):
-        """Applique les paramètres de police à toutes les cellules"""
+        """Applique les paramètres de police à toutes les cellules avec compatibilité multiplateforme"""
         # Créer les fonts avec les paramètres configurés
         base_font = QFont()
         if self._font_settings.get('family'):
             base_font.setFamily(self._font_settings['family'])
-        base_font.setPointSize(self._font_settings['base_size'])
+        
+        # Base font size - using correct method for platform
+        if self._font_settings.get('force_pixel_size', False):
+            base_font.setPixelSize(int(self._font_settings['base_size'] * 1.33))
+        else:
+            base_font.setPointSize(self._font_settings['base_size'])
         
         # Police pour les en-têtes de mois
         month_font = QFont(base_font)
-        month_font.setPointSize(self._font_settings['header_size'])
+        if self._font_settings.get('force_pixel_size', False):
+            month_font.setPixelSize(int(self._font_settings['header_size'] * 1.33))
+        else:
+            month_font.setPointSize(self._font_settings['header_size'])
         month_font.setBold(True)
         
         # Police pour les en-têtes de période (J, M, AM, S)
         period_font = QFont(base_font)
-        period_font.setPointSize(self._font_settings['period_size'])
+        if self._font_settings.get('force_pixel_size', False):
+            period_font.setPixelSize(int(self._font_settings['period_size'] * 1.33))
+        else:
+            period_font.setPointSize(self._font_settings['period_size'])
         period_font.setBold(True)
         
         # Police pour les jours de la semaine
         weekday_font = QFont(base_font)
-        weekday_font.setPointSize(self._font_settings['weekday_size'])
+        if self._font_settings.get('force_pixel_size', False):
+            weekday_font.setPixelSize(int(self._font_settings['weekday_size'] * 1.33))
+        else:
+            weekday_font.setPointSize(self._font_settings['weekday_size'])
         
         # Appliquer aux en-têtes de période (J, M, AM, S)
         for col in range(self.columnCount()):

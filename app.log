@@ -40484,3 +40484,17 @@ DOCTORS:
 2025-03-06 15:15:52,156 [INFO] Traitement du poste NZ
 2025-03-06 15:15:52,156 [INFO] - Ajouté au groupe soir/nuit
 2025-03-06 15:16:01,530 [INFO] Données sauvegardées
+2025-03-06 15:59:16,989 [INFO] Données chargées
+2025-03-06 15:59:17,287 [INFO] Poste personnalisé chargé: NR
+2025-03-06 15:59:17,288 [INFO] Poste personnalisé chargé: NZ
+2025-03-06 16:04:06,720 [INFO] Données chargées
+2025-03-06 16:04:07,030 [INFO] Poste personnalisé chargé: NR
+2025-03-06 16:04:07,030 [INFO] Poste personnalisé chargé: NZ
+2025-03-06 16:04:07,410 [INFO] Postes personnalisés chargés: ['NR', 'NZ']
+2025-03-06 16:04:07,491 [INFO] Chargement des postes personnalisés: {'NR': CustomPost(name='NR', start_time=datetime.time(19, 0), end_time=datetime.time(23, 0), day_types={'weekday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x11a7fd4d0>), 'NZ': CustomPost(name='NZ', start_time=datetime.time(20, 0), end_time=datetime.time(23, 0), day_types={'saturday', 'sunday_holiday', 'weekday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x11a7fd550>)}
+2025-03-06 16:04:07,491 [INFO] Mise à jour des groupes avec les postes personnalisés
+2025-03-06 16:04:07,491 [INFO] Traitement du poste NR
+2025-03-06 16:04:07,491 [INFO] - Ajouté au groupe soir/nuit
+2025-03-06 16:04:07,491 [INFO] Traitement du poste NZ
+2025-03-06 16:04:07,491 [INFO] - Ajouté au groupe soir/nuit
+2025-03-06 16:04:17,404 [INFO] Données sauvegardées
