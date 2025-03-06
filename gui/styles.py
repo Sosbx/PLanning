@@ -45,12 +45,12 @@ class PlatformHelper:
         """Retourne les ajustements de taille de police spécifiques à la plateforme."""
         platform = PlatformHelper.get_platform()
         if platform == 'Windows':
-            # Sur Windows, réduire légèrement les tailles de police
+            # Sur Windows, réduire davantage les tailles de police
             return {
-                'base_size_factor': 0.9,
-                'header_size_factor': 0.85,
-                'period_size_factor': 0.9,
-                'weekday_size_factor': 0.9
+                'base_size_factor': 0.8,     # Réduction plus importante (0.8 au lieu de 0.9)
+                'header_size_factor': 0.75,  # Réduction plus importante (0.75 au lieu de 0.85)
+                'period_size_factor': 0.8,   # Réduction plus importante (0.8 au lieu de 0.9)
+                'weekday_size_factor': 0.8   # Réduction plus importante (0.8 au lieu de 0.9)
             }
         elif platform == 'macOS':
             # Sur macOS, utiliser les tailles par défaut
@@ -63,10 +63,10 @@ class PlatformHelper:
         else:
             # Pour Linux et autres plateformes
             return {
-                'base_size_factor': 0.95,
-                'header_size_factor': 0.9,
-                'period_size_factor': 0.95,
-                'weekday_size_factor': 0.95
+                'base_size_factor': 0.9,    # Légère réduction
+                'header_size_factor': 0.85,
+                'period_size_factor': 0.9,
+                'weekday_size_factor': 0.9
             }
     
     @staticmethod
@@ -74,10 +74,10 @@ class PlatformHelper:
         """Retourne les ajustements de couleur spécifiques à la plateforme."""
         platform = PlatformHelper.get_platform()
         if platform == 'Windows':
-            # Sur Windows, augmenter légèrement la saturation et le contraste des couleurs
+            # Sur Windows, assombrir légèrement les couleurs et augmenter le contraste
             return {
-                'color_saturation_factor': 1.15,  # Augmenté de 1.1 à 1.15
-                'color_value_factor': 1.05,       # Rendre légèrement plus lumineux
+                'color_saturation_factor': 1.1,   # Saturation modérée
+                'color_value_factor': 0.9,        # Plus sombre (0.9 au lieu de 1.05)
                 'force_explicit_colors': True
             }
         elif platform == 'macOS':
@@ -94,7 +94,7 @@ class PlatformHelper:
                 'color_value_factor': 1.0,
                 'force_explicit_colors': True  # True pour Linux aussi pour garantir la cohérence
             }
-    
+
     @staticmethod
     def adjust_color_for_platform(color):
         """
@@ -124,15 +124,18 @@ class PlatformHelper:
         adjusted_color.setHsvF(h, s, v, a)
         
         # Pour Windows, s'assurer que les couleurs sont suffisamment contrastées
-        if PlatformHelper.get_platform() == 'Windows':
-            # Éviter les couleurs trop pâles
-            if adjusted_color.lightnessF() > 0.9 and s < 0.2:
-                # Augmenter légèrement la saturation et diminuer la luminosité
-                adjusted_color = QColor()
-                adjusted_color.setHsvF(h, min(1.0, s + 0.1), max(0.0, v - 0.05), a)
+        platform = PlatformHelper.get_platform()
+        if platform == 'Windows':
+            # Correction spéciale pour la couleur de weekend - assurer qu'elle est grise et non bleue
+            # Comparer avec la couleur du weekend définie dans ColorSystem
+            from gui.styles import color_system
+            if color.name() == color_system.colors.get('weekend').name():
+                # Forcer une teinte grise pour le weekend
+                grey_color = QColor(230, 230, 235)  # Gris légèrement bleuté
+                return grey_color
         
         return adjusted_color
-    
+
     @staticmethod
     def apply_background_color(item, color):
         """

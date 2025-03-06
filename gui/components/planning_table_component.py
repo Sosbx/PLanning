@@ -75,6 +75,7 @@ class PlanningTableComponent(QTableWidget):
         """
         Adapte automatiquement les dimensions en fonction de la plage de dates à afficher.
         Plus la période est longue, plus les cellules sont compactes.
+        Ajustements améliorés pour Windows.
         """
         if not self.start_date or not self.end_date:
             return
@@ -85,27 +86,55 @@ class PlanningTableComponent(QTableWidget):
         # Calculer le nombre de mois
         total_months = (self.end_date.year - self.start_date.year) * 12 + self.end_date.month - self.start_date.month + 1
         
-        # Adapter les hauteurs de ligne en fonction du nombre de jours à afficher
-        if total_days <= 31:  # Un seul mois
-            self.min_row_height = 20
-            self.max_row_height = 25
-        elif total_days <= 62:  # Deux mois
-            self.min_row_height = 18
-            self.max_row_height = 22
-        else:  # Plus de deux mois
-            self.min_row_height = 16
-            self.max_row_height = 20
+        # Obtenir les ajustements spécifiques à la plateforme
+        from gui.styles import PlatformHelper
+        platform = PlatformHelper.get_platform()
         
-        # Adapter les largeurs de colonne en fonction du nombre de mois à afficher
-        if total_months <= 3:  # Trimestre
-            self.min_col_widths = {"day": 30, "weekday": 35, "period": 40}
-            self.max_col_widths = {"day": 40, "weekday": 45, "period": 70}
-        elif total_months <= 6:  # Semestre
-            self.min_col_widths = {"day": 25, "weekday": 30, "period": 35}
-            self.max_col_widths = {"day": 35, "weekday": 40, "period": 60}
-        else:  # Année ou plus
-            self.min_col_widths = {"day": 20, "weekday": 25, "period": 30}
-            self.max_col_widths = {"day": 30, "weekday": 35, "period": 50}
+        # Adapter les hauteurs de ligne en fonction du nombre de jours à afficher
+        if platform == 'Windows':
+            # Dimensions réduites pour Windows
+            if total_days <= 31:  # Un seul mois
+                self.min_row_height = 18
+                self.max_row_height = 22
+            elif total_days <= 62:  # Deux mois
+                self.min_row_height = 16
+                self.max_row_height = 20
+            else:  # Plus de deux mois
+                self.min_row_height = 14
+                self.max_row_height = 18
+            
+            # Adapter les largeurs de colonne en fonction du nombre de mois à afficher
+            if total_months <= 3:  # Trimestre
+                self.min_col_widths = {"day": 25, "weekday": 30, "period": 35}
+                self.max_col_widths = {"day": 35, "weekday": 40, "period": 60}
+            elif total_months <= 6:  # Semestre
+                self.min_col_widths = {"day": 22, "weekday": 25, "period": 30}
+                self.max_col_widths = {"day": 30, "weekday": 35, "period": 50}
+            else:  # Année ou plus
+                self.min_col_widths = {"day": 18, "weekday": 22, "period": 25}
+                self.max_col_widths = {"day": 25, "weekday": 30, "period": 40}
+        else:
+            # Dimensions standard pour macOS et Linux
+            if total_days <= 31:  # Un seul mois
+                self.min_row_height = 20
+                self.max_row_height = 25
+            elif total_days <= 62:  # Deux mois
+                self.min_row_height = 18
+                self.max_row_height = 22
+            else:  # Plus de deux mois
+                self.min_row_height = 16
+                self.max_row_height = 20
+            
+            # Adapter les largeurs de colonne en fonction du nombre de mois à afficher
+            if total_months <= 3:  # Trimestre
+                self.min_col_widths = {"day": 30, "weekday": 35, "period": 40}
+                self.max_col_widths = {"day": 40, "weekday": 45, "period": 70}
+            elif total_months <= 6:  # Semestre
+                self.min_col_widths = {"day": 25, "weekday": 30, "period": 35}
+                self.max_col_widths = {"day": 35, "weekday": 40, "period": 60}
+            else:  # Année ou plus
+                self.min_col_widths = {"day": 20, "weekday": 25, "period": 30}
+                self.max_col_widths = {"day": 30, "weekday": 35, "period": 50}
         
         # Réoptimiser les dimensions
         self.optimize_dimensions()
@@ -686,7 +715,7 @@ class PlanningTableComponent(QTableWidget):
     
     def set_font_settings(self, font_family=None, base_size=None, header_size=None, period_size=None, weekday_size=None):
         """
-        Configure les paramètres de police pour le tableau
+        Configure les paramètres de police pour le tableau avec ajustements spécifiques à la plateforme
         
         Args:
             font_family (str): Famille de police à utiliser
@@ -695,6 +724,21 @@ class PlanningTableComponent(QTableWidget):
             period_size (int): Taille pour les en-têtes de période (J, M, AM, S)
             weekday_size (int): Taille pour les jours de la semaine
         """
+        # Obtenir les ajustements spécifiques à la plateforme
+        from gui.styles import PlatformHelper
+        platform = PlatformHelper.get_platform()
+        font_adjustments = PlatformHelper.get_platform_font_adjustments()
+        
+        # Ajuster les tailles de police en fonction de la plateforme
+        if base_size:
+            base_size = int(base_size * font_adjustments['base_size_factor'])
+        if header_size:
+            header_size = int(header_size * font_adjustments['header_size_factor'])
+        if period_size:
+            period_size = int(period_size * font_adjustments['period_size_factor'])
+        if weekday_size:
+            weekday_size = int(weekday_size * font_adjustments['weekday_size_factor'])
+        
         # Stocker les paramètres
         self._font_settings = {
             'family': font_family or self._font_settings.get('family', None),
@@ -707,7 +751,6 @@ class PlanningTableComponent(QTableWidget):
         
         # Appliquer les paramètres aux cellules existantes
         self._apply_font_settings()
-
     def _apply_font_settings(self):
         """Applique les paramètres de police à toutes les cellules"""
         # Créer les fonts avec les paramètres configurés
