@@ -21,7 +21,7 @@ landing_page_instance = None
 main_window_instance = None
 
 def set_application_style(app):
-    """Configure le style global de l'application"""
+    """Configure le style global de l'application de manière robuste pour toutes les plateformes"""
     app.setStyle("Fusion")  # Style Fusion est bien supporté sur toutes les plateformes
     
     # Palette de couleurs adaptative
@@ -31,16 +31,16 @@ def set_application_style(app):
     from gui.styles import PlatformHelper
     
     # Couleurs de base depuis le système de styles
-    window_bg = PlatformHelper.adjust_color_for_platform(color_system.colors['window_background'])
-    window_text = PlatformHelper.adjust_color_for_platform(color_system.colors['text']['primary'])
-    base_color = PlatformHelper.adjust_color_for_platform(QColor(255, 255, 255))
-    alt_base = PlatformHelper.adjust_color_for_platform(color_system.colors['table']['alternate'])
-    tooltip_base = PlatformHelper.adjust_color_for_platform(QColor(255, 255, 225))
-    text_color = PlatformHelper.adjust_color_for_platform(color_system.colors['text']['primary'])
-    button_color = PlatformHelper.adjust_color_for_platform(color_system.colors['primary'])
-    button_text = PlatformHelper.adjust_color_for_platform(color_system.colors['text']['light'])
-    highlight = PlatformHelper.adjust_color_for_platform(color_system.colors['primary'])
-    highlight_text = PlatformHelper.adjust_color_for_platform(color_system.colors['text']['light'])
+    window_bg = color_system.get_color('window_background')
+    window_text = color_system.get_color('text', 'primary')
+    base_color = QColor(255, 255, 255)  # Couleur de base toujours blanche
+    alt_base = color_system.get_color('table', 'alternate')
+    tooltip_base = QColor(255, 255, 225)  # Jaune très pâle pour les tooltips
+    text_color = color_system.get_color('text', 'primary')
+    button_color = color_system.get_color('primary')
+    button_text = color_system.get_color('text', 'light')
+    highlight = color_system.get_color('primary')
+    highlight_text = color_system.get_color('text', 'light')
     
     # Application des couleurs à la palette
     palette.setColor(QPalette.ColorRole.Window, window_bg)
@@ -57,15 +57,40 @@ def set_application_style(app):
     
     # Pour une meilleure compatibilité Windows, définir également ces rôles
     if PlatformHelper.get_platform() == 'Windows':
-        # Ces rôles supplémentaires peuvent être nécessaires sur Windows
+        # Ces rôles supplémentaires sont nécessaires sur Windows
         palette.setColor(QPalette.ColorRole.Light, window_bg.lighter(120))
         palette.setColor(QPalette.ColorRole.Midlight, window_bg.lighter(110))
         palette.setColor(QPalette.ColorRole.Mid, window_bg.darker(120))
         palette.setColor(QPalette.ColorRole.Dark, window_bg.darker(160))
         palette.setColor(QPalette.ColorRole.Shadow, QColor(0, 0, 0, 100))
+        
+        # Paramètres spécifiques à Windows pour les contrôles
+        palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 255, 255))
+        palette.setColor(QPalette.ColorRole.Link, color_system.get_color('primary'))
+        palette.setColor(QPalette.ColorRole.LinkVisited, color_system.get_color('primary').darker(120))
+        
+        # S'assurer que les boutons et widgets ont un arrière-plan bien défini
+        app.setStyleSheet(app.styleSheet() + """
+            QPushButton, QComboBox, QLineEdit, QSpinBox, QDateEdit, QTimeEdit {
+                background-color: """ + color_system.get_hex_color('container', 'background') + """;
+            }
+            
+            QTableView, QTableWidget {
+                background-color: """ + color_system.get_hex_color('table', 'background') + """;
+                alternate-background-color: """ + color_system.get_hex_color('table', 'alternate') + """;
+            }
+        """)
 
+    # Appliquer la palette
     app.setPalette(palette)
+    
+    # Appliquer le style global
     app.setStyleSheet(GLOBAL_STYLE)
+    
+    # Pour Windows, forcer la mise à jour du style
+    if PlatformHelper.get_platform() == 'Windows':
+        app.style().unpolish(app)
+        app.style().polish(app)
 
 class LoaderThread(QThread):
     update_signal = pyqtSignal(str)

@@ -59,7 +59,7 @@ class LandingPage(QMainWindow):
         self.bg_widget.lower()
     
     def init_ui(self):
-        """Initialise l'interface utilisateur"""
+        """Initialise l'interface utilisateur avec une gestion des couleurs améliorée"""
         # Widget central
         central_widget = QWidget()
         central_widget.setAutoFillBackground(False)
@@ -88,15 +88,16 @@ class LandingPage(QMainWindow):
         title_font = QFont("Arial", 48, QFont.Weight.Bold)
         title_label.setFont(title_font)
         
-        # Style du titre avec QGraphicsDropShadowEffect au lieu de text-shadow
+        # Style du titre avec QGraphicsDropShadowEffect
         title_shadow = QGraphicsDropShadowEffect()
         title_shadow.setBlurRadius(4)
         title_shadow.setColor(QColor(0, 0, 0, 50))  # 20% d'opacité
         title_shadow.setOffset(2, 2)
         title_label.setGraphicsEffect(title_shadow)
         
+        # Utiliser les couleurs du système
         title_label.setStyleSheet(f"""
-            color: {color_system.colors['primary'].name()};
+            color: {color_system.get_hex_color('primary')};
             letter-spacing: 4px;
             margin-top: 20px;
             margin-bottom: 20px;
@@ -110,7 +111,7 @@ class LandingPage(QMainWindow):
         subtitle_font = QFont("Arial", 20, QFont.Weight.Normal)
         subtitle_label.setFont(subtitle_font)
         subtitle_label.setStyleSheet(f"""
-            color: {color_system.colors['text']['secondary'].name()};
+            color: {color_system.get_hex_color('text', 'secondary')};
             letter-spacing: 1px;
             margin-top: 10px;
             margin-bottom: 20px;
@@ -128,8 +129,8 @@ class LandingPage(QMainWindow):
             background: qlineargradient(
                 x1:0, y1:0, x2:1, y2:0,
                 stop:0 transparent,
-                stop:0.4 {color_system.colors['primary'].name()},
-                stop:0.6 {color_system.colors['primary'].name()},
+                stop:0.4 {color_system.get_hex_color('primary')},
+                stop:0.6 {color_system.get_hex_color('primary')},
                 stop:1 transparent
             );
             margin-top: 10px;
@@ -164,6 +165,15 @@ class LandingPage(QMainWindow):
             StyleConstants.SPACING['md']
         )
         
+        # Mettre à jour les données des cartes pour utiliser le système de couleurs
+        # Remplacer les hexadécimaux codés en dur par les références au système de couleurs
+        updated_cards_data = []
+        for i, (title, icon_path, description, tab_index, _) in enumerate(self.cards_data):
+            card_color = color_system.get_hex_color(f'card.{["planning", "personnel", "desiderata", "doctor_planning", "statistics", "comparison", "export"][i % 7]}')
+            updated_cards_data.append((title, icon_path, description, tab_index, card_color))
+        
+        self.cards_data = updated_cards_data
+        
         # Créer et ajouter les cartes à la grille
         self.create_card_buttons()
         
@@ -183,11 +193,10 @@ class LandingPage(QMainWindow):
         footer_label.setObjectName("footer_label")
         footer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         footer_label.setStyleSheet(f"""
-            color: {color_system.colors['text']['secondary'].name()};
+            color: {color_system.get_hex_color('text', 'secondary')};
             font-size: {int(StyleConstants.FONT['size']['sm'][:-2]) - 1}px;
         """)
         main_layout.addWidget(footer_label)
-    
 
 
 

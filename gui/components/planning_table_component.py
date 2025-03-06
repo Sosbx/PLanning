@@ -281,7 +281,9 @@ class PlanningTableComponent(QTableWidget):
         self.optimize_dimensions()
         
     def _add_day_to_table(self, day_date: date):
-        """Ajoute un jour au tableau"""
+        """
+        Ajoute un jour au tableau avec une gestion améliorée des couleurs pour compatibilité Windows
+        """
         # Décaler l'indice de ligne pour tenir compte de la ligne d'en-tête des mois
         day_row = day_date.day - 1 + 1  # +1 pour la ligne d'en-tête des mois
         if day_row >= self.rowCount():
@@ -305,7 +307,10 @@ class PlanningTableComponent(QTableWidget):
                 period = i + 1
                 col = col_offset + period
                 if col < self.columnCount():  # Vérifier que la colonne existe
+                    # Créer un nouvel item
                     item = QTableWidgetItem("")
+                    
+                    # Déterminer si c'est un weekend ou jour férié
                     is_weekend = day_date.weekday() >= 5 or self._calendar.is_holiday(day_date)
                     
                     # Déterminer la couleur de fond en fonction du type de jour
@@ -314,9 +319,18 @@ class PlanningTableComponent(QTableWidget):
                     else:
                         background_color = self.current_colors.get("base", {}).get("normal", QColor(255, 255, 255))
                     
-                    # Utiliser PlatformHelper au lieu de setBackground directement
+                    # Approche 1: Utiliser PlatformHelper (méthode recommandée)
                     from gui.styles import PlatformHelper
                     PlatformHelper.apply_background_color(item, background_color)
+                    
+                    # Approche 2: Définir également les propriétés explicites pour Windows
+                    if PlatformHelper.get_platform() == 'Windows':
+                        # Utiliser les deux approches pour garantir la compatibilité
+                        item.setData(Qt.ItemDataRole.BackgroundRole, QBrush(background_color))
+                    
+                    # Approche 3: Définir un style personnalisé pour cette cellule
+                    style = f"background-color: {background_color.name()};"
+                    item.setData(Qt.ItemDataRole.UserRole + 1, style)
                     
                     # Marquer le jour comme weekend pour les styles CSS ET les approches programmatiques
                     if is_weekend:
@@ -330,6 +344,7 @@ class PlanningTableComponent(QTableWidget):
                     # Stocker la date et la période dans les données de l'élément
                     item.setData(Qt.ItemDataRole.UserRole, {"date": day_date, "period": period})
                     
+                    # Ajouter l'item au tableau
                     self.setItem(day_row, col, item)
             
     def _set_day_cell(self, row: int, col: int, text: str):

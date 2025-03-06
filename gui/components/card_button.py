@@ -8,7 +8,7 @@ from PyQt6.QtGui import QFont, QIcon, QColor, QPixmap, QLinearGradient, QPainter
 class CardButton(QPushButton):
     """
     Widget de bouton stylisé comme une carte avec icône et description.
-    Intégré directement dans la landing page.
+    Version améliorée avec meilleure gestion des couleurs pour Windows.
     """
     
     def __init__(self, title, icon_path, description="", bg_color=None, parent=None):
@@ -16,26 +16,33 @@ class CardButton(QPushButton):
         self.title = title
         self.icon_path = icon_path
         self.description = description
-        self.bg_color = bg_color or "#FFFFFF"
-        self.hovered = False
         
-        # Couleurs par défaut
-        self.primary_color = "#1A5A96"  # Bleu primaire
-        self.border_color = "#CBD5E1"   # Gris clair pour bordures
-        self.text_secondary_color = "#505A64"  # Gris foncé pour texte secondaire
+        # Utiliser color_system pour obtenir les couleurs standards
+        from gui.styles import color_system
+        
+        # Permettre une couleur personnalisée ou utiliser la couleur par défaut
+        if bg_color and bg_color.startswith('#'):
+            self.bg_color = bg_color
+        else:
+            # Utiliser le système de couleurs centralisé
+            self.bg_color = color_system.get_hex_color('container', 'background')
+        
+        # Obtenir les couleurs du système
+        self.primary_color = color_system.get_hex_color('primary')
+        self.border_color = color_system.get_hex_color('container', 'border')
+        self.text_secondary_color = color_system.get_hex_color('text', 'secondary')
+        
+        self.hovered = False
         
         # Configuration du bouton
         self.setFixedSize(220, 200)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         
-        # Important: Ne pas utiliser setObjectName qui peut causer des problèmes
-        # d'application de style sous Windows
-        # self.setObjectName("card_button")
-        
         # Définir directement la couleur de fond à l'initialisation pour Windows
         self.setAutoFillBackground(True)
         palette = self.palette()
         palette.setColor(QPalette.ColorRole.Window, QColor(self.bg_color))
+        palette.setColor(QPalette.ColorRole.Button, QColor(self.bg_color))
         self.setPalette(palette)
         
         # Création du contenu
@@ -76,8 +83,7 @@ class CardButton(QPushButton):
             self.desc_label.setStyleSheet(f"color: {self.text_secondary_color};")
             self.layout.addWidget(self.desc_label)
         
-        # Style initial - Utiliser directement setPalette et propriétés 
-        # au lieu de styleSheet pour une meilleure compatibilité
+        # Appliquer le style initial
         self.update_style()
     
     def setup_effects(self):
@@ -107,18 +113,22 @@ class CardButton(QPushButton):
     def update_style(self):
         """
         Met à jour le style du bouton de manière compatible avec Windows et macOS.
-        Combine setStyleSheet et QPalette pour une compatibilité maximale.
+        Utilise à la fois styleSheet et QPalette pour une compatibilité maximale.
         """
         border_radius = "10px"
         
         # Assurer que le fond auto-remplissage est activé
         self.setAutoFillBackground(True)
         
+        # Obtenir la plateforme
+        from gui.styles import PlatformHelper
+        platform = PlatformHelper.get_platform()
+        
         if self.hovered:
             # Style au survol
             lighter_color = self._lighten_color(self.bg_color, 0.9)
             
-            # Utiliser styleSheet pour tous les styles y compris la couleur de fond
+            # Utiliser styleSheet pour tous les styles
             self.setStyleSheet(f"""
                 QPushButton {{
                     background-color: {lighter_color};
@@ -127,6 +137,16 @@ class CardButton(QPushButton):
                     padding: 10px;
                 }}
             """)
+            
+            # Appliquer aussi via QPalette pour Windows
+            palette = self.palette()
+            palette.setColor(QPalette.ColorRole.Button, QColor(lighter_color))
+            palette.setColor(QPalette.ColorRole.Window, QColor(lighter_color))
+            self.setPalette(palette)
+            
+            # Pour Windows, définir explicitement le fond
+            if platform == 'Windows':
+                self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         else:
             # Style normal
             self.setStyleSheet(f"""
@@ -137,17 +157,16 @@ class CardButton(QPushButton):
                     padding: 10px;
                 }}
             """)
-        
-        # Appliquer également la couleur via QPalette pour Windows
-        palette = self.palette()
-        if self.hovered:
-            palette.setColor(QPalette.ColorRole.Button, QColor(lighter_color))
-            palette.setColor(QPalette.ColorRole.Window, QColor(lighter_color))
-        else:
+            
+            # Appliquer via QPalette pour Windows
+            palette = self.palette()
             palette.setColor(QPalette.ColorRole.Button, QColor(self.bg_color))
             palette.setColor(QPalette.ColorRole.Window, QColor(self.bg_color))
-        self.setPalette(palette)
-
+            self.setPalette(palette)
+            
+            # Pour Windows, définir explicitement le fond
+            if platform == 'Windows':
+                self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
     
     def _lighten_color(self, color, factor=0.7):
         """Éclaircit une couleur hexadécimale"""
@@ -224,7 +243,7 @@ class CardButton(QPushButton):
             # Style de clic
             darker_color = QColor(self.bg_color).darker(110).name()
             
-            # Appliquer via styleSheet et QPalette pour une compatibilité maximale
+            # Appliquer via styleSheet
             self.setStyleSheet(f"""
                 QPushButton {{
                     background-color: {darker_color};
@@ -234,10 +253,16 @@ class CardButton(QPushButton):
                 }}
             """)
             
+            # Appliquer aussi via QPalette pour Windows
             palette = self.palette()
             palette.setColor(QPalette.ColorRole.Button, QColor(darker_color))
             palette.setColor(QPalette.ColorRole.Window, QColor(darker_color))
             self.setPalette(palette)
+            
+            # Pour Windows, définir explicitement le fond
+            from gui.styles import PlatformHelper
+            if PlatformHelper.get_platform() == 'Windows':
+                self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         
         super().mousePressEvent(event)
     

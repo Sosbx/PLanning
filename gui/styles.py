@@ -7,7 +7,9 @@ from PyQt6.QtGui import QColor, QGuiApplication, QScreen, QBrush
 from PyQt6.QtCore import QOperatingSystemVersion, QSysInfo, Qt
 
 class PlatformHelper:
-   
+    """
+    Classe utilitaire pour gérer les spécificités des différentes plateformes
+    """
     
     @staticmethod
     def get_platform():
@@ -72,36 +74,62 @@ class PlatformHelper:
         """Retourne les ajustements de couleur spécifiques à la plateforme."""
         platform = PlatformHelper.get_platform()
         if platform == 'Windows':
-            # Sur Windows, augmenter légèrement la saturation des couleurs
+            # Sur Windows, augmenter légèrement la saturation et le contraste des couleurs
             return {
-                'color_saturation_factor': 1.1,
+                'color_saturation_factor': 1.15,  # Augmenté de 1.1 à 1.15
+                'color_value_factor': 1.05,       # Rendre légèrement plus lumineux
                 'force_explicit_colors': True
             }
+        elif platform == 'macOS':
+            # Pour macOS, couleurs légèrement moins saturées pour correspondre au style
+            return {
+                'color_saturation_factor': 0.95,
+                'color_value_factor': 1.0,
+                'force_explicit_colors': False
+            }
         else:
-            # Pour macOS et autres plateformes
+            # Pour Linux et autres plateformes
             return {
                 'color_saturation_factor': 1.0,
-                'force_explicit_colors': False
+                'color_value_factor': 1.0,
+                'force_explicit_colors': True  # True pour Linux aussi pour garantir la cohérence
             }
     
     @staticmethod
     def adjust_color_for_platform(color):
-        """Ajuste une couleur pour la plateforme actuelle."""
+        """
+        Ajuste une couleur pour la plateforme actuelle avec un meilleur contrôle
+        du contraste et de la luminosité.
+        """
+        # Obtenir les ajustements pour la plateforme actuelle
         adjustments = PlatformHelper.get_platform_color_adjustments()
         
         # Si nous n'avons pas besoin d'ajuster la couleur, la retourner telle quelle
-        if adjustments['color_saturation_factor'] == 1.0 and not adjustments['force_explicit_colors']:
+        if (adjustments['color_saturation_factor'] == 1.0 and 
+            adjustments['color_value_factor'] == 1.0 and 
+            not adjustments['force_explicit_colors']):
             return color
         
-        # Convertir en HSL pour ajuster la saturation
-        h, s, l, a = color.getHslF()
+        # Convertir en HSV pour des ajustements plus précis
+        h, s, v, a = color.getHsvF()
         
         # Ajuster la saturation
         s = min(1.0, s * adjustments['color_saturation_factor'])
         
-        # Créer une nouvelle couleur avec la saturation ajustée
+        # Ajuster la luminosité/valeur
+        v = min(1.0, v * adjustments['color_value_factor'])
+        
+        # Créer une nouvelle couleur avec les paramètres ajustés
         adjusted_color = QColor()
-        adjusted_color.setHslF(h, s, l, a)
+        adjusted_color.setHsvF(h, s, v, a)
+        
+        # Pour Windows, s'assurer que les couleurs sont suffisamment contrastées
+        if PlatformHelper.get_platform() == 'Windows':
+            # Éviter les couleurs trop pâles
+            if adjusted_color.lightnessF() > 0.9 and s < 0.2:
+                # Augmenter légèrement la saturation et diminuer la luminosité
+                adjusted_color = QColor()
+                adjusted_color.setHsvF(h, min(1.0, s + 0.1), max(0.0, v - 0.05), a)
         
         return adjusted_color
     
@@ -109,6 +137,7 @@ class PlatformHelper:
     def apply_background_color(item, color):
         """
         Applique une couleur de fond à un élément de manière compatible avec toutes les plateformes.
+        Version améliorée pour Windows.
         
         Args:
             item: L'élément de tableau (QTableWidgetItem) auquel appliquer la couleur
@@ -120,17 +149,30 @@ class PlatformHelper:
         platform = PlatformHelper.get_platform()
         brush = QBrush(color)
         
-        # Sur Windows, utiliser setData avec BackgroundRole
+        # Sur Windows, appliquer toutes les méthodes possibles
         if platform == 'Windows':
+            # Méthode 1: setData avec BackgroundRole (recommandé)
             item.setData(Qt.ItemDataRole.BackgroundRole, brush)
-        
-        # Sur toutes les plateformes, utiliser aussi setBackground pour compatibilité
-        item.setBackground(brush)
+            
+            # Méthode 2: setBackground (toujours utiliser)
+            item.setBackground(brush)
+            
+            # Méthode 3: définir un style personnalisé
+            style = f"background-color: {color.name()};"
+            item.setData(Qt.ItemDataRole.UserRole + 1, style)
+            
+            # Méthode 4: définir des propriétés pour les styles QSS
+            if hasattr(item, 'setProperty'):
+                item.setProperty("customBgColor", color.name())
+        else:
+            # Sur macOS et Linux, utiliser la méthode standard
+            item.setBackground(brush)
     
     @staticmethod
     def apply_foreground_color(item, color):
         """
         Applique une couleur de texte à un élément de manière compatible avec toutes les plateformes.
+        Version améliorée pour Windows.
         
         Args:
             item: L'élément de tableau (QTableWidgetItem) auquel appliquer la couleur
@@ -142,16 +184,43 @@ class PlatformHelper:
         platform = PlatformHelper.get_platform()
         brush = QBrush(color)
         
-        # Sur Windows, utiliser setData avec ForegroundRole
+        # Sur Windows, appliquer toutes les méthodes possibles
         if platform == 'Windows':
+            # Méthode 1: setData avec ForegroundRole (recommandé)
             item.setData(Qt.ItemDataRole.ForegroundRole, brush)
+            
+            # Méthode 2: setForeground (toujours utiliser)
+            item.setForeground(brush)
+            
+            # Méthode 3: définir un style personnalisé
+            style = f"color: {color.name()};"
+            current_style = item.data(Qt.ItemDataRole.UserRole + 1) or ""
+            item.setData(Qt.ItemDataRole.UserRole + 1, current_style + style)
+            
+            # Méthode 4: définir des propriétés pour les styles QSS
+            if hasattr(item, 'setProperty'):
+                item.setProperty("customFgColor", color.name())
+        else:
+            # Sur macOS et Linux, utiliser la méthode standard
+            item.setForeground(brush)
+            
+    @staticmethod
+    def ensure_widget_style_updated(widget):
+        """
+        S'assure qu'un widget met à jour son style, spécialement important sur Windows.
         
-        # Sur toutes les plateformes, utiliser aussi setForeground pour compatibilité
-        item.setForeground(brush)
+        Args:
+            widget: Le widget à mettre à jour
+        """
+        if PlatformHelper.get_platform() == 'Windows':
+            # Forcer la mise à jour du style sur Windows
+            widget.style().unpolish(widget)
+            widget.style().polish(widget)
+            widget.update()
 
 class ColorSystem:
     def __init__(self):
-        # Palette optimisée pour l'accessibilité avec ajustements spécifiques à la plateforme
+        # Palette optimisée pour l'accessibilité et la compatibilité multi-plateformes
         # Couleurs de base
         base_colors = {
             'primary': QColor('#1A5A96'),        # Bleu principal
@@ -219,6 +288,17 @@ class ColorSystem:
             'garde': QColor('#E2D4ED')          # Violet pâle pour gardes
         }
         
+        # Couleurs pour les cartes de la landing page
+        card_colors = {
+            'planning': QColor('#E3F2FD'),
+            'personnel': QColor('#E8F5E9'),
+            'desiderata': QColor('#FFF8E1'),
+            'doctor_planning': QColor('#F3E5F5'),
+            'statistics': QColor('#E1F5FE'),
+            'comparison': QColor('#E0F2F1'),
+            'export': QColor('#F1F8E9')
+        }
+        
         # Appliquer les ajustements de couleur spécifiques à la plateforme
         self.colors = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in base_colors.items()}
         
@@ -227,6 +307,7 @@ class ColorSystem:
         self.colors['container'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in container_colors.items()}
         self.colors['table'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in table_colors.items()}
         self.colors['focus'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in focus_colors.items()}
+        self.colors['card'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in card_colors.items()}
         
         # Traiter les couleurs de desiderata (structure imbriquée à deux niveaux)
         self.colors['desiderata'] = {}
@@ -238,265 +319,75 @@ class ColorSystem:
         # Ajouter les couleurs des types de postes
         self.colors['post_types'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in post_type_colors.items()}
         
-        # Styles pour les boutons et autres éléments
-        self.styles = {
-            'button': {
-                'primary': """
-                    QPushButton {
-                        background-color: #1A5A96;
-                        color: white;
-                        border: none;
-                        padding: 8px 16px;
-                        border-radius: 4px;
-                        font-weight: 500;
-                        min-height: 30px;
-                        font-size: 14px;
-                    }
-                    QPushButton:hover {
-                        background-color: #1467A8;
-                    }
-                    QPushButton:pressed {
-                        background-color: #0E4875;
-                    }
-                    QPushButton:disabled {
-                        background-color: #A0AEC0;
-                        color: #E2E8F0;
-                    }
-                """,
-                'success': """
-                    QPushButton {
-                        background-color: #2E8540;
-                        color: white;
-                        border: none;
-                        padding: 8px 16px;
-                        border-radius: 4px;
-                        font-weight: 500;
-                        min-height: 30px;
-                        font-size: 14px;
-                    }
-                    QPushButton:hover {
-                        background-color: #267638;
-                    }
-                    QPushButton:pressed {
-                        background-color: #1E622D;
-                    }
-                    QPushButton:disabled {
-                        background-color: #A0AEC0;
-                        color: #E2E8F0;
-                    }
-                """,
-                'danger': """
-                    QPushButton {
-                        background-color: #D73F3F;
-                        color: white;
-                        border: none;
-                        padding: 8px 16px;
-                        border-radius: 4px;
-                        font-weight: 500;
-                        min-height: 30px;
-                        font-size: 14px;
-                    }
-                    QPushButton:hover {
-                        background-color: #C42F2F;
-                    }
-                    QPushButton:pressed {
-                        background-color: #A42828;
-                    }
-                    QPushButton:disabled {
-                        background-color: #A0AEC0;
-                        color: #E2E8F0;
-                    }
-                """,
-                'secondary': """
-                    QPushButton {
-                        background-color: #FFFFFF;
-                        color: #505A64;
-                        border: 1px solid #CBD5E1;
-                        padding: 8px 16px;
-                        border-radius: 4px;
-                        font-weight: 500;
-                        min-height: 30px;
-                        font-size: 14px;
-                    }
-                    QPushButton:hover {
-                        background-color: #EDF2F7;
-                        border-color: #A0AEC0;
-                    }
-                    QPushButton:pressed {
-                        background-color: #E2E8F0;
-                        border-color: #718096;
-                    }
-                    QPushButton:disabled {
-                        background-color: #EDF2F7;
-                        color: #A0AEC0;
-                        border-color: #E2E8F0;
-                    }
-                """
-            },
-            'table': {
-                'base': """
-                    QTableWidget, QTableView {
-                        background-color: #EDF2F7;
-                        alternate-background-color: #E2E8F0;
-                        border: 1px solid #B4C2D3;
-                        gridline-color: #B4C2D3;
-                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                        font-size: 14px;
-                        color: #2C3E50;
-                    }
-                    QHeaderView::section {
-                        background-color: #C6D1E1;
-                        color: #2C3E50;
-                        padding: 4px 8px;
-                        border: 1px solid #B4C2D3;
-                        font-weight: 600;
-                    }
-                    QTableWidget::item, QTableView::item {
-                        padding: 4px;
-                        border-bottom: 1px solid #E2E8F0;
-                    }
-                    QTableWidget::item:hover, QTableView::item:hover {
-                        background-color: #D8E1ED;
-                    }
-                    QTableWidget::item:selected, QTableView::item:selected {
-                        background-color: #B8C7DB;
-                        color: #2C3E50;
-                    }
-                """,
-                'weekend': """
-                    QTableWidget::item[weekend="true"], QTableView::item[weekend="true"] {
-                        background-color: #E2E8F0;
-                    }
-                    QTableWidget::item[weekend="true"]:hover, QTableView::item[weekend="true"]:hover {
-                        background-color: #D8E1ED;
-                    }
-                    QTableWidget::item[weekend="true"]:selected, QTableView::item[weekend="true"]:selected {
-                        background-color: #CBD5E1;
-                        color: #2C3E50;
-                    }
-                """
-            },
-            'combobox': """
-                QComboBox {
-                    background-color: #FFFFFF;
-                    color: #2C3E50;
-                    border: 1px solid #CBD5E1;
-                    border-radius: 4px;
-                    padding: 6px 8px;
-                    min-height: 30px;
-                    font-size: 14px;
-                }
-                QComboBox:hover {
-                    border-color: #A0AEC0;
-                }
-                QComboBox:focus {
-                    border: 2px solid #1A5A96;
-                }
-                QComboBox::drop-down {
-                    subcontrol-origin: padding;
-                    subcontrol-position: center right;
-                    width: 20px;
-                    border-left: none;
-                }
-                QComboBox QAbstractItemView {
-                    border: 1px solid #CBD5E1;
-                    background-color: #FFFFFF;
-                    selection-background-color: #D0E2F3;
-                    selection-color: #2C3E50;
-                }
-            """,
-            'checkbox': """
-                QCheckBox {
-                    spacing: 8px;
-                    color: #2C3E50;
-                    font-size: 14px;
-                }
-                QCheckBox::indicator {
-                    width: 18px;
-                    height: 18px;
-                    border: 1px solid #CBD5E1;
-                    border-radius: 3px;
-                }
-                QCheckBox::indicator:unchecked {
-                    background-color: #FFFFFF;
-                }
-                QCheckBox::indicator:checked {
-                    background-color: #1A5A96;
-                    border-color: #1A5A96;
-                    image: url(check.png);
-                }
-                QCheckBox::indicator:hover {
-                    border-color: #1A5A96;
-                }
-            """,
-            'tab': """
-                QTabWidget::pane {
-                    border: 1px solid #CBD5E1;
-                    background-color: #FFFFFF;
-                    border-radius: 4px;
-                }
-                QTabBar::tab {
-                    background-color: #E2E8F0;
-                    color: #505A64;
-                    padding: 10px 16px;
-                    border: 1px solid #CBD5E1;
-                    border-bottom: none;
-                    border-top-left-radius: 4px;
-                    border-top-right-radius: 4px;
-                    min-width: 100px;
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                    font-size: 14px;
-                }
-                QTabBar::tab:selected {
-                    background-color: #1A5A96;
-                    color: white;
-                    font-weight: 600;
-                }
-                QTabBar::tab:hover:!selected {
-                    background-color: #D0E2F3;
-                }
-                QTabBar::tab:focus {
-                    outline: none;
-                    border: 2px solid #1A5A96;
-                }
-            """
-        }
-    
     def get_color(self, key, context=None, priority=None):
-        """Get a color from the system with optional context and priority."""
+        """
+        Récupère une couleur du système avec contexte et priorité optionnels.
+        Méthode robuste qui gère les clés manquantes en retournant une couleur par défaut.
+        
+        Args:
+            key (str): Clé principale de la couleur
+            context (str, optional): Sous-clé de contexte
+            priority (str, optional): Sous-clé de priorité
+            
+        Returns:
+            QColor: La couleur demandée ou une couleur par défaut (#CCCCCC) si non trouvée
+        """
+        default_color = QColor('#CCCCCC')  # Gris par défaut en cas de clé non trouvée
+        
         if context and priority:
-            return self.colors.get(key, {}).get(priority, {}).get(context)
+            return self.colors.get(key, {}).get(priority, {}).get(context, default_color)
         elif context:
-            return self.colors.get(key, {}).get(context)
+            return self.colors.get(key, {}).get(context, default_color)
+        elif key in self.colors:
+            return self.colors.get(key, default_color)
+        elif '.' in key:
+            # Gestion des clés composées comme "card.planning"
+            main_key, sub_key = key.split('.', 1)
+            return self.colors.get(main_key, {}).get(sub_key, default_color)
         else:
-            return self.colors.get(key)
+            return default_color
+            
+    def get_hex_color(self, key, context=None, priority=None):
+        """
+        Récupère une couleur au format hexadécimal (#RRGGBB)
+        """
+        color = self.get_color(key, context, priority)
+        return color.name()
+        
+    def get_rgba_color(self, key, context=None, priority=None, alpha=255):
+        """
+        Récupère une couleur avec canal alpha spécifié
+        """
+        color = self.get_color(key, context, priority)
+        color.setAlpha(alpha)
+        return color
     
     def get_post_group_colors(self):
         """Get colors for post groups."""
         return {
-            'matin': QColor('#D0E2F3'),      # Bleu pâle
-            'apresMidi': QColor('#F8D57E'),  # Jaune-orange
-            'soirNuit': QColor('#E2D4ED')    # Violet pâle
+            'matin': self.get_color('post_types', 'consultation'),  # Utilise la couleur de consultation (bleu)
+            'apresMidi': self.get_color('warning'),                 # Utilise la couleur d'avertissement (jaune-orange)
+            'soirNuit': self.get_color('post_types', 'garde')       # Utilise la couleur de garde (violet)
         }
     
     def get_weekend_group_colors(self):
         """Get colors for weekend groups."""
         return {
-            'gardes': QColor('#E2D4ED'),     # Violet pâle
-            'visites': QColor('#D4EDDA'),    # Vert pâle
-            'consultations': QColor('#D0E2F3') # Bleu pâle
+            'gardes': self.get_color('post_types', 'garde'),         # Violet pâle
+            'visites': self.get_color('post_types', 'visite'),       # Vert pâle
+            'consultations': self.get_color('post_types', 'consultation') # Bleu pâle
         }
-        
-    def get_scaled_font_size(self, base_size=14, scale_factor=1.0):
+    
+    def get_card_color_by_index(self, index):
         """
-        Calcule une taille de police adaptative.
-        Args:
-            base_size: Taille de base en pixels
-            scale_factor: Facteur d'échelle (1.0 = normal)
-        Returns:
-            Taille de police adaptée
+        Récupère la couleur d'une carte selon son index
+        Utile pour la landing page
         """
-        return int(base_size * scale_factor)
+        card_types = ['planning', 'personnel', 'desiderata', 'doctor_planning', 
+                      'statistics', 'comparison', 'export']
+        if 0 <= index < len(card_types):
+            return self.get_color('card', card_types[index])
+        return self.get_color('container', 'background')  # Couleur par défaut
 
 class StyleConstants:
     """Constants for styling the application."""

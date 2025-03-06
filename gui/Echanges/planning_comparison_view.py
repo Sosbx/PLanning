@@ -76,23 +76,23 @@ class PlanningComparisonView(QWidget):
         )
         layout.setSpacing(StyleConstants.SPACING['md'])
 
-        # Style global du widget
+        # Style global du widget - Utilisation directe du système de couleurs
         self.setStyleSheet(f"""
             QWidget {{
-                background-color: {color_system.colors['container']['background'].name()};
+                background-color: {color_system.get_hex_color('container', 'background')};
                 font-family: {StyleConstants.FONT['family']['primary']};
                 font-size: {StyleConstants.FONT['size']['md']};
-                color: {color_system.colors['text']['primary'].name()};
+                color: {color_system.get_hex_color('text', 'primary')};
             }}
             QComboBox {{
-                background-color: {color_system.colors['container']['background'].name()};
-                border: 1px solid {color_system.colors['container']['border'].name()};
+                background-color: {color_system.get_hex_color('container', 'background')};
+                border: 1px solid {color_system.get_hex_color('container', 'border')};
                 border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
                 padding: {StyleConstants.SPACING['xs']}px;
                 min-width: 200px;
             }}
             QComboBox:hover {{
-                border-color: {color_system.colors['primary'].name()};
+                border-color: {color_system.get_hex_color('primary')};
             }}
         """)
 
@@ -104,11 +104,11 @@ class PlanningComparisonView(QWidget):
         self.selector1 = QComboBox()
         self.selector2 = QComboBox()
         
-        # Style des sélecteurs
+        # Style des sélecteurs - Utilisation du système de couleurs
         selector_style = f"""
             QComboBox {{
-                background-color: {color_system.colors['container']['background'].name()};
-                border: 1px solid {color_system.colors['container']['border'].name()};
+                background-color: {color_system.get_hex_color('container', 'background')};
+                border: 1px solid {color_system.get_hex_color('container', 'border')};
                 border-radius: {StyleConstants.BORDER_RADIUS['sm']}px;
                 padding: {StyleConstants.SPACING['xs']}px;
                 min-width: 200px;
@@ -116,7 +116,7 @@ class PlanningComparisonView(QWidget):
                 max-height: {StyleConstants.SPACING['xl']}px;
             }}
             QComboBox:hover {{
-                border-color: {color_system.colors['primary'].name()};
+                border-color: {color_system.get_hex_color('primary')};
             }}
         """
         self.selector1.setStyleSheet(selector_style)
@@ -156,19 +156,19 @@ class PlanningComparisonView(QWidget):
         self.table1 = PlanningTableComponent(self)
         self.table2 = PlanningTableComponent(self)
         
-        # Configuration des couleurs pour les deux tables - Définition explicite
+        # Configuration des couleurs pour les deux tables - Utilisation du système de couleurs
         colors = {
             "primary": {
-                "weekend": QColor(255, 150, 150),  # Rouge vif pour weekend
-                "normal": QColor(255, 200, 200)    # Rouge clair pour jour normal
+                "weekend": color_system.get_rgba_color('danger', alpha=150),   # Rouge vif pour weekend
+                "normal": color_system.get_rgba_color('danger', alpha=100)     # Rouge clair pour jour normal
             },
             "secondary": {
-                "weekend": QColor(150, 200, 255),  # Bleu vif pour weekend
-                "normal": QColor(180, 220, 255)    # Bleu clair pour jour normal
+                "weekend": color_system.get_rgba_color('info', alpha=150),     # Bleu vif pour weekend
+                "normal": color_system.get_rgba_color('info', alpha=100)       # Bleu clair pour jour normal
             },
             "base": {
-                "weekend": WEEKEND_COLOR,
-                "normal": WEEKDAY_COLOR
+                "weekend": color_system.get_color('weekend'),
+                "normal": color_system.get_color('weekday')
             }
         }
 
@@ -178,7 +178,7 @@ class PlanningComparisonView(QWidget):
         
         # Configuration des dimensions adaptatives
         for table in [self.table1, self.table2]:
-            table.min_row_height = 18
+            table.set_min_row_height(18)
             table.set_max_row_height(25)
             table.set_min_column_widths(
                 day_width=25,
