@@ -4,6 +4,7 @@
 from PyQt6.QtWidgets import QPushButton, QVBoxLayout, QLabel, QWidget, QGraphicsDropShadowEffect
 from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, QPoint
 from PyQt6.QtGui import QFont, QIcon, QColor, QPixmap, QLinearGradient, QPainter, QBrush
+from ..styles import PlatformHelper, StyleConstants
 
 class CardButton(QPushButton):
     """
@@ -19,10 +20,19 @@ class CardButton(QPushButton):
         self.bg_color = bg_color or "#FFFFFF"
         self.hovered = False
         
-        # Couleurs par défaut
-        self.primary_color = "#1A5A96"  # Bleu primaire
-        self.border_color = "#CBD5E1"   # Gris clair pour bordures
-        self.text_secondary_color = "#505A64"  # Gris foncé pour texte secondaire
+        # Couleurs par défaut avec ajustements spécifiques à la plateforme
+        primary_color = QColor("#1A5A96")  # Bleu primaire
+        border_color = QColor("#CBD5E1")   # Gris clair pour bordures
+        text_secondary_color = QColor("#505A64")  # Gris foncé pour texte secondaire
+        
+        # Appliquer les ajustements de couleur spécifiques à la plateforme
+        self.primary_color = PlatformHelper.adjust_color_for_platform(primary_color).name()
+        self.border_color = PlatformHelper.adjust_color_for_platform(border_color).name()
+        self.text_secondary_color = PlatformHelper.adjust_color_for_platform(text_secondary_color).name()
+        
+        # Ajuster la couleur de fond si fournie
+        if bg_color:
+            self.bg_color = PlatformHelper.adjust_color_for_platform(QColor(bg_color)).name()
         
         # Configuration du bouton
         self.setFixedSize(220, 200)
@@ -98,30 +108,65 @@ class CardButton(QPushButton):
         """Met à jour le style du bouton"""
         border_radius = "10px"
         
+        # Forcer l'application des couleurs pour Windows
+        platform = PlatformHelper.get_platform()
+        force_explicit = platform == 'Windows'
+        
         if self.hovered:
-            # Style au survol
-            self.setStyleSheet(f"""
-                #card_button {{
+            # Style au survol avec couleurs explicites pour Windows
+            gradient_start = self.bg_color
+            gradient_end = self._lighten_color(self.bg_color, 0.9)
+            
+            # Sur Windows, utiliser des couleurs RGB explicites pour le dégradé
+            if force_explicit:
+                start_color = QColor(gradient_start)
+                end_color = QColor(gradient_end)
+                gradient_style = f"""
                     background-color: qlineargradient(
                         x1:0, y1:0, x2:0, y2:1,
-                        stop:0 {self.bg_color}, 
-                        stop:1 {self._lighten_color(self.bg_color, 0.9)}
+                        stop:0 rgb({start_color.red()}, {start_color.green()}, {start_color.blue()}), 
+                        stop:1 rgb({end_color.red()}, {end_color.green()}, {end_color.blue()})
                     );
+                """
+            else:
+                gradient_style = f"""
+                    background-color: qlineargradient(
+                        x1:0, y1:0, x2:0, y2:1,
+                        stop:0 {gradient_start}, 
+                        stop:1 {gradient_end}
+                    );
+                """
+            
+            self.setStyleSheet(f"""
+                #card_button {{
+                    {gradient_style}
                     border: 2px solid {self.primary_color};
                     border-radius: {border_radius};
                     padding: 10px;
                 }}
             """)
         else:
-            # Style normal
-            self.setStyleSheet(f"""
-                #card_button {{
-                    background-color: {self.bg_color};
-                    border: 1px solid {self.border_color};
-                    border-radius: {border_radius};
-                    padding: 10px;
-                }}
-            """)
+            # Style normal avec couleurs explicites pour Windows si nécessaire
+            if force_explicit:
+                bg_color = QColor(self.bg_color)
+                border_color = QColor(self.border_color)
+                self.setStyleSheet(f"""
+                    #card_button {{
+                        background-color: rgb({bg_color.red()}, {bg_color.green()}, {bg_color.blue()});
+                        border: 1px solid rgb({border_color.red()}, {border_color.green()}, {border_color.blue()});
+                        border-radius: {border_radius};
+                        padding: 10px;
+                    }}
+                """)
+            else:
+                self.setStyleSheet(f"""
+                    #card_button {{
+                        background-color: {self.bg_color};
+                        border: 1px solid {self.border_color};
+                        border-radius: {border_radius};
+                        padding: 10px;
+                    }}
+                """)
     
     def _lighten_color(self, color, factor=0.7):
         """Éclaircit une couleur hexadécimale"""
@@ -195,16 +240,32 @@ class CardButton(QPushButton):
             self.shadow.setBlurRadius(10)
             self.shadow.setOffset(0, 2)
             
-            # Style de clic
-            darker_color = QColor(self.bg_color).darker(110).name()
-            self.setStyleSheet(f"""
-                #card_button {{
-                    background-color: {darker_color};
-                    border: 2px solid {self.primary_color};
-                    border-radius: 10px;
-                    padding: 10px;
-                }}
-            """)
+            # Style de clic avec couleurs explicites pour Windows
+            darker_color = QColor(self.bg_color).darker(110)
+            primary_color = QColor(self.primary_color)
+            
+            # Forcer l'application des couleurs pour Windows
+            platform = PlatformHelper.get_platform()
+            force_explicit = platform == 'Windows'
+            
+            if force_explicit:
+                self.setStyleSheet(f"""
+                    #card_button {{
+                        background-color: rgb({darker_color.red()}, {darker_color.green()}, {darker_color.blue()});
+                        border: 2px solid rgb({primary_color.red()}, {primary_color.green()}, {primary_color.blue()});
+                        border-radius: 10px;
+                        padding: 10px;
+                    }}
+                """)
+            else:
+                self.setStyleSheet(f"""
+                    #card_button {{
+                        background-color: {darker_color.name()};
+                        border: 2px solid {self.primary_color};
+                        border-radius: 10px;
+                        padding: 10px;
+                    }}
+                """)
         
         super().mousePressEvent(event)
     

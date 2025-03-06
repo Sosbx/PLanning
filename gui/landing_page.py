@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QPropertyAnimation, QEasingCurve, QSequentialAnimationGroup, QPauseAnimation
 from PyQt6.QtGui import QFont, QIcon, QPixmap, QColor, QLinearGradient, QPainter, QPalette, QBrush
 from .components.card_button import CardButton
-from .styles import StyleConstants, color_system, GLOBAL_STYLE
+from .styles import StyleConstants, color_system, GLOBAL_STYLE, PlatformHelper
 from core.utils import resource_path
 
 class LandingPage(QMainWindow):
@@ -47,11 +47,15 @@ class LandingPage(QMainWindow):
         self.bg_widget.setGeometry(0, 0, self.width(), self.height())
         self.bg_widget.setAutoFillBackground(True)
         
+        # Couleurs avec ajustements spécifiques à la plateforme
+        top_color = PlatformHelper.adjust_color_for_platform(QColor(235, 242, 250))  # Couleur de base légèrement plus claire
+        bottom_color = PlatformHelper.adjust_color_for_platform(QColor(218, 226, 240))  # Couleur légèrement plus foncée en bas
+        
         # Définir le dégradé de couleur comme fond
         palette = self.bg_widget.palette()
         gradient = QLinearGradient(0, 0, 0, self.height())
-        gradient.setColorAt(0, QColor(235, 242, 250))  # Couleur de base légèrement plus claire
-        gradient.setColorAt(1, QColor(218, 226, 240))  # Couleur légèrement plus foncée en bas
+        gradient.setColorAt(0, top_color)
+        gradient.setColorAt(1, bottom_color)
         palette.setBrush(QPalette.ColorRole.Window, QBrush(gradient))
         self.bg_widget.setPalette(palette)
         

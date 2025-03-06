@@ -8,6 +8,7 @@ from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 from workalendar.europe import France
 from typing import Dict, List, Optional, Tuple, Callable, Any
+from ..styles import StyleConstants, PlatformHelper
 
 
 class PlanningTableComponent(QTableWidget):
@@ -44,13 +45,14 @@ class PlanningTableComponent(QTableWidget):
             "period": 80           # Largeur maximale pour les colonnes des périodes (M, AM, S)
         }
         
-        # Paramètres de police avec des tailles plus grandes
+        # Paramètres de police avec ajustements spécifiques à la plateforme
+        font_adjustments = StyleConstants.FONT_ADJUSTMENTS
         self._font_settings = {
             'family': None,        # Police utilisée (None = police système par défaut)
-            'base_size': 12,       # Taille du texte des postes dans les cellules 
-            'header_size': 14,     # Taille des en-têtes de mois
-            'period_size': 10,     # Taille des en-têtes de période (J, M, AM, S)
-            'weekday_size': 9,     # Taille des jours de la semaine (L, M, M, J, V, S, D)
+            'base_size': int(12 * font_adjustments['base_size_factor']),       # Taille du texte des postes dans les cellules 
+            'header_size': int(14 * font_adjustments['header_size_factor']),   # Taille des en-têtes de mois
+            'period_size': int(10 * font_adjustments['period_size_factor']),   # Taille des en-têtes de période (J, M, AM, S)
+            'weekday_size': int(9 * font_adjustments['weekday_size_factor']),  # Taille des jours de la semaine (L, M, M, J, V, S, D)
             'bold_posts': True     # Activation/désactivation du gras pour les postes
         }
         
@@ -249,7 +251,14 @@ class PlanningTableComponent(QTableWidget):
                    Doit inclure les clés "base", "primary", "secondary"
                    Chaque type doit avoir les contextes "normal" et "weekend"
         """
-        self.current_colors = colors
+        # Appliquer les ajustements de couleur spécifiques à la plateforme
+        adjusted_colors = {}
+        for color_type, contexts in colors.items():
+            adjusted_colors[color_type] = {}
+            for context, color in contexts.items():
+                adjusted_colors[color_type][context] = PlatformHelper.adjust_color_for_platform(color)
+        
+        self.current_colors = adjusted_colors
         
     def set_cell_renderer(self, renderer: Callable[[date, int, Any], Tuple[str, Dict]]):
         """

@@ -1,12 +1,115 @@
 # © 2024 HILAL Arkane. Tous droits réservés.
 # gui/styles.py
 
-from PyQt6.QtGui import QColor
+import sys
+import platform
+from PyQt6.QtGui import QColor, QGuiApplication, QScreen
+from PyQt6.QtCore import QOperatingSystemVersion, QSysInfo
+
+class PlatformHelper:
+    """Helper class to detect platform and screen properties for cross-platform compatibility."""
+    
+    @staticmethod
+    def get_platform():
+        """Détecte la plateforme actuelle (Windows, macOS, Linux)."""
+        if sys.platform.startswith('win'):
+            return 'Windows'
+        elif sys.platform.startswith('darwin'):
+            return 'macOS'
+        elif sys.platform.startswith('linux'):
+            return 'Linux'
+        else:
+            return 'Unknown'
+    
+    @staticmethod
+    def get_dpi_scale_factor():
+        """Calcule le facteur d'échelle DPI pour l'écran principal."""
+        try:
+            # Obtenir l'écran principal
+            screen = QGuiApplication.primaryScreen()
+            if screen:
+                # Obtenir le facteur d'échelle logique
+                logical_dpi = screen.logicalDotsPerInch()
+                # DPI de référence (96 pour Windows, 72 pour macOS)
+                reference_dpi = 72.0 if sys.platform.startswith('darwin') else 96.0
+                return logical_dpi / reference_dpi
+            return 1.0
+        except Exception:
+            # En cas d'erreur, retourner 1.0 comme valeur par défaut
+            return 1.0
+    
+    @staticmethod
+    def get_platform_font_adjustments():
+        """Retourne les ajustements de taille de police spécifiques à la plateforme."""
+        platform = PlatformHelper.get_platform()
+        if platform == 'Windows':
+            # Sur Windows, réduire légèrement les tailles de police
+            return {
+                'base_size_factor': 0.9,
+                'header_size_factor': 0.85,
+                'period_size_factor': 0.9,
+                'weekday_size_factor': 0.9
+            }
+        elif platform == 'macOS':
+            # Sur macOS, utiliser les tailles par défaut
+            return {
+                'base_size_factor': 1.0,
+                'header_size_factor': 1.0,
+                'period_size_factor': 1.0,
+                'weekday_size_factor': 1.0
+            }
+        else:
+            # Pour Linux et autres plateformes
+            return {
+                'base_size_factor': 0.95,
+                'header_size_factor': 0.9,
+                'period_size_factor': 0.95,
+                'weekday_size_factor': 0.95
+            }
+    
+    @staticmethod
+    def get_platform_color_adjustments():
+        """Retourne les ajustements de couleur spécifiques à la plateforme."""
+        platform = PlatformHelper.get_platform()
+        if platform == 'Windows':
+            # Sur Windows, augmenter légèrement la saturation des couleurs
+            return {
+                'color_saturation_factor': 1.1,
+                'force_explicit_colors': True
+            }
+        else:
+            # Pour macOS et autres plateformes
+            return {
+                'color_saturation_factor': 1.0,
+                'force_explicit_colors': False
+            }
+    
+    @staticmethod
+    def adjust_color_for_platform(color):
+        """Ajuste une couleur pour la plateforme actuelle."""
+        adjustments = PlatformHelper.get_platform_color_adjustments()
+        
+        # Si nous n'avons pas besoin d'ajuster la couleur, la retourner telle quelle
+        if adjustments['color_saturation_factor'] == 1.0 and not adjustments['force_explicit_colors']:
+            return color
+        
+        # Convertir en HSL pour ajuster la saturation
+        h, s, l, a = color.getHslF()
+        
+        # Ajuster la saturation
+        s = min(1.0, s * adjustments['color_saturation_factor'])
+        
+        # Créer une nouvelle couleur avec la saturation ajustée
+        adjusted_color = QColor()
+        adjusted_color.setHslF(h, s, l, a)
+        
+        return adjusted_color
 
 class ColorSystem:
     def __init__(self):
-        # Palette optimisée pour l'accessibilité
-        self.colors = {
+        # Palette optimisée pour l'accessibilité avec ajustements spécifiques à la plateforme
+        # Couleurs de base
+        base_colors = {
             'primary': QColor('#1A5A96'),        # Bleu principal
             'secondary': QColor('#505A64'),      # Gris foncé
             'success': QColor('#2E8540'),        # Vert succès
@@ -16,57 +119,80 @@ class ColorSystem:
             'light': QColor('#F5F7FA'),          # Gris très pâle
             'dark': QColor('#2C3E50'),           # Gris très foncé
             'window_background': QColor('#F5F7FA'), # Fond d'application
-            
-            'text': {
-                'primary': QColor('#2C3E50'),    # Texte principal
-                'secondary': QColor('#505A64'),  # Texte secondaire
-                'light': QColor('#FFFFFF'),      # Texte clair
-                'dark': QColor('#1A1A1A'),       # Texte foncé
-                'disabled': QColor('#A0AEC0')    # Texte désactivé
-            },
-            
-            'container': {
-                'background': QColor('#FFFFFF'), # Fond de conteneur
-                'border': QColor('#CBD5E1'),     # Bordure de conteneur
-                'hover': QColor('#E9EEF4'),      # Effet de survol
-                'disabled': QColor('#EDF2F7')    # Conteneur désactivé
-            },
-            
-            'table': {
-                'header': QColor('#C6D1E1'),     # En-tête de tableau
-                'border': QColor('#B4C2D3'),     # Bordure de tableau
-                'hover': QColor('#D8E1ED'),      # Ligne survolée
-                'selected': QColor('#B8C7DB'),   # Ligne sélectionnée
-                'alternate': QColor('#E2E8F0'),  # Ligne alternée
-                'background': QColor('#EDF2F7')  # Fond de tableau
-            },
-            
-            'focus': {
-                'outline': QColor('#1A5A96')     # Contour de focus
-            },
-            
             'weekend': QColor('#E2E8F0'),        # Fond pour les weekends (gris pâle)
             'weekday': QColor('#FFFFFF'),        # Fond pour les jours de semaine
             'available': QColor('#D4EDDA'),      # Disponibilité
-            
-            'desiderata': {
-                'primary': {
-                    'normal': QColor('#FFD4D4'),  # Rouge clair pour jours normaux
-                    'weekend': QColor('#FFA8A8')  # Rouge plus foncé pour weekends
-                },
-                'secondary': {
-                    'normal': QColor('#D4E4FF'),  # Bleu clair pour jours normaux
-                    'weekend': QColor('#A8C8FF')  # Bleu plus foncé pour weekends
-                }
+        }
+        
+        # Couleurs de texte
+        text_colors = {
+            'primary': QColor('#2C3E50'),    # Texte principal
+            'secondary': QColor('#505A64'),  # Texte secondaire
+            'light': QColor('#FFFFFF'),      # Texte clair
+            'dark': QColor('#1A1A1A'),       # Texte foncé
+            'disabled': QColor('#A0AEC0')    # Texte désactivé
+        }
+        
+        # Couleurs de conteneur
+        container_colors = {
+            'background': QColor('#FFFFFF'), # Fond de conteneur
+            'border': QColor('#CBD5E1'),     # Bordure de conteneur
+            'hover': QColor('#E9EEF4'),      # Effet de survol
+            'disabled': QColor('#EDF2F7')    # Conteneur désactivé
+        }
+        
+        # Couleurs de tableau
+        table_colors = {
+            'header': QColor('#C6D1E1'),     # En-tête de tableau
+            'border': QColor('#B4C2D3'),     # Bordure de tableau
+            'hover': QColor('#D8E1ED'),      # Ligne survolée
+            'selected': QColor('#B8C7DB'),   # Ligne sélectionnée
+            'alternate': QColor('#E2E8F0'),  # Ligne alternée
+            'background': QColor('#EDF2F7')  # Fond de tableau
+        }
+        
+        # Couleurs de focus
+        focus_colors = {
+            'outline': QColor('#1A5A96')     # Contour de focus
+        }
+        
+        # Couleurs de desiderata
+        desiderata_colors = {
+            'primary': {
+                'normal': QColor('#FFD4D4'),  # Rouge clair pour jours normaux
+                'weekend': QColor('#FFA8A8')  # Rouge plus foncé pour weekends
             },
-            
-            # Couleurs pour les différents types de postes
-            'post_types': {
-                'consultation': QColor('#D0E2F3'),  # Bleu pâle pour consultations
-                'visite': QColor('#D4EDDA'),        # Vert pâle pour visites
-                'garde': QColor('#E2D4ED')          # Violet pâle pour gardes
+            'secondary': {
+                'normal': QColor('#D4E4FF'),  # Bleu clair pour jours normaux
+                'weekend': QColor('#A8C8FF')  # Bleu plus foncé pour weekends
             }
         }
+        
+        # Couleurs pour les différents types de postes
+        post_type_colors = {
+            'consultation': QColor('#D0E2F3'),  # Bleu pâle pour consultations
+            'visite': QColor('#D4EDDA'),        # Vert pâle pour visites
+            'garde': QColor('#E2D4ED')          # Violet pâle pour gardes
+        }
+        
+        # Appliquer les ajustements de couleur spécifiques à la plateforme
+        self.colors = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in base_colors.items()}
+        
+        # Ajouter les dictionnaires de couleurs imbriqués avec ajustements
+        self.colors['text'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in text_colors.items()}
+        self.colors['container'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in container_colors.items()}
+        self.colors['table'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in table_colors.items()}
+        self.colors['focus'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in focus_colors.items()}
+        
+        # Traiter les couleurs de desiderata (structure imbriquée à deux niveaux)
+        self.colors['desiderata'] = {}
+        for priority, contexts in desiderata_colors.items():
+            self.colors['desiderata'][priority] = {}
+            for context, color in contexts.items():
+                self.colors['desiderata'][priority][context] = PlatformHelper.adjust_color_for_platform(color)
+        
+        # Ajouter les couleurs des types de postes
+        self.colors['post_types'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in post_type_colors.items()}
         
         # Styles pour les boutons et autres éléments
         self.styles = {
@@ -331,8 +457,13 @@ class ColorSystem:
 class StyleConstants:
     """Constants for styling the application."""
     
-    # Facteur d'échelle global (pourrait être ajusté en fonction de la résolution)
-    SCALE_FACTOR = 1.0
+    # Facteur d'échelle global basé sur la plateforme et la résolution
+    PLATFORM = PlatformHelper.get_platform()
+    DPI_SCALE = PlatformHelper.get_dpi_scale_factor()
+    FONT_ADJUSTMENTS = PlatformHelper.get_platform_font_adjustments()
+    
+    # Facteur d'échelle combiné (plateforme + résolution)
+    SCALE_FACTOR = DPI_SCALE
     
     # Espacement proportionnel à l'échelle
     SPACING = {
