@@ -16,7 +16,7 @@ import os
 import logging
 from gui.components.planning_table_component import PlanningTableComponent
 import codecs
-from gui.styles import color_system, ACTION_BUTTON_STYLE, ADD_BUTTON_STYLE, EDIT_DELETE_BUTTON_STYLE, GLOBAL_STYLE, DESIDERATA_TABLE_STYLE
+from gui.styles import color_system, ACTION_BUTTON_STYLE, ADD_BUTTON_STYLE, EDIT_DELETE_BUTTON_STYLE, GLOBAL_STYLE, DESIDERATA_TABLE_STYLE, PlatformHelper
 
 
 logger = logging.getLogger(__name__)
@@ -194,7 +194,7 @@ class DesiderataCalendarWidget(PlanningTableComponent):
                 new_color = self.desiderata_colors[priority]['weekend' if is_special_day else 'normal']
         
         # Mettre à jour la cellule
-        item.setBackground(QBrush(new_color))
+        PlatformHelper.apply_background_color(item, new_color)
         
     def mousePressEvent(self, event):
         """Gestion des clics de souris pour les deux types de desiderata"""
@@ -306,7 +306,7 @@ class DesiderataCalendarWidget(PlanningTableComponent):
                 if date_val and period and 1 <= period <= 3:
                     is_special_day = self._is_special_day(date_val)
                     base_color = self.desiderata_colors['base']['weekend' if is_special_day else 'normal']
-                    item.setBackground(QBrush(base_color))
+                    PlatformHelper.apply_background_color(item, base_color)
         
         # Appliquer les desiderata
         for d in desiderata:
@@ -397,7 +397,7 @@ class DesiderataCalendarWidget(PlanningTableComponent):
                 if date_val:
                     is_special_day = self._is_special_day(date_val)
                     base_color = self.desiderata_colors['base']['weekend' if is_special_day else 'normal']
-                    item.setBackground(QBrush(base_color))
+                    PlatformHelper.apply_background_color(item, base_color)
 
     def is_bridge_day(self, date):
         """Détermine si un jour est un pont"""
@@ -784,24 +784,24 @@ class DesiderataManagementWidget(QWidget):
                 # Ajouter le nom avec style selon le type de personne
                 name_item = QTableWidgetItem(name)
                 if any(cat.name == name for cat in self.cats):
-                    name_item.setBackground(QBrush(QColor(200, 255, 200)))  # Vert clair pour les CAT
+                    PlatformHelper.apply_background_color(name_item, QColor(200, 255, 200))  # Vert clair pour les CAT
                 elif any(doc.name == name and doc.half_parts == 1 for doc in self.doctors):
-                    name_item.setBackground(QBrush(QColor(255, 255, 200)))  # Jaune clair pour les mi-temps
+                    PlatformHelper.apply_background_color(name_item, QColor(255, 255, 200))  # Jaune clair pour les mi-temps
                 self.stats_table.setItem(row, 0, name_item)
                 
                 # Ajouter le pourcentage total avec fond rouge
                 total_item = QTableWidgetItem(f"{total_pct:.2f}%")
-                total_item.setBackground(QBrush(QColor(255, 200, 200)))  # Fond rouge clair
+                PlatformHelper.apply_background_color(total_item, QColor(255, 200, 200))  # Fond rouge clair
                 self.stats_table.setItem(row, 1, total_item)
                 
                 # Ajouter le pourcentage primaire en rouge sur fond blanc
                 primary_item = QTableWidgetItem(f"{primary_pct:.2f}%")
-                primary_item.setForeground(QBrush(QColor(255, 0, 0)))  # Texte rouge
+                PlatformHelper.apply_foreground_color(primary_item, QColor(255, 0, 0))  # Texte rouge
                 self.stats_table.setItem(row, 2, primary_item)
                 
                 # Ajouter le pourcentage secondaire en bleu sur fond blanc
                 secondary_item = QTableWidgetItem(f"{secondary_pct:.2f}%")
-                secondary_item.setForeground(QBrush(QColor(0, 0, 255)))  # Texte bleu
+                PlatformHelper.apply_foreground_color(secondary_item, QColor(0, 0, 255))  # Texte bleu
                 self.stats_table.setItem(row, 3, secondary_item)
 
             # Mettre à jour les en-têtes et ajuster les colonnes
@@ -1097,7 +1097,7 @@ class CriticalPeriodsWindow(QDialog):
             f"{date.strftime('%d/%m/%Y')} - {period_name}\n"
             f"{unavailable_count}/{total_personnel} ({percentage:.0f}% indisponibles)"
         )
-        header_item.setBackground(QBrush(QColor(240, 240, 240)))
+        PlatformHelper.apply_background_color(header_item, QColor(240, 240, 240))
         header_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         self.availability_list.setSpan(0, 0, 1, 2)
         self.availability_list.setItem(0, 0, header_item)
@@ -1131,7 +1131,7 @@ class CriticalPeriodsWindow(QDialog):
             )
             status_item = QTableWidgetItem("Disponible" if is_available else "Indisponible")
             color = QColor(150, 255, 150) if is_available else QColor(255, 150, 150)
-            status_item.setBackground(QBrush(color))
+            PlatformHelper.apply_background_color(status_item, color)
             status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.availability_list.setItem(row, 1, status_item)
 

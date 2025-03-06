@@ -381,7 +381,8 @@ class AvailablePostList(QTableWidget):
                 
                 status_item = QTableWidgetItem(status)
                 status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                status_item.setBackground(QBrush(color))
+                from gui.styles import PlatformHelper
+                PlatformHelper.apply_background_color(status_item, color)
                 self.setItem(row, 1, status_item)
 
                 # Si c'est un poste avec force_zero_count, toujours ajouter une ligne disponible
@@ -395,7 +396,8 @@ class AvailablePostList(QTableWidget):
                     
                     status_item = QTableWidgetItem("Disponible")
                     status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                    status_item.setBackground(QBrush(QColor('#D1E6D6')))
+                    from gui.styles import PlatformHelper
+                    PlatformHelper.apply_background_color(status_item, QColor('#D1E6D6'))
                     self.setItem(row, 1, status_item)
             else:
                 # Pour les postes standards, afficher une ligne par quota
@@ -420,7 +422,8 @@ class AvailablePostList(QTableWidget):
                     
                     status_item = QTableWidgetItem(status)
                     status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                    status_item.setBackground(QBrush(color))
+                    from gui.styles import PlatformHelper
+                    PlatformHelper.apply_background_color(status_item, color)
                     self.setItem(row, 1, status_item)
 
     def get_available_posts(self, date, period, person):
@@ -1314,9 +1317,11 @@ class AttributionHistoryWidget(QTableWidget):
                         guard_item = QTableWidgetItem(guard_type)
                         color = color_system.colors.get('available')
                         if isinstance(color, QColor):
-                            guard_item.setBackground(QBrush(color))
+                            from gui.styles import PlatformHelper
+                            PlatformHelper.apply_background_color(guard_item, color)
                         else:
-                            guard_item.setBackground(QBrush(QColor('#D1E6D6')))
+                            from gui.styles import PlatformHelper
+                            PlatformHelper.apply_background_color(guard_item, QColor('#D1E6D6'))
                         self.setItem(row, 1, guard_item)
                         
                         # Nom du médecin

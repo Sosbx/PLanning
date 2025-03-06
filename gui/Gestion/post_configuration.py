@@ -1688,7 +1688,8 @@ class PostConfigurationWidget(QWidget):
             # Nom du poste
             name_item = QTableWidgetItem(post_type)
             if post_type in self.custom_posts:
-                name_item.setBackground(QBrush(self.custom_posts[post_type].color))
+                from gui.styles import PlatformHelper
+                PlatformHelper.apply_background_color(name_item, self.custom_posts[post_type].color)
                 
             # Pour NL dans la config CAT en semaine, modifier le texte
             if post_type == "NL" and "CAT" in day_type and "Semaine" in day_type:
@@ -1898,7 +1899,8 @@ class PostConfigurationWidget(QWidget):
                     # Création et ajout du nom du poste
                     name_item = QTableWidgetItem(post_type)
                     if post_type in self.custom_posts:
-                        name_item.setBackground(QBrush(self.custom_posts[post_type].color))
+                        from gui.styles import PlatformHelper
+                        PlatformHelper.apply_background_color(name_item, self.custom_posts[post_type].color)
                     table.setItem(row, 0, name_item)
                     
                     # SpinBox pour le nombre
@@ -2092,7 +2094,8 @@ class PostConfigurationWidget(QWidget):
             # Colorer les postes personnalisés
             if post_type in [p.name for p in custom_posts_for_type]:
                 custom_post = next(p for p in custom_posts_for_type if p.name == post_type)
-                name_item.setBackground(QBrush(custom_post.color))
+                from gui.styles import PlatformHelper
+                PlatformHelper.apply_background_color(name_item, custom_post.color)
             
             # SpinBox pour le nombre
             spinbox = CustomSpinBox()
@@ -2145,7 +2148,8 @@ class PostConfigurationWidget(QWidget):
             name_item = QTableWidgetItem(post_type)
             if post_type in self.custom_posts:
                 custom_post = self.custom_posts[post_type]
-                name_item.setBackground(QBrush(custom_post.color))
+                from gui.styles import PlatformHelper
+                PlatformHelper.apply_background_color(name_item, custom_post.color)
                 # Ajouter les boutons d'action
                 actions_widget = QWidget()
                 actions_layout = QHBoxLayout(actions_widget)

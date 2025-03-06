@@ -855,8 +855,9 @@ class PlanningViewWidget(QWidget):
                                 break
 
                 # Appliquer la couleur
+                from gui.styles import PlatformHelper
                 for col in range(self.global_view.columnCount()):
-                    self.global_view.item(row, col).setBackground(QBrush(base_color))
+                    PlatformHelper.apply_background_color(self.global_view.item(row, col), base_color)
 
         self.global_view.resizeColumnsToContents()
         

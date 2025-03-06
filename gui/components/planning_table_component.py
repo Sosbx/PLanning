@@ -165,7 +165,8 @@ class PlanningTableComponent(QTableWidget):
                 
                 # Appliquer une couleur de fond légère pour les en-têtes de période
                 if col > 0:  # Toutes les colonnes sauf "Jour"
-                    header_item.setBackground(QBrush(QColor(245, 245, 245)))  # Gris très clair
+                    from gui.styles import PlatformHelper
+                    PlatformHelper.apply_background_color(header_item, QColor(245, 245, 245))  # Gris très clair
         
         # Style des en-têtes de mois
         month_font = QFont()
@@ -194,7 +195,8 @@ class PlanningTableComponent(QTableWidget):
         
         # Cellule vide pour la colonne "Jour"
         month_header_item = QTableWidgetItem("")
-        month_header_item.setBackground(QBrush(QColor(255, 255, 255)))  # Blanc
+        from gui.styles import PlatformHelper
+        PlatformHelper.apply_background_color(month_header_item, QColor(255, 255, 255))  # Blanc
         self.setItem(0, 0, month_header_item)
         
         # Pour chaque mois, créer une cellule fusionnée
@@ -205,7 +207,8 @@ class PlanningTableComponent(QTableWidget):
             # Créer l'item pour l'en-tête de mois
             month_header_item = QTableWidgetItem(month_name)
             month_header_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            month_header_item.setBackground(QBrush(month_color))
+            from gui.styles import PlatformHelper
+            PlatformHelper.apply_background_color(month_header_item, month_color)
             month_header_item.setFont(month_font)
             
             # Colonne de début pour ce mois
@@ -308,7 +311,8 @@ class PlanningTableComponent(QTableWidget):
                         "weekend" if is_weekend else "normal", 
                         QColor(220, 220, 220) if is_weekend else QColor(255, 255, 255)
                     )
-                    item.setBackground(QBrush(background_color))
+                    from gui.styles import PlatformHelper
+                    PlatformHelper.apply_background_color(item, background_color)
                     
                     # Stocker la date et la période dans les données de l'élément
                     item.setData(Qt.ItemDataRole.UserRole, {"date": day_date, "period": period})
@@ -347,9 +351,11 @@ class PlanningTableComponent(QTableWidget):
             item.setFont(font)
             
             if is_holiday:
-                item.setForeground(QBrush(QColor(180, 0, 0)))  # Rouge pour les jours fériés
+                from gui.styles import PlatformHelper
+                PlatformHelper.apply_foreground_color(item, QColor(180, 0, 0))  # Rouge pour les jours fériés
             else:
-                item.setForeground(QBrush(QColor(0, 0, 180)))  # Bleu pour les week-ends
+                from gui.styles import PlatformHelper
+                PlatformHelper.apply_foreground_color(item, QColor(0, 0, 180))  # Bleu pour les week-ends
         else:
             font.setBold(True)  # Mettre toute la cellule en gras pour simplifier
             item.setFont(font)
@@ -441,10 +447,12 @@ class PlanningTableComponent(QTableWidget):
         
         # Mettre à jour les couleurs si spécifiées
         if background_color:
-            item.setBackground(QBrush(background_color))
+            from gui.styles import PlatformHelper
+            PlatformHelper.apply_background_color(item, background_color)
         
         if foreground_color:
-            item.setForeground(QBrush(foreground_color))
+            from gui.styles import PlatformHelper
+            PlatformHelper.apply_foreground_color(item, foreground_color)
             
         # Mettre à jour la police avec les paramètres de base si aucune police n'est spécifiée
         if not font:

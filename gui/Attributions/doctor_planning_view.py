@@ -416,11 +416,13 @@ class DoctorPlanningView(QWidget):
             
             # Style pour les postes non assignés
             if assignee == "Non assigné":
-                doctor_item.setForeground(QBrush(QColor(150, 150, 150)))
-                doctor_item.setBackground(QBrush(QColor(255, 240, 240)))  # Fond légèrement rouge
+                from gui.styles import PlatformHelper
+                PlatformHelper.apply_foreground_color(doctor_item, QColor(150, 150, 150))
+                PlatformHelper.apply_background_color(doctor_item, QColor(255, 240, 240))  # Fond légèrement rouge
                 doctor_item.setToolTip("Ce poste n'est pas encore assigné")
             else:
-                doctor_item.setBackground(QBrush(QColor(240, 255, 240)))  # Fond légèrement vert
+                from gui.styles import PlatformHelper
+                PlatformHelper.apply_background_color(doctor_item, QColor(240, 255, 240))  # Fond légèrement vert
                 
             self.detail_table.setItem(i, 1, doctor_item)
 
@@ -542,7 +544,8 @@ class DoctorPlanningView(QWidget):
             for i, name in enumerate(sorted(available_personnel)):
                 item = QTableWidgetItem(name)
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                item.setBackground(QBrush(AVAILABLE_COLOR))
+                from gui.styles import PlatformHelper
+                PlatformHelper.apply_background_color(item, AVAILABLE_COLOR)
                 
                 # Distinguer les CAT visuellement
                 if any(cat.name == name for cat in self.cats):
@@ -592,7 +595,8 @@ class DoctorPlanningView(QWidget):
             for i, name in enumerate(sorted(secondary_personnel)):
                 item = QTableWidgetItem(name)
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                item.setBackground(QBrush(SECONDARY_DESIDERATA_COLOR))
+                from gui.styles import PlatformHelper
+                PlatformHelper.apply_background_color(item, SECONDARY_DESIDERATA_COLOR)
                 if any(cat.name == name for cat in self.cats):
                     font = item.font()
                     font.setBold(True)

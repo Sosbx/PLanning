@@ -77,9 +77,11 @@ class PostAttributionHistoryDialog(QDialog):
             action_item = QTableWidgetItem(action_type)
             action_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             if "Suppression" in action_type:
-                action_item.setBackground(QBrush(color_system.get_color('danger')))
+                from gui.styles import PlatformHelper
+                PlatformHelper.apply_background_color(action_item, color_system.get_color('danger'))
             else:
-                action_item.setBackground(QBrush(color_system.get_color('available')))
+                from gui.styles import PlatformHelper
+                PlatformHelper.apply_background_color(action_item, color_system.get_color('available'))
             self.history_table.setItem(i, 1, action_item)
             
             # Détails
