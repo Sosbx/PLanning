@@ -301,7 +301,7 @@ class MainWindow(QMainWindow):
         self.tab_widget.addTab(
             self.comparison_view,
             self.create_tab_icon("icons/comparaison.png"),
-            "Comparaison des plannings"
+            "Echanges"
         )
 
     def _init_export_tab(self):

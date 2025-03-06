@@ -1,3 +1,6 @@
+# © 2024 HILAL Arkane. Tous droits réservés.
+# core/Generator/Weekday/Weekday_gen.py
+
 from datetime import datetime, date, timedelta, time
 from typing import List, Dict, Optional, Tuple, Set
 import random

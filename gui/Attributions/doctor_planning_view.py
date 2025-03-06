@@ -286,10 +286,18 @@ class DoctorPlanningView(QWidget):
         
         Args:
             current_date: Date correspondante
-            period: Période (1=Matin, 2=Après-midi, 3=Soir, None=Jour)
+            period: Période (1=Matin, 2=Après-midi, 3=Soir, -1=Jour)
         """
         if not current_date:
             return
+            
+        # Convertir -1 en None pour la compatibilité avec le reste du code
+        if period == -1:
+            period = None
+            
+        # Stocker la date et la période sélectionnées pour pouvoir les réutiliser lors des mises à jour
+        self.selected_date = current_date
+        self.selected_period = period
             
         # Le reste du code est similaire à _on_cell_clicked mais utilise directement
         # current_date et period plutôt que de les calculer à partir de row et col
@@ -695,14 +703,29 @@ class DoctorPlanningView(QWidget):
         start_date = self.planning.start_date
         end_date = self.planning.end_date
         
-        # Configurer les dates du planning
-        self.table.setup_planning_dates(start_date, end_date)
+        # Désactiver les mises à jour de l'interface pendant les modifications
+        self.table.setUpdatesEnabled(False)
         
-        # Remplir les jours de base
-        self.table.populate_days()
-        
-        # Mettre à jour les cellules pour le médecin/CAT sélectionné
-        self._update_cells_for_selected(selected_name)
+        try:
+            # Configurer les dates du planning
+            self.table.setup_planning_dates(start_date, end_date)
+            
+            # Remplir les jours de base
+            self.table.populate_days()
+            
+            # Mettre à jour les cellules pour le médecin/CAT sélectionné
+            self._update_cells_for_selected(selected_name)
+            
+            # Mettre à jour les sections d'information si une cellule est sélectionnée
+            if hasattr(self, 'selected_date') and self.selected_date:
+                # Simuler un clic sur la cellule actuellement sélectionnée pour rafraîchir les informations
+                self._on_cell_clicked_date_period(self.selected_date, self.selected_period)
+        finally:
+            # Réactiver les mises à jour de l'interface
+            self.table.setUpdatesEnabled(True)
+            
+            # Forcer un rafraîchissement visuel
+            self.table.viewport().update()
     
     def _update_cells_for_selected(self, selected_name):
         """

@@ -3,7 +3,7 @@
 
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QScrollArea, QGridLayout, QAbstractScrollArea,
                              QTableWidget, QTableWidgetItem, QComboBox, QMessageBox, QLabel, QDateEdit, QMessageBox,
-                             QSplitter, QHeaderView,QDialog)
+                             QSplitter, QHeaderView,QDialog,QFileDialog)
 from PyQt6.QtCore import Qt, QDate, QEvent, pyqtSignal
 from PyQt6.QtGui import QColor, QBrush, QFont
 from core.Constantes.models import Desiderata, Doctor, CAT
@@ -14,16 +14,18 @@ from datetime import datetime
 import csv
 import os
 import logging
-# Au début du fichier desiderata_management.py, ajoutez ces imports
-import csv
+from gui.components.planning_table_component import PlanningTableComponent
 import codecs
-from datetime import datetime
 from gui.styles import color_system, ACTION_BUTTON_STYLE, ADD_BUTTON_STYLE, EDIT_DELETE_BUTTON_STYLE, GLOBAL_STYLE, DESIDERATA_TABLE_STYLE
-from PyQt6.QtWidgets import QFileDialog
+
 
 logger = logging.getLogger(__name__)
 
-class DesiderataCalendarWidget(QTableWidget):
+class DesiderataCalendarWidget(PlanningTableComponent):
+    """
+    Widget de calendrier pour la gestion des desiderata, héritant du composant
+    PlanningTableComponent pour une cohérence visuelle avec le reste de l'application.
+    """
     def __init__(self, start_date, end_date):
         super().__init__()
         self.start_date = start_date
@@ -32,174 +34,184 @@ class DesiderataCalendarWidget(QTableWidget):
         self.selections = {}
         self.is_selecting = False
         self.current_selection_priority = None
-        self.is_deselecting = False  # Nouveau mode pour la désélection
-        self.init_ui()
-
-    def init_ui(self):
+        self.is_deselecting = False  # Mode pour la désélection
+        self.init_desiderata_ui()
+        
+    def init_desiderata_ui(self):
+        """Initialise l'interface utilisateur spécifique aux desiderata"""
+        # Configurer les en-têtes et propriétés de base du tableau
         self.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.verticalHeader().setVisible(False)
-        self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
         
-        # Appliquer le style spécifique pour les tableaux de desiderata au lieu du style de base
+        # Configurer les dimensions et styles
         self.setStyleSheet(DESIDERATA_TABLE_STYLE)
         
-        self.create_calendar()
+        # Préparer le tableau et configurer les dates
+        self.setup_planning_dates(self.start_date, self.end_date)
+        
+        # Initialiser les couleurs du calendrier pour les desiderata
+        self.desiderata_colors = {
+            'base': {
+                'normal': color_system.colors['weekday'],
+                'weekend': color_system.colors['weekend']
+            },
+            'primary': {
+                'normal': color_system.colors['desiderata']['primary']['normal'],
+                'weekend': color_system.colors['desiderata']['primary']['weekend']
+            },
+            'secondary': {
+                'normal': color_system.colors['desiderata']['secondary']['normal'],
+                'weekend': color_system.colors['desiderata']['secondary']['weekend']
+            }
+        }
+        self.set_colors(self.desiderata_colors)
+        
+        # Remplir le calendrier avec les jours
+        self.populate_days()
+        
+        # Connecter les événements
         self.cellPressed.connect(self.on_cell_pressed)
         self.cellEntered.connect(self.on_cell_entered)
         self.setMouseTracking(True)
         self.viewport().installEventFilter(self)
         
-    
-
-    def create_calendar(self):
-        self.clear()
-        days_abbr = ["L", "M", "M", "J", "V", "S", "D"]
-        months = (self.end_date.year - self.start_date.year) * 12 + self.end_date.month - self.start_date.month + 1
-
-        total_columns = 5 * months  # 5 colonnes pour chaque mois (Jour, Mois, M, AM, S)
-        self.setColumnCount(total_columns)
-        self.setRowCount(31)
-
-        current_date = self.start_date
-        for i in range(months):
-            base_col = i * 5
-            month_name = current_date.strftime("%b")
-            self.setHorizontalHeaderItem(base_col, QTableWidgetItem("Jour"))
-            self.setHorizontalHeaderItem(base_col + 1, QTableWidgetItem(month_name))
-            self.setHorizontalHeaderItem(base_col + 2, QTableWidgetItem("M"))
-            self.setHorizontalHeaderItem(base_col + 3, QTableWidgetItem("AM"))
-            self.setHorizontalHeaderItem(base_col + 4, QTableWidgetItem("S"))
-            current_date += timedelta(days=32)
-            current_date = current_date.replace(day=1)
-
-        current_date = self.start_date
-        while current_date <= self.end_date:
-            row = current_date.day - 1
-            month_col = (current_date.year - self.start_date.year) * 12 + current_date.month - self.start_date.month
-            base_col = month_col * 5
-
-            is_weekend = current_date.weekday() >= 5
-            is_holiday = self.cal.is_holiday(current_date)
-            is_bridge = self.is_bridge_day(current_date)
-            # Utiliser les couleurs de color_system au lieu des valeurs codées en dur
-            background_color = color_system.colors['weekend'] if (is_weekend or is_holiday or is_bridge) else color_system.colors['weekday']
-
-            # Colonne de jour pour chaque mois
-            day_item = QTableWidgetItem(str(current_date.day))
-            day_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            day_item.setBackground(QBrush(background_color))
-            day_item.setForeground(QBrush(color_system.get_color('text', 'primary')))
-            self.setItem(row, base_col, day_item)
-
-            # Colonne du jour de la semaine
-            weekday_item = QTableWidgetItem(days_abbr[current_date.weekday()])
-            weekday_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            weekday_item.setForeground(QBrush(color_system.get_color('text', 'secondary')))
-            weekday_item.setBackground(QBrush(background_color))
-            self.setItem(row, base_col + 1, weekday_item)
-
-            # Colonnes M, AM, S
-            for i in range(3):
-                item = QTableWidgetItem()
-                item.setBackground(QBrush(background_color))
-                item.setForeground(QBrush(color_system.get_color('text', 'primary')))
-                self.setItem(row, base_col + 2 + i, item)
-
-            current_date += timedelta(days=1)
-
-        # Réduire la hauteur des lignes et la largeur des colonnes
-        for row in range(self.rowCount()):
-            self.setRowHeight(row, int(self.rowHeight(row) * 4/6))
-        for col in range(self.columnCount()):
-            self.setColumnWidth(col, int(self.columnWidth(col) * 3/5))
-            
     def update_dates(self, start_date, end_date):
+        """Met à jour les dates du calendrier et préserve les sélections"""
         self.store_selections()  # Stocker les sélections avant de mettre à jour
         self.start_date = start_date
         self.end_date = end_date
-        self.create_calendar()
+        
+        # Sauvegarder le nombre de lignes actuel pour détecter si une nouvelle ligne a été ajoutée
+        old_row_count = self.rowCount()
+        
+        # Mettre à jour les dates et le tableau
+        self.setup_planning_dates(start_date, end_date)
+        self.populate_days()
+        
+        # Vérifier si une nouvelle ligne a été ajoutée et l'enlever si nécessaire
+        if self.rowCount() > old_row_count + 1:  # +1 car on s'attend à ce que setup_planning_dates ajoute une ligne
+            self.removeRow(1)  # Supprimer la ligne en trop (la deuxième ligne, car la première est l'en-tête des mois)
+            
         self.restore_selections()
-
+        
     def store_selections(self):
         """Stocke les sélections actuelles avant une mise à jour"""
         self.selections.clear()
         for row in range(self.rowCount()):
-            for col in range(1, self.columnCount()):
+            for col in range(self.columnCount()):
                 item = self.item(row, col)
-                if item:
-                    priority = self.get_cell_priority(item)
-                    if priority:  # Si la cellule a une priorité (primary ou secondary)
-                        date = self.get_date_from_cell(row, col)
-                        if date:
-                            self.selections[date] = col - (((col - 1) // 4) * 4)
-
+                if not item:
+                    continue
+                    
+                data = item.data(Qt.ItemDataRole.UserRole)
+                if not data or not isinstance(data, dict):
+                    continue
+                    
+                date_val = data.get("date")
+                period = data.get("period")
+                if not date_val or not period or period < 1 or period > 3:
+                    continue
+                    
+                priority = self.get_cell_priority(item)
+                if priority:  # Si la cellule a une priorité (primary ou secondary)
+                    self.selections[(date_val, period)] = priority
+        
     def restore_selections(self):
-        for date, period in self.selections.items():
-            if self.start_date <= date <= self.end_date:
-                row = date.day - 1
-                month_col = (date.year - self.start_date.year) * 12 + date.month - self.start_date.month
-                col = 1 + month_col * 4 + period
-                item = self.item(row, col)
-                if item:
-                    self.toggle_cell(item, force_select=True)
-
-    def get_date_from_cell(self, row, col):
-        month_col = col // 5
-        year = self.start_date.year + (self.start_date.month + month_col - 1) // 12
-        month = (self.start_date.month + month_col - 1) % 12 + 1
-        day = row + 1
-        try:
-            return date(year, month, day)
-        except ValueError:
+        """Restaure les sélections après une mise à jour du calendrier"""
+        for (date_val, period), priority in self.selections.items():
+            if self.start_date <= date_val <= self.end_date and 1 <= period <= 3:
+                self.update_cell(
+                    date_val, 
+                    period, 
+                    "", 
+                    self.desiderata_colors[priority]['weekend' if self._is_special_day(date_val) else 'normal']
+                )
+                
+    def _is_special_day(self, day_date):
+        """Vérifie si le jour est un week-end, un jour férié ou un pont"""
+        return (day_date.weekday() >= 5 or 
+                self.cal.is_holiday(day_date) or 
+                self.is_bridge_day(day_date))
+        
+    def get_cell_priority(self, item):
+        """Détermine la priorité d'une cellule selon sa couleur"""
+        if not item:
             return None
-
-
+            
+        background = item.background().color()
+        
+        # Comparer avec les couleurs définies
+        for priority in ['primary', 'secondary']:
+            for context in ['normal', 'weekend']:
+                if background == self.desiderata_colors[priority][context]:
+                    return priority
+        return None
+        
     def toggle_cell(self, item, force_select=False, priority="primary"):
-        """Toggle une cellule avec la couleur appropriée selon la priorité"""
+        """
+        Bascule l'état d'une cellule avec la couleur appropriée selon la priorité
+        
+        Args:
+            item: L'élément de cellule à modifier
+            force_select: Force la sélection indépendamment de l'état actuel
+            priority: La priorité ('primary' ou 'secondary')
+        """
         if not item:
             return
             
-        col = item.column()
-        row = item.row()
-        date = self.get_date_from_cell(row, col - (col % 5))
-        if not date:
+        # Récupérer les informations de la cellule
+        data = item.data(Qt.ItemDataRole.UserRole)
+        if not data or not isinstance(data, dict):
             return
             
-        is_weekend_or_holiday = date.weekday() >= 5 or self.cal.is_holiday(date) or self.is_bridge_day(date)
+        date_val = data.get("date")
+        period = data.get("period")
+        if not date_val or not period or period < 1 or period > 3:
+            return
+            
+        is_special_day = self._is_special_day(date_val)
         current_priority = self.get_cell_priority(item)
         
         # Déterminer la nouvelle couleur
         if force_select:
             # Forcer la sélection (utilisé lors du chargement des desiderata)
-            new_color = color_system.colors['desiderata'][priority]['weekend' if is_weekend_or_holiday else 'normal']
+            new_color = self.desiderata_colors[priority]['weekend' if is_special_day else 'normal']
         elif self.is_selecting:
             if self.is_deselecting:
                 # Mode désélection : retourner à la couleur de base
-                new_color = color_system.colors['weekend'] if is_weekend_or_holiday else color_system.colors['weekday']
+                new_color = self.desiderata_colors['base']['weekend' if is_special_day else 'normal']
             else:
                 # Mode sélection : appliquer la nouvelle couleur
-                new_color = color_system.colors['desiderata'][priority]['weekend' if is_weekend_or_holiday else 'normal']
+                new_color = self.desiderata_colors[priority]['weekend' if is_special_day else 'normal']
         else:
             # Clic simple : inverser l'état
             if current_priority == priority:
                 # Retourner à la couleur de base
-                new_color = color_system.colors['weekend'] if is_weekend_or_holiday else color_system.colors['weekday']
+                new_color = self.desiderata_colors['base']['weekend' if is_special_day else 'normal']
             else:
                 # Appliquer la nouvelle couleur
-                new_color = color_system.colors['desiderata'][priority]['weekend' if is_weekend_or_holiday else 'normal']
+                new_color = self.desiderata_colors[priority]['weekend' if is_special_day else 'normal']
         
-        # Appliquer la nouvelle couleur
+        # Mettre à jour la cellule
         item.setBackground(QBrush(new_color))
-
+        
     def mousePressEvent(self, event):
-        """Gère les clics de souris pour les deux types de desiderata"""
+        """Gestion des clics de souris pour les deux types de desiderata"""
         item = self.itemAt(event.pos())
         if not item:
+            super().mousePressEvent(event)
             return
 
-        col = item.column()
-        if col % 5 not in [2, 3, 4]:  # Uniquement pour les colonnes M, AM, S
+        # Vérifier si c'est une cellule de période
+        data = item.data(Qt.ItemDataRole.UserRole)
+        if not data or not isinstance(data, dict):
+            super().mousePressEvent(event)
+            return
+            
+        period = data.get("period")
+        if not period or period < 1 or period > 3:
+            super().mousePressEvent(event)
             return
 
         self.is_selecting = True
@@ -212,6 +224,7 @@ class DesiderataCalendarWidget(QTableWidget):
             self.current_selection_priority = "secondary"
             event.accept()
         else:
+            super().mousePressEvent(event)
             return
 
         # Vérifie si on doit passer en mode désélection
@@ -220,150 +233,174 @@ class DesiderataCalendarWidget(QTableWidget):
 
         # Appliquer la sélection
         self.toggle_cell(item, priority=self.current_selection_priority)
-
+        
     def mouseMoveEvent(self, event):
         """Gestion du glissement avec maintien du mode (sélection ou désélection)"""
         if not self.is_selecting:
+            super().mouseMoveEvent(event)
             return
 
         item = self.itemAt(event.pos())
-        if item and item.column() % 5 in [2, 3, 4]:
-            self.toggle_cell(item, priority=self.current_selection_priority)
-
+        if not item:
+            return
+            
+        # Vérifier si c'est une cellule de période
+        data = item.data(Qt.ItemDataRole.UserRole)
+        if not data or not isinstance(data, dict):
+            return
+            
+        period = data.get("period")
+        if not period or period < 1 or period > 3:
+            return
+            
+        self.toggle_cell(item, priority=self.current_selection_priority)
+        
     def mouseReleaseEvent(self, event):
         """Réinitialisation des états de sélection"""
         self.is_selecting = False
         self.current_selection_priority = None
         self.is_deselecting = False
-
-    def get_cell_priority(self, item) -> str:
-        """Détermine la priorité d'une cellule selon sa couleur"""
-        if not item:
-            return None
-            
-        color = item.background().color()
+        super().mouseReleaseEvent(event)
         
-        # Obtenir directement les couleurs du système
-        primary_colors = [
-            color_system.colors['desiderata']['primary']['weekend'],
-            color_system.colors['desiderata']['primary']['normal']
-        ]
-        secondary_colors = [
-            color_system.colors['desiderata']['secondary']['weekend'],
-            color_system.colors['desiderata']['secondary']['normal']
-        ]
-        
-        if color in primary_colors:
-            return "primary"
-        elif color in secondary_colors:
-            return "secondary"
-        return None
-
     def get_selected_desiderata(self):
         """Retourne les desiderata sélectionnés avec leur priorité"""
         desiderata = []
+        
         for row in range(self.rowCount()):
-            for col in range(2, self.columnCount(), 5):
-                date = self.get_date_from_cell(row, col - 2)
-                if date is None or date > self.end_date:
+            for col in range(self.columnCount()):
+                item = self.item(row, col)
+                if not item:
                     continue
-
-                for i in range(3):
-                    item = self.item(row, col + i)
-                    if item:
-                        priority = self.get_cell_priority(item)
-                        if priority:  # Si une couleur de desiderata est présente
-                            desiderata.append((date, i + 1, priority))
+                    
+                priority = self.get_cell_priority(item)
+                if not priority:
+                    continue
+                    
+                data = item.data(Qt.ItemDataRole.UserRole)
+                if not data or not isinstance(data, dict):
+                    continue
+                    
+                date_val = data.get("date")
+                period = data.get("period")
+                if date_val and period and 1 <= period <= 3:
+                    desiderata.append((date_val, period, priority))
+                    
         return desiderata
-
-
+        
     def set_desiderata(self, desiderata):
         """Configure les desiderata avec rétrocompatibilité pour l'ancien format"""
-        self.reset_to_initial_state()
+        # Réinitialiser le tableau
+        for row in range(self.rowCount()):
+            for col in range(self.columnCount()):
+                item = self.item(row, col)
+                if not item:
+                    continue
+                    
+                data = item.data(Qt.ItemDataRole.UserRole)
+                if not data or not isinstance(data, dict):
+                    continue
+                    
+                date_val = data.get("date")
+                period = data.get("period")
+                
+                if date_val and period and 1 <= period <= 3:
+                    is_special_day = self._is_special_day(date_val)
+                    base_color = self.desiderata_colors['base']['weekend' if is_special_day else 'normal']
+                    item.setBackground(QBrush(base_color))
         
+        # Appliquer les desiderata
         for d in desiderata:
             # Vérification du type de l'objet Desiderata
             if isinstance(d, Desiderata):
-                date = d.start_date
+                date_val = d.start_date
                 period = d.period
                 priority = getattr(d, 'priority', 'primary')
             elif isinstance(d, tuple):
                 if len(d) == 2:  # Ancien format
-                    date, period = d
+                    date_val, period = d
                     priority = 'primary'
                 elif len(d) == 3:  # Nouveau format
-                    date, period, priority = d
+                    date_val, period, priority = d
                 else:
                     continue
             else:
                 continue
 
-            if self.start_date <= date <= self.end_date:
-                row = date.day - 1
-                month_col = (date.year - self.start_date.year) * 12 + date.month - self.start_date.month
-                base_col = month_col * 5
-                col = base_col + 2 + (period - 1)
-                
-                item = self.item(row, col)
-                if item:
-                    self.toggle_cell(item, force_select=True, priority=priority)
-
-
-    def on_cell_pressed(self, row, column):
-        if column % 5 in [2, 3, 4]:
-            item = self.item(row, column)
-            if item:
-                self.is_selecting = True
-                self.selection_state = item.background().color() != self.get_desiderata_color(item)
-                self.toggle_cell(item)
-
-    def on_cell_entered(self, row, column):
-        if self.is_selecting and column % 5 in [2, 3, 4]:
-            item = self.item(row, column)
-            if item:
-                self.toggle_cell(item)
-
+            if self.start_date <= date_val <= self.end_date and 1 <= period <= 3:
+                # Appliquer directement la couleur à la cellule appropriée
+                is_special_day = self._is_special_day(date_val)
+                color = self.desiderata_colors[priority]['weekend' if is_special_day else 'normal']
+                self.update_cell(date_val, period, "", color)
+        
+    def on_cell_pressed(self, row, col):
+        """Gestion du clic sur une cellule"""
+        item = self.item(row, col)
+        if not item:
+            return
+            
+        # Vérifier si c'est une cellule de période
+        data = item.data(Qt.ItemDataRole.UserRole)
+        if not data or not isinstance(data, dict):
+            return
+            
+        period = data.get("period")
+        if not period or period < 1 or period > 3:
+            return
+            
+        self.is_selecting = True
+        current_priority = self.get_cell_priority(item)
+        self.is_deselecting = (current_priority == "primary")  # Par défaut, desélection pour le clic gauche
+        self.toggle_cell(item)
+        
+    def on_cell_entered(self, row, col):
+        """Gestion du survol de cellule lorsque le bouton est maintenu"""
+        if not self.is_selecting:
+            return
+            
+        item = self.item(row, col)
+        if not item:
+            return
+            
+        # Vérifier si c'est une cellule de période
+        data = item.data(Qt.ItemDataRole.UserRole)
+        if not data or not isinstance(data, dict):
+            return
+            
+        period = data.get("period")
+        if not period or period < 1 or period > 3:
+            return
+            
+        self.toggle_cell(item, priority=self.current_selection_priority)
+        
     def eventFilter(self, obj, event):
-        if obj == self.viewport():
-            if event.type() == QEvent.Type.MouseButtonRelease:
-                self.is_selecting = False
+        """Filtre d'événements pour gérer le relâchement du bouton de souris"""
+        if obj == self.viewport() and event.type() == QEvent.Type.MouseButtonRelease:
+            self.is_selecting = False
+            self.current_selection_priority = None
+            self.is_deselecting = False
         return super().eventFilter(obj, event)
-
-
-    def get_desiderata_color(self, item):
-        col = item.column()
-        row = item.row()
-        date = self.get_date_from_cell(row, col - (col % 5))
-        is_special_day = date and (date.weekday() >= 5 or self.cal.is_holiday(date) or self.is_bridge_day(date))
-        return QColor(255, 150, 150) if is_special_day else QColor(255, 200, 200)
-
-
-
-
-    
-    def reset_to_initial_state(self):
+        
+    def clear_all_selections(self):
         """Réinitialise toutes les cellules à leur couleur de base"""
         for row in range(self.rowCount()):
-            for col in range(1, self.columnCount()):
+            for col in range(self.columnCount()):
                 item = self.item(row, col)
-                if item:
-                    date = self.get_date_from_cell(row, col)
-                    if date:
-                        is_weekend = date.weekday() >= 5
-                        is_holiday = self.cal.is_holiday(date)
-                        is_bridge = self.is_bridge_day(date)
-                        # Utiliser les couleurs de color_system
-                        background_color = color_system.colors['weekend'] if (is_weekend or is_holiday or is_bridge) else color_system.colors['weekday']
-                        item.setBackground(QBrush(background_color))
-
-
-    def clear_all_selections(self):
-        self.reset_to_initial_state()
-
-    
-
+                if not item:
+                    continue
+                    
+                data = item.data(Qt.ItemDataRole.UserRole)
+                if not data or not isinstance(data, dict):
+                    continue
+                    
+                date_val = data.get("date")
+                
+                if date_val:
+                    is_special_day = self._is_special_day(date_val)
+                    base_color = self.desiderata_colors['base']['weekend' if is_special_day else 'normal']
+                    item.setBackground(QBrush(base_color))
 
     def is_bridge_day(self, date):
+        """Détermine si un jour est un pont"""
         # 1) Lundi avant un mardi férié
         if date.weekday() == 0 and self.cal.is_holiday(date + timedelta(days=1)):
             return True
@@ -388,7 +425,11 @@ class DesiderataCalendarWidget(QTableWidget):
 
     
 class DesiderataManagementWidget(QWidget):
-    desiderata_updated = pyqtSignal()  # Signal for desiderata updates
+    """
+    Widget de gestion des desiderata utilisant la nouvelle implémentation 
+    basée sur PlanningTableComponent
+    """
+    desiderata_updated = pyqtSignal()  # Signal pour les mises à jour de desiderata
     
     def __init__(self, doctors, cats, planning_start_date, planning_end_date, main_window):
         super().__init__()
@@ -465,6 +506,7 @@ class DesiderataManagementWidget(QWidget):
         self.person_selector.installEventFilter(self)
         left_layout.addWidget(self.person_selector)
 
+        # Utiliser le nouveau calendrier basé sur PlanningTableComponent
         self.calendar_widget = DesiderataCalendarWidget(self.planning_start_date, self.planning_end_date)
         self.calendar_widget.setMinimumSize(800, 600)
         left_layout.addWidget(self.calendar_widget)
@@ -490,7 +532,7 @@ class DesiderataManagementWidget(QWidget):
         reset_all_button.setStyleSheet(EDIT_DELETE_BUTTON_STYLE)
         button_layout.addWidget(reset_all_button)
 
-        # Ajout du nouveau bouton d'import CSV
+        # Ajout du bouton d'import CSV
         import_button = QPushButton("Importer depuis CSV")
         import_button.clicked.connect(self.import_multiple_desiderata)
         import_button.setStyleSheet(ACTION_BUTTON_STYLE)
@@ -561,16 +603,16 @@ class DesiderataManagementWidget(QWidget):
         self.update_stats()
         self.update_calendar()
 
-     # Ajouter la méthode pour afficher la fenêtre des périodes critiques
+    # Méthode pour afficher la fenêtre des périodes critiques
     def show_critical_periods(self):
-            self.critical_periods_window = CriticalPeriodsWindow(
-                self.doctors,
-                self.cats,
-                self.planning_start_date,
-                self.planning_end_date,
-                self
-            )
-            self.critical_periods_window.show()
+        self.critical_periods_window = CriticalPeriodsWindow(
+            self.doctors,
+            self.cats,
+            self.planning_start_date,
+            self.planning_end_date,
+            self
+        )
+        self.critical_periods_window.show()
             
     def update_person_selector(self):
         self.person_selector.clear()
@@ -658,7 +700,7 @@ class DesiderataManagementWidget(QWidget):
             self.update_stats()
             self.update_calendar()
             QMessageBox.information(self, "Succès", "Tous les desiderata ont été réinitialisés.")
-
+    
     def update_stats(self):
         """
         Met à jour les statistiques d'indisponibilité pour chaque personne.
@@ -776,9 +818,7 @@ class DesiderataManagementWidget(QWidget):
                 "Erreur de mise à jour",
                 "Une erreur est survenue lors de la mise à jour des statistiques."
             )
-        
-        
-        
+    
     def import_multiple_desiderata(self):
         """
         Gère l'import de plusieurs fichiers CSV de desiderata simultanément.
@@ -953,6 +993,9 @@ class DesiderataManagementWidget(QWidget):
 
 
 class CriticalPeriodsWindow(QDialog):
+    """
+    Fenêtre pour visualiser les périodes critiques d'indisponibilité
+    """
     def __init__(self, doctors, cats, start_date, end_date, parent=None):
         super().__init__(parent)
         self.doctors = doctors
@@ -972,7 +1015,7 @@ class CriticalPeriodsWindow(QDialog):
         # Layout horizontal pour le calendrier et la liste
         content_layout = QHBoxLayout()
         
-        # Création du calendrier des périodes critiques
+        # Création du calendrier des périodes critiques avec la nouvelle implémentation
         self.calendar = CriticalPeriodsCalendar(self.start_date, self.end_date)
         self.calendar.cellClicked.connect(self.update_availability_list)
         content_layout.addWidget(self.calendar, stretch=2)
@@ -995,7 +1038,6 @@ class CriticalPeriodsWindow(QDialog):
         self.availability_list.setMinimumWidth(300)
 
         # Empêcher le redimensionnement des lignes
-        self.calendar.verticalHeader().setDefaultSectionSize(25)
         self.availability_list.verticalHeader().setDefaultSectionSize(25)
 
     def update_critical_periods(self):
@@ -1020,23 +1062,25 @@ class CriticalPeriodsWindow(QDialog):
 
     def update_availability_list(self, row, col):
         self.availability_list.setRowCount(0)
-        date = self.calendar.get_date_from_cell(row, col - (col % 5))
         
-        # Déterminer la période en fonction de la colonne
-        if col % 5 == 2:
-            period = 1  # Matin
-            period_name = "Matin"
-        elif col % 5 == 3:
-            period = 2  # Après-midi
-            period_name = "Après-midi"
-        elif col % 5 == 4:
-            period = 3  # Soir
-            period_name = "Soir"
-        else:
+        # Récupérer la date et la période depuis la cellule cliquée
+        item = self.calendar.item(row, col)
+        if not item:
             return
-
-        if not date:
+            
+        data = item.data(Qt.ItemDataRole.UserRole)
+        if not data or not isinstance(data, dict):
             return
+            
+        date = data.get("date")
+        period = data.get("period")
+        
+        if not date or not period or period < 1 or period > 3:
+            return
+            
+        # Déterminer le nom de la période
+        period_names = {1: "Matin", 2: "Après-midi", 3: "Soir"}
+        period_name = period_names.get(period, "")
 
         # Ajouter une ligne d'en-tête avec la date et la période
         self.availability_list.insertRow(0)
@@ -1058,7 +1102,7 @@ class CriticalPeriodsWindow(QDialog):
         self.availability_list.setSpan(0, 0, 1, 2)
         self.availability_list.setItem(0, 0, header_item)
 
-        # Trier et afficher tous le personnel (médecins et CAT)
+        # Trier et afficher tout le personnel (médecins et CAT)
         all_personnel = self.doctors + self.cats
         sorted_personnel = sorted(all_personnel, key=lambda p: (
             not any(des.start_date <= date <= des.end_date and des.period == period for des in p.desiderata),
@@ -1093,10 +1137,18 @@ class CriticalPeriodsWindow(QDialog):
 
         self.availability_list.resizeColumnsToContents()
             
-class CriticalPeriodsCalendar(DesiderataCalendarWidget):
+class CriticalPeriodsCalendar(PlanningTableComponent):
+    """
+    Calendrier des périodes critiques utilisant le composant PlanningTableComponent
+    pour la cohérence visuelle.
+    """
     def __init__(self, start_date, end_date):
-        super().__init__(start_date, end_date)
-        self.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
+        super().__init__()
+        self.start_date = start_date
+        self.end_date = end_date
+        self.cal = France()
+        self.init_critical_periods_ui()
+        
         # Définition des paliers et leurs couleurs
         self.color_ranges = {
             (0, 0): (QColor(255, 255, 255), "0% - Aucune indisponibilité"),
@@ -1107,6 +1159,21 @@ class CriticalPeriodsCalendar(DesiderataCalendarWidget):
             (100, 100): (QColor(0, 0, 0), "100% - Indisponibilité totale")
         }
 
+    def init_critical_periods_ui(self):
+        """Initialise l'interface utilisateur spécifique aux périodes critiques"""
+        # Configuration pour le mode sélection unique
+        self.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
+        self.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.verticalHeader().setVisible(False)
+        
+        # Nettoyer le tableau avant de configurer les dates
+        self.setRowCount(0)
+        self.setColumnCount(0)
+        
+        # Configurer les dates et créer le tableau
+        self.setup_planning_dates(self.start_date, self.end_date)
+        self.populate_days()
+        
     def get_color_for_count(self, percentage):
         """
         Détermine la couleur en fonction du pourcentage d'indisponibilité
@@ -1128,26 +1195,53 @@ class CriticalPeriodsCalendar(DesiderataCalendarWidget):
         return self.color_ranges[(100, 100)][0]  # Noir pour 100%
 
     def update_colors(self, unavailability_map, total_personnel):
+        """
+        Met à jour les couleurs des cellules en fonction des taux d'indisponibilité
+        
+        Args:
+            unavailability_map: Dictionnaire {(date, période): nombre_indisponibles}
+            total_personnel: Nombre total de personnel
+        """
+        # Parcourir toutes les cellules du tableau
         for row in range(self.rowCount()):
-            for col in range(2, self.columnCount(), 5):  # Colonnes M, AM, S
-                date = self.get_date_from_cell(row, col - 2)
-                if not date:
+            for col in range(self.columnCount()):
+                item = self.item(row, col)
+                if not item:
                     continue
-
-                for i in range(3):  # Pour chaque période (M, AM, S)
-                    period = i + 1
-                    unavailable_count = unavailability_map.get((date, period), 0)
-                    percentage = (unavailable_count / total_personnel) * 100 if total_personnel > 0 else 0
                     
-                    item = self.item(row, col + i)
-                    if item:
-                        color = self.get_color_for_count(percentage)
-                        item.setBackground(QBrush(color))
-                        # Ajouter le pourcentage dans la cellule
-                        item.setText(f"{percentage:.0f}%")
-                        item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                data = item.data(Qt.ItemDataRole.UserRole)
+                if not data or not isinstance(data, dict):
+                    continue
+                    
+                date_val = data.get("date")
+                period = data.get("period")
+                
+                if not date_val or not period or period < 1 or period > 3:
+                    continue
+                    
+                # Calculer le pourcentage d'indisponibilité
+                unavailable_count = unavailability_map.get((date_val, period), 0)
+                percentage = (unavailable_count / total_personnel) * 100 if total_personnel > 0 else 0
+                
+                # Appliquer la couleur et le texte
+                color = self.get_color_for_count(percentage)
+                self.update_cell(
+                    date_val, 
+                    period, 
+                    f"{percentage:.0f}%", 
+                    color
+                )
 
     def add_legend(self, parent_layout):
+        """
+        Crée et retourne un widget de légende pour le code couleur
+        
+        Args:
+            parent_layout: Layout parent
+            
+        Returns:
+            QWidget: Widget contenant la légende
+        """
         legend_widget = QWidget()
         legend_layout = QHBoxLayout(legend_widget)
         legend_layout.setSpacing(10)
@@ -1173,9 +1267,3 @@ class CriticalPeriodsCalendar(DesiderataCalendarWidget):
             legend_layout.addWidget(container)
 
         return legend_widget
-
-    def mousePressEvent(self, event):
-        # Empêcher la modification des couleurs lors du clic
-        item = self.itemAt(event.pos())
-        if item:
-            self.cellClicked.emit(item.row(), item.column())

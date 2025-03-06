@@ -371,9 +371,22 @@ class PlanningComparisonView(QWidget):
         Gère la mise à jour après un changement d'assignation.
         """
         self.save_current_selections()
+        
+        # Récupérer le médecin actuellement sélectionné dans la vue de planning par médecin
+        current_doctor_selected = self.main_window.doctor_planning_view.selector.currentText()
+        
+        # Mettre à jour les tables principales
         self.main_window.planning_tab.update_table()
         self.main_window.update_stats_view()
+        
+        # Mettre à jour la vue de planning par médecin
         self.main_window.doctor_planning_view.update_view(self.planning, self.doctors, self.cats)
+        
+        # Si le médecin concerné par le changement est actuellement affiché dans la vue de planning par médecin,
+        # forcer une mise à jour complète de son affichage
+        if current_doctor_selected == old_assignee or current_doctor_selected == new_assignee:
+            # Forcer la mise à jour de la table pour le médecin actuellement sélectionné
+            self.main_window.doctor_planning_view.update_table()
         
         # Mettre à jour les sélecteurs en permettant de nouvelles sélections
         self.update_selectors(preserve_selection=True, allow_new_selection=True)

@@ -1,5 +1,5 @@
 # © 2024 HILAL Arkane. Tous droits réservés.
-# gui/post_configuration.py
+# gui/Gestion/post_configuration.py
 from PyQt6.QtWidgets import (QWidget, QGridLayout, QVBoxLayout, QHBoxLayout, QPushButton, QTabWidget,
                             QTimeEdit, QLineEdit, QCheckBox, QGroupBox,
                             QTableWidget, QTableWidgetItem, QLabel, QSpinBox, QDateEdit, 

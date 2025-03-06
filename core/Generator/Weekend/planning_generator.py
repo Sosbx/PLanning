@@ -1,3 +1,4 @@
+# © 2024 HILAL Arkane. Tous droits réservés.
 # core/Generator/Weekend/planning_generator.py
 
 """
