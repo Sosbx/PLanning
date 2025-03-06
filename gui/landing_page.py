@@ -3,10 +3,10 @@
 
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                            QLabel, QGridLayout, QSpacerItem, QSizePolicy, QGraphicsDropShadowEffect)
-from PyQt6.QtCore import Qt, QSize, pyqtSignal, QPropertyAnimation, QEasingCurve, QSequentialAnimationGroup, QPauseAnimation
+from PyQt6.QtCore import Qt, QSize, pyqtSignal, QPropertyAnimation, QEasingCurve, QSequentialAnimationGroup, QPauseAnimation, QTimer
 from PyQt6.QtGui import QFont, QIcon, QPixmap, QColor, QLinearGradient, QPainter, QPalette, QBrush
 from .components.card_button import CardButton
-from .styles import StyleConstants, color_system, GLOBAL_STYLE
+from .styles import StyleConstants, color_system, GLOBAL_STYLE, PlatformHelper
 from core.utils import resource_path
 
 class LandingPage(QMainWindow):
@@ -188,6 +188,9 @@ class LandingPage(QMainWindow):
         """)
         main_layout.addWidget(footer_label)
     
+
+
+
     def create_card_buttons(self):
         """Crée les boutons-cartes et les ajoute à la grille"""
         # Déterminer le nombre de colonnes en fonction de la largeur
@@ -211,7 +214,7 @@ class LandingPage(QMainWindow):
         
         # Créer et ajouter les nouvelles cartes
         for title, icon_path, description, tab_index, bg_color in self.cards_data:
-            # Créer un bouton-carte
+            # Créer un bouton-carte en s'assurant que la couleur est bien passée
             card = CardButton(title, resource_path(icon_path), description, bg_color=bg_color)
             
             # Stocker la référence à l'index d'onglet dans le bouton
@@ -229,6 +232,21 @@ class LandingPage(QMainWindow):
             if col >= max_cols:
                 col = 0
                 row += 1
+    
+    def check_card_colors(self):
+        """Vérifie et corrige les couleurs des cartes si nécessaire"""
+        if not hasattr(self, 'cards') or not self.cards:
+            return
+            
+        for i, card in enumerate(self.cards):
+            if i < len(self.cards_data):
+                # Récupérer la couleur définie dans cards_data
+                _, _, _, _, bg_color = self.cards_data[i]
+                
+                # Vérifier et appliquer la couleur si nécessaire
+                if card.bg_color != bg_color:
+                    card.bg_color = bg_color
+                    card.update_style()
     
     def on_card_clicked(self):
         """Gère le clic sur une carte"""
@@ -255,6 +273,9 @@ class LandingPage(QMainWindow):
         
         # Appliquer les animations après l'affichage initial
         self.animate_elements()
+        
+        # Vérifier les couleurs des cartes après l'animation
+        QTimer.singleShot(600, self.check_card_colors)
     
     def animate_elements(self):
         """Anime les éléments de la page avec un effet de fondu enchaîné"""

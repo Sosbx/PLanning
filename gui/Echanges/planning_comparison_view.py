@@ -178,7 +178,7 @@ class PlanningComparisonView(QWidget):
         
         # Configuration des dimensions adaptatives
         for table in [self.table1, self.table2]:
-            table.set_min_row_height(18)
+            table.min_row_height = 18
             table.set_max_row_height(25)
             table.set_min_column_widths(
                 day_width=25,

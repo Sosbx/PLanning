@@ -307,12 +307,25 @@ class PlanningTableComponent(QTableWidget):
                 if col < self.columnCount():  # Vérifier que la colonne existe
                     item = QTableWidgetItem("")
                     is_weekend = day_date.weekday() >= 5 or self._calendar.is_holiday(day_date)
-                    background_color = self.current_colors.get("base", {}).get(
-                        "weekend" if is_weekend else "normal", 
-                        QColor(220, 220, 220) if is_weekend else QColor(255, 255, 255)
-                    )
+                    
+                    # Déterminer la couleur de fond en fonction du type de jour
+                    if is_weekend:
+                        background_color = self.current_colors.get("base", {}).get("weekend", QColor(220, 220, 220))
+                    else:
+                        background_color = self.current_colors.get("base", {}).get("normal", QColor(255, 255, 255))
+                    
+                    # Utiliser PlatformHelper au lieu de setBackground directement
                     from gui.styles import PlatformHelper
                     PlatformHelper.apply_background_color(item, background_color)
+                    
+                    # Marquer le jour comme weekend pour les styles CSS ET les approches programmatiques
+                    if is_weekend:
+                        # Pour QSS (fonctionne sur macOS)
+                        item.setData(Qt.ItemDataRole.UserRole + 2, True)
+                        
+                        # Pour les approches programmatiques (fonctionne sur Windows)
+                        if hasattr(item, 'setProperty'):
+                            item.setProperty("weekend", "true")
                     
                     # Stocker la date et la période dans les données de l'élément
                     item.setData(Qt.ItemDataRole.UserRole, {"date": day_date, "period": period})
@@ -350,12 +363,17 @@ class PlanningTableComponent(QTableWidget):
             font.setBold(True)
             item.setFont(font)
             
+            # Utiliser PlatformHelper pour appliquer la couleur du texte
+            from gui.styles import PlatformHelper
             if is_holiday:
-                from gui.styles import PlatformHelper
                 PlatformHelper.apply_foreground_color(item, QColor(180, 0, 0))  # Rouge pour les jours fériés
             else:
-                from gui.styles import PlatformHelper
                 PlatformHelper.apply_foreground_color(item, QColor(0, 0, 180))  # Bleu pour les week-ends
+                
+            # Appliquer l'attribut weekend pour les styles CSS
+            item.setData(Qt.ItemDataRole.UserRole + 2, True)
+            if hasattr(item, 'setProperty'):
+                item.setProperty("weekend", "true")
         else:
             font.setBold(True)  # Mettre toute la cellule en gras pour simplifier
             item.setFont(font)
@@ -441,6 +459,18 @@ class PlanningTableComponent(QTableWidget):
             item = QTableWidgetItem()
             self.setItem(day_row, col, item)
             
+        # Vérifier si c'est un weekend ou jour férié
+        is_weekend = day_date.weekday() >= 5 or self._calendar.is_holiday(day_date)
+        
+        # Marquer le jour comme weekend pour les styles CSS ET les approches programmatiques
+        if is_weekend:
+            # Pour QSS (fonctionne sur macOS)
+            item.setData(Qt.ItemDataRole.UserRole + 2, True)
+            
+            # Pour les approches programmatiques (fonctionne sur Windows)
+            if hasattr(item, 'setProperty'):
+                item.setProperty("weekend", "true")
+                
         # Mettre à jour les propriétés de base
         item.setText(text)
         item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)

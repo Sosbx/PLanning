@@ -3,7 +3,7 @@
 
 from PyQt6.QtWidgets import QPushButton, QVBoxLayout, QLabel, QWidget, QGraphicsDropShadowEffect
 from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, QPoint
-from PyQt6.QtGui import QFont, QIcon, QColor, QPixmap, QLinearGradient, QPainter, QBrush
+from PyQt6.QtGui import QFont, QIcon, QColor, QPixmap, QLinearGradient, QPainter, QBrush, QPalette
 
 class CardButton(QPushButton):
     """
@@ -27,7 +27,16 @@ class CardButton(QPushButton):
         # Configuration du bouton
         self.setFixedSize(220, 200)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setObjectName("card_button")
+        
+        # Important: Ne pas utiliser setObjectName qui peut causer des problèmes
+        # d'application de style sous Windows
+        # self.setObjectName("card_button")
+        
+        # Définir directement la couleur de fond à l'initialisation pour Windows
+        self.setAutoFillBackground(True)
+        palette = self.palette()
+        palette.setColor(QPalette.ColorRole.Window, QColor(self.bg_color))
+        self.setPalette(palette)
         
         # Création du contenu
         self.setup_ui()
@@ -67,7 +76,8 @@ class CardButton(QPushButton):
             self.desc_label.setStyleSheet(f"color: {self.text_secondary_color};")
             self.layout.addWidget(self.desc_label)
         
-        # Style initial
+        # Style initial - Utiliser directement setPalette et propriétés 
+        # au lieu de styleSheet pour une meilleure compatibilité
         self.update_style()
     
     def setup_effects(self):
@@ -95,18 +105,23 @@ class CardButton(QPushButton):
         self.hover_animations.addAnimation(self.shadow_offset_anim)
     
     def update_style(self):
-        """Met à jour le style du bouton"""
+        """
+        Met à jour le style du bouton de manière compatible avec Windows et macOS.
+        Combine setStyleSheet et QPalette pour une compatibilité maximale.
+        """
         border_radius = "10px"
+        
+        # Assurer que le fond auto-remplissage est activé
+        self.setAutoFillBackground(True)
         
         if self.hovered:
             # Style au survol
+            lighter_color = self._lighten_color(self.bg_color, 0.9)
+            
+            # Utiliser styleSheet pour tous les styles y compris la couleur de fond
             self.setStyleSheet(f"""
-                #card_button {{
-                    background-color: qlineargradient(
-                        x1:0, y1:0, x2:0, y2:1,
-                        stop:0 {self.bg_color}, 
-                        stop:1 {self._lighten_color(self.bg_color, 0.9)}
-                    );
+                QPushButton {{
+                    background-color: {lighter_color};
                     border: 2px solid {self.primary_color};
                     border-radius: {border_radius};
                     padding: 10px;
@@ -115,13 +130,24 @@ class CardButton(QPushButton):
         else:
             # Style normal
             self.setStyleSheet(f"""
-                #card_button {{
+                QPushButton {{
                     background-color: {self.bg_color};
                     border: 1px solid {self.border_color};
                     border-radius: {border_radius};
                     padding: 10px;
                 }}
             """)
+        
+        # Appliquer également la couleur via QPalette pour Windows
+        palette = self.palette()
+        if self.hovered:
+            palette.setColor(QPalette.ColorRole.Button, QColor(lighter_color))
+            palette.setColor(QPalette.ColorRole.Window, QColor(lighter_color))
+        else:
+            palette.setColor(QPalette.ColorRole.Button, QColor(self.bg_color))
+            palette.setColor(QPalette.ColorRole.Window, QColor(self.bg_color))
+        self.setPalette(palette)
+
     
     def _lighten_color(self, color, factor=0.7):
         """Éclaircit une couleur hexadécimale"""
@@ -197,14 +223,21 @@ class CardButton(QPushButton):
             
             # Style de clic
             darker_color = QColor(self.bg_color).darker(110).name()
+            
+            # Appliquer via styleSheet et QPalette pour une compatibilité maximale
             self.setStyleSheet(f"""
-                #card_button {{
+                QPushButton {{
                     background-color: {darker_color};
                     border: 2px solid {self.primary_color};
                     border-radius: 10px;
                     padding: 10px;
                 }}
             """)
+            
+            palette = self.palette()
+            palette.setColor(QPalette.ColorRole.Button, QColor(darker_color))
+            palette.setColor(QPalette.ColorRole.Window, QColor(darker_color))
+            self.setPalette(palette)
         
         super().mousePressEvent(event)
     
@@ -215,6 +248,7 @@ class CardButton(QPushButton):
                 # Si toujours sur le bouton, revenir au style survol
                 self.shadow.setBlurRadius(25)
                 self.shadow.setOffset(0, 2)
+                self.hovered = True
                 self.update_style()
             else:
                 # Sinon, revenir au style normal

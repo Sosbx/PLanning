@@ -157,8 +157,8 @@ class DoctorPlanningView(QWidget):
         self.table = PlanningTableComponent()
 
         # Configurer les dimensions adaptatives
-        self.table.set_min_row_height(20)  # Augmenté pour accommoder des polices plus grandes
-        self.table.set_max_row_height(28)  # Augmenté pour accommoder des polices plus grandes
+        self.table.min_row_height = 20  # Augmenté pour accommoder des polices plus grandes
+        self.table.max_row_height = 28  # Augmenté pour accommoder des polices plus grandes
         self.table.set_min_column_widths(
             day_width=28,      # Augmenté pour accommoder des polices plus grandes
             weekday_width=35,  # Augmenté pour accommoder des polices plus grandes

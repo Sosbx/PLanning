@@ -22,23 +22,47 @@ main_window_instance = None
 
 def set_application_style(app):
     """Configure le style global de l'application"""
-    app.setStyle("Fusion")
+    app.setStyle("Fusion")  # Style Fusion est bien supporté sur toutes les plateformes
     
     # Palette de couleurs adaptative
     palette = QPalette()
     
+    # Utiliser la classe PlatformHelper pour ajuster les couleurs selon la plateforme
+    from gui.styles import PlatformHelper
+    
     # Couleurs de base depuis le système de styles
-    palette.setColor(QPalette.ColorRole.Window, color_system.colors['window_background'])
-    palette.setColor(QPalette.ColorRole.WindowText, color_system.colors['text']['primary'])
-    palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))
-    palette.setColor(QPalette.ColorRole.AlternateBase, color_system.colors['table']['alternate'])
-    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 225))
-    palette.setColor(QPalette.ColorRole.ToolTipText, color_system.colors['text']['primary'])
-    palette.setColor(QPalette.ColorRole.Text, color_system.colors['text']['primary'])
-    palette.setColor(QPalette.ColorRole.Button, color_system.colors['primary'])
-    palette.setColor(QPalette.ColorRole.ButtonText, color_system.colors['text']['light'])
-    palette.setColor(QPalette.ColorRole.Highlight, color_system.colors['primary'])
-    palette.setColor(QPalette.ColorRole.HighlightedText, color_system.colors['text']['light'])
+    window_bg = PlatformHelper.adjust_color_for_platform(color_system.colors['window_background'])
+    window_text = PlatformHelper.adjust_color_for_platform(color_system.colors['text']['primary'])
+    base_color = PlatformHelper.adjust_color_for_platform(QColor(255, 255, 255))
+    alt_base = PlatformHelper.adjust_color_for_platform(color_system.colors['table']['alternate'])
+    tooltip_base = PlatformHelper.adjust_color_for_platform(QColor(255, 255, 225))
+    text_color = PlatformHelper.adjust_color_for_platform(color_system.colors['text']['primary'])
+    button_color = PlatformHelper.adjust_color_for_platform(color_system.colors['primary'])
+    button_text = PlatformHelper.adjust_color_for_platform(color_system.colors['text']['light'])
+    highlight = PlatformHelper.adjust_color_for_platform(color_system.colors['primary'])
+    highlight_text = PlatformHelper.adjust_color_for_platform(color_system.colors['text']['light'])
+    
+    # Application des couleurs à la palette
+    palette.setColor(QPalette.ColorRole.Window, window_bg)
+    palette.setColor(QPalette.ColorRole.WindowText, window_text)
+    palette.setColor(QPalette.ColorRole.Base, base_color)
+    palette.setColor(QPalette.ColorRole.AlternateBase, alt_base)
+    palette.setColor(QPalette.ColorRole.ToolTipBase, tooltip_base)
+    palette.setColor(QPalette.ColorRole.ToolTipText, text_color)
+    palette.setColor(QPalette.ColorRole.Text, text_color)
+    palette.setColor(QPalette.ColorRole.Button, button_color)
+    palette.setColor(QPalette.ColorRole.ButtonText, button_text)
+    palette.setColor(QPalette.ColorRole.Highlight, highlight)
+    palette.setColor(QPalette.ColorRole.HighlightedText, highlight_text)
+    
+    # Pour une meilleure compatibilité Windows, définir également ces rôles
+    if PlatformHelper.get_platform() == 'Windows':
+        # Ces rôles supplémentaires peuvent être nécessaires sur Windows
+        palette.setColor(QPalette.ColorRole.Light, window_bg.lighter(120))
+        palette.setColor(QPalette.ColorRole.Midlight, window_bg.lighter(110))
+        palette.setColor(QPalette.ColorRole.Mid, window_bg.darker(120))
+        palette.setColor(QPalette.ColorRole.Dark, window_bg.darker(160))
+        palette.setColor(QPalette.ColorRole.Shadow, QColor(0, 0, 0, 100))
 
     app.setPalette(palette)
     app.setStyleSheet(GLOBAL_STYLE)
