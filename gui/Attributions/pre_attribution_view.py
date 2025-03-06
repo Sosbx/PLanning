@@ -10,6 +10,7 @@ from datetime import date, datetime, timedelta
 from workalendar.europe import France
 from core.Constantes.models import PostManager, Doctor, PostConfig, TimeSlot, Planning, DayPlanning
 from ..styles import color_system, ADD_BUTTON_STYLE, EDIT_DELETE_BUTTON_STYLE
+from ..components.planning_table_component import PlanningTableComponent
 
 class PreAttributionWidget(QWidget):
     """Widget principal pour la vue de pré-attribution"""
@@ -426,6 +427,9 @@ class AvailablePostList(QTableWidget):
         """Retourne les postes disponibles pour une période donnée"""
         available_posts = {}
         
+        # Afficher un message de débogage pour voir quelle période est passée
+        print(f"get_available_posts pour la date {date} et la période {period}")
+        
         # Déterminer le type de jour
         cal = France()
         is_weekend = date.weekday() >= 5
@@ -461,16 +465,25 @@ class AvailablePostList(QTableWidget):
             
             if post_details:
                 post_start_hour = post_details['start_time'].hour
+                print(f"Post {post_type} - Heure de début: {post_start_hour}h")
+                
+                # Afficher les postes en fonction de la période sélectionnée
+                # Période 1 = Matin (7h-13h)
+                # Période 2 = Après-midi (13h-18h)
+                # Période 3 = Soir/Nuit (18h-7h)
                 if period == 1 and 7 <= post_start_hour < 13 and post_type != "CT":  # Matin (sauf CT)
+                    print(f"  -> Ajout du poste {post_type} pour le matin")
                     is_attributed = self.is_post_attributed(date, period, post_type)
                     available_posts[post_type] = is_attributed
                 elif period == 2 and (
                     (13 <= post_start_hour < 18) or  # Après-midi normal
                     post_type == "CT"  # CT toujours en après-midi
                 ):
+                    print(f"  -> Ajout du poste {post_type} pour l'après-midi")
                     is_attributed = self.is_post_attributed(date, period, post_type)
                     available_posts[post_type] = is_attributed
                 elif period == 3 and (post_start_hour >= 18 or post_start_hour < 7):  # Soir/Nuit
+                    print(f"  -> Ajout du poste {post_type} pour le soir/nuit")
                     is_attributed = self.is_post_attributed(date, period, post_type)
                     available_posts[post_type] = is_attributed
         
@@ -565,30 +578,19 @@ class AvailablePostList(QTableWidget):
         self.clear()
         self.setHorizontalHeaderLabels(["Poste", "Statut"])
         self.setRowCount(0)
-class PreAttributionTable(QTableWidget):
+class PreAttributionTable(PlanningTableComponent):
     """Tableau pour afficher et gérer les pré-attributions"""
-
-    cell_clicked = pyqtSignal(date, int)  # (date, période)
 
     def __init__(self, start_date, end_date, pre_attribution_widget):
         super().__init__()
-        self.start_date = start_date
-        self.end_date = end_date
         self.cal = France()
         self.pre_attribution_widget = pre_attribution_widget
-        self.init_ui()
-        self.create_calendar()
+        self.setup_planning_dates(start_date, end_date)
+        self.populate_days()
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
-
-    def init_ui(self):
-        """Initialise l'interface du tableau"""
-        self.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.verticalHeader().setVisible(False)
-        self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
         
-        # Connecter uniquement le double-clic
+        # Connecter le double-clic
         self.cellDoubleClicked.connect(self.handle_cell_double_click)
         
         # Connecter le clic simple pour mettre à jour la liste des postes
@@ -596,28 +598,43 @@ class PreAttributionTable(QTableWidget):
 
     def handle_cell_click(self, row, col):
         """Gère le clic simple sur une cellule"""
-        base_col = (col // 5) * 5
+        # Calculer le début du groupe de colonnes pour ce mois
+        # Chaque mois a 4 colonnes: J, M, AM, S
+        # La colonne 0 est la colonne des jours du mois
+        if col == 0:  # Colonne des jours du mois
+            return
+            
+        # Calculer l'index du mois (0, 1, 2, ...)
+        month_idx = (col - 1) // 4
         
-        if col in [base_col + 2, base_col + 3, base_col + 4]:
-            period = col - base_col - 1  # 2->1 (M), 3->2 (AM), 4->3 (S)
+        # Calculer la colonne de base pour ce mois
+        base_col = month_idx * 4 + 1
+        
+        # Déterminer la période en fonction de la colonne relative
+        if col in [base_col + 1, base_col + 2, base_col + 3]:  # M, AM, S
+            period = col - base_col  # 1->1 (M), 2->2 (AM), 3->3 (S)
             date = self.get_date_from_cell(row, col)
             if date:
                 self.cell_clicked.emit(date, period)
 
     def handle_cell_double_click(self, row, col):
         """Gère le double-clic sur une cellule"""
-        base_col = (col // 5) * 5  # Trouve le début du groupe de colonnes pour ce mois
+        # Calculer le début du groupe de colonnes pour ce mois
+        # Chaque mois a 4 colonnes: J, M, AM, S
+        # La colonne 0 est la colonne des jours du mois
+        if col == 0:  # Colonne des jours du mois
+            return
+            
+        # Calculer l'index du mois (0, 1, 2, ...)
+        month_idx = (col - 1) // 4
+        
+        # Calculer la colonne de base pour ce mois
+        base_col = month_idx * 4 + 1
         
         # Déterminer la période en fonction de la colonne relative
-        period_mapping = {
-            base_col + 2: 1,  # Matin
-            base_col + 3: 2,  # Après-midi
-            base_col + 4: 3   # Soir
-        }
-        
-        if col in period_mapping:
+        if col in [base_col + 1, base_col + 2, base_col + 3]:  # M, AM, S
+            period = col - base_col  # 1->1 (M), 2->2 (AM), 3->3 (S)
             date = self.get_date_from_cell(row, col)
-            period = period_mapping[col]
             
             if date and self.can_attribute(date, period):
                 self.show_attribution_menu(date, period, row, col)
@@ -682,6 +699,9 @@ class PreAttributionTable(QTableWidget):
         """Affiche le menu d'attribution des postes"""
         current_person = self.pre_attribution_widget.get_current_person()
         menu = QMenu(self)
+        
+        # Afficher un message de débogage pour voir quelle période est passée
+        print(f"Affichage du menu pour la date {date} et la période {period}")
         
         available_posts = self.pre_attribution_widget.post_list.get_available_posts(
             date, period, current_person
@@ -945,11 +965,23 @@ class PreAttributionTable(QTableWidget):
         if not date:
             return
             
-        base_col = (col // 5) * 5
-        if col not in [base_col + 2, base_col + 3, base_col + 4]:
+        # Calculer le début du groupe de colonnes pour ce mois
+        # Chaque mois a 4 colonnes: J, M, AM, S
+        # La colonne 0 est la colonne des jours du mois
+        if col == 0:  # Colonne des jours du mois
             return
             
-        period = col - base_col - 1
+        # Calculer l'index du mois (0, 1, 2, ...)
+        month_idx = (col - 1) // 4
+        
+        # Calculer la colonne de base pour ce mois
+        base_col = month_idx * 4 + 1
+        
+        # Déterminer la période en fonction de la colonne relative
+        if col not in [base_col + 1, base_col + 2, base_col + 3]:  # M, AM, S
+            return
+            
+        period = col - base_col  # 1->1 (M), 2->2 (AM), 3->3 (S)
         current_person = self.pre_attribution_widget.get_current_person()
         
         if not current_person:
@@ -1017,106 +1049,58 @@ class PreAttributionTable(QTableWidget):
                 # Mettre à jour l'affichage
                 self.update_display(person)
                 self.pre_attribution_widget.post_list.update_for_period(date, period, person)
-    def create_calendar(self):
-        """Crée la structure du calendrier"""
-        self.clear()
-        days_abbr = ["L", "M", "M", "J", "V", "S", "D"]
-        months = (self.end_date.year - self.start_date.year) * 12 + self.end_date.month - self.start_date.month + 1
-
-        total_columns = 5 * months  # 5 colonnes par mois (Jour, Mois, M, AM, S)
-        self.setColumnCount(total_columns)
-        self.setRowCount(31)
-
-        current_date = self.start_date
-        for i in range(months):
-            base_col = i * 5
-            month_name = current_date.strftime("%b")
-            self.setHorizontalHeaderItem(base_col, QTableWidgetItem("Jour"))
-            self.setHorizontalHeaderItem(base_col + 1, QTableWidgetItem(month_name))
-            self.setHorizontalHeaderItem(base_col + 2, QTableWidgetItem("M"))
-            self.setHorizontalHeaderItem(base_col + 3, QTableWidgetItem("AM"))
-            self.setHorizontalHeaderItem(base_col + 4, QTableWidgetItem("S"))
-            current_date += timedelta(days=32)
-            current_date = current_date.replace(day=1)
-
-        # Réduire la hauteur des lignes et la largeur des colonnes
-        for row in range(self.rowCount()):
-            self.setRowHeight(row, int(self.rowHeight(row) * 4/6))
-        for col in range(self.columnCount()):
-            self.setColumnWidth(col, int(self.columnWidth(col) * 3/5))
-
-        self.fill_calendar()
-
     def update_dates(self, start_date, end_date):
         """Met à jour les dates et rafraîchit l'affichage"""
-        self.start_date = start_date
-        self.end_date = end_date
-        self.create_calendar()
+        # Sauvegarder le nombre de lignes actuel pour détecter si une nouvelle ligne a été ajoutée
+        old_row_count = self.rowCount()
+        
+        # Mettre à jour les dates et le tableau
+        self.setup_planning_dates(start_date, end_date)
+        self.populate_days()
+        
+        # Vérifier si une nouvelle ligne a été ajoutée et l'enlever si nécessaire
+        if self.rowCount() > old_row_count + 1:  # +1 car on s'attend à ce que setup_planning_dates ajoute une ligne
+            self.removeRow(1)  # Supprimer la ligne en trop (la deuxième ligne, car la première est l'en-tête des mois)
+        
+        # Mettre à jour l'affichage pour la personne actuelle
         current_person = self.pre_attribution_widget.get_current_person()
         if current_person:
             self.update_display(current_person)
 
-    def fill_calendar(self):
-        """Remplit le calendrier avec les dates"""
-        current_date = self.start_date
-        while current_date <= self.end_date:
-            row = current_date.day - 1
-            month_col = (current_date.year - self.start_date.year) * 12 + current_date.month - self.start_date.month
-            base_col = month_col * 5
-
-            is_weekend = current_date.weekday() >= 5
-            is_holiday = self.cal.is_holiday(current_date)
-            
-            # Check for bridge days
-            is_bridge = False
-            if not (is_weekend or is_holiday):
-                # Check if it's between a holiday and a weekend
-                prev_day = current_date - timedelta(days=1)
-                next_day = current_date + timedelta(days=1)
-                
-                prev_is_off = prev_day.weekday() >= 5 or self.cal.is_holiday(prev_day)
-                next_is_off = next_day.weekday() >= 5 or self.cal.is_holiday(next_day)
-                
-                is_bridge = prev_is_off and next_is_off
-            
-            background_color = color_system.get_color('weekend') if (is_weekend or is_holiday or is_bridge) else color_system.get_color('weekday')
-
-            # Colonne jour
-            day_item = QTableWidgetItem(str(current_date.day))
-            day_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            day_item.setBackground(QBrush(background_color))
-            self.setItem(row, base_col, day_item)
-
-            # Colonne jour de la semaine
-            weekday_item = QTableWidgetItem(["L", "M", "M", "J", "V", "S", "D"][current_date.weekday()])
-            weekday_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            weekday_item.setForeground(QBrush(color_system.get_color('text', 'secondary')))
-            weekday_item.setBackground(QBrush(background_color))
-            self.setItem(row, base_col + 1, weekday_item)
-
-            # Colonnes périodes (M, AM, S)
-            for i in range(3):
-                item = QTableWidgetItem()
-                item.setBackground(QBrush(background_color))
-                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                self.setItem(row, base_col + 2 + i, item)
-
-            current_date += timedelta(days=1)
-
     def get_date_from_cell(self, row, col):
         """Retourne la date correspondant à une cellule"""
         try:
-            month_col = col // 5
-            year = self.start_date.year + (self.start_date.month + month_col - 1) // 12
-            month = (self.start_date.month + month_col - 1) % 12 + 1
-            return date(year, month, row + 1)
+            # Ajuster la ligne pour tenir compte de l'en-tête des mois
+            # La première ligne (row=0) est l'en-tête des mois, donc les jours commencent à row=1
+            if row == 0:  # Si on clique sur l'en-tête des mois, retourner None
+                return None
+                
+            day = row  # row 1 correspond au jour 1, row 2 au jour 2, etc.
+            
+            # Calculer le mois en fonction de la colonne
+            # Chaque mois a 4 colonnes: J, M, AM, S
+            # La colonne 0 est la colonne des jours du mois
+            if col == 0:  # Colonne des jours du mois
+                # Utiliser le mois de la date de début
+                month = self.start_date.month
+                year = self.start_date.year
+            else:
+                # Calculer l'index du mois (0, 1, 2, ...)
+                month_idx = (col - 1) // 4
+                
+                # Calculer le mois et l'année
+                total_months = self.start_date.month + month_idx - 1
+                year = self.start_date.year + total_months // 12
+                month = total_months % 12 + 1
+            
+            return date(year, month, day)
         except ValueError:
             return None
 
     def update_display(self, person):
         """Met à jour l'affichage pour la personne sélectionnée"""
-        # Réinitialiser l'affichage avec le calendrier de base
-        self.fill_calendar()
+        # Réinitialiser l'affichage en repeuplant les jours
+        self.populate_days()
         
         if not person:
             return
@@ -1125,73 +1109,44 @@ class PreAttributionTable(QTableWidget):
         for desiderata in person.desiderata:
             current_date = desiderata.start_date
             while current_date <= desiderata.end_date:
-                row = current_date.day - 1
-                month_col = (current_date.year - self.start_date.year) * 12 + current_date.month - self.start_date.month
-                base_col = month_col * 5
+                # Déterminer si c'est un weekend ou férié
+                is_weekend = current_date.weekday() >= 5
+                is_holiday = self.cal.is_holiday(current_date)
+                is_bridge = False
+                if not (is_weekend or is_holiday):
+                    prev_day = current_date - timedelta(days=1)
+                    next_day = current_date + timedelta(days=1)
+                    prev_is_off = prev_day.weekday() >= 5 or self.cal.is_holiday(prev_day)
+                    next_is_off = next_day.weekday() >= 5 or self.cal.is_holiday(next_day)
+                    is_bridge = prev_is_off and next_is_off
                 
-                period_col = {1: 2, 2: 3, 3: 4}  # Mapping période -> colonne relative
-                col = base_col + period_col[desiderata.period]
-                item = self.item(row, col)
-                if item:
-                    # Déterminer si c'est un weekend ou férié
-                    is_weekend = current_date.weekday() >= 5
-                    is_holiday = self.cal.is_holiday(current_date)
-                    is_bridge = False
-                    if not (is_weekend or is_holiday):
-                        prev_day = current_date - timedelta(days=1)
-                        next_day = current_date + timedelta(days=1)
-                        prev_is_off = prev_day.weekday() >= 5 or self.cal.is_holiday(prev_day)
-                        next_is_off = next_day.weekday() >= 5 or self.cal.is_holiday(next_day)
-                        is_bridge = prev_is_off and next_is_off
-                    
-                    is_special_day = is_weekend or is_holiday or is_bridge
-                    priority = getattr(desiderata, 'priority', 'primary')
-                    
-                    # Obtenir la couleur du système de couleurs
-                    if priority == 'primary':
-                        color = color_system.colors['desiderata']['primary']['weekend' if is_special_day else 'normal']
-                    else:  # secondary
-                        color = color_system.colors['desiderata']['secondary']['weekend' if is_special_day else 'normal']
-                    
-                    # Vérifier que la couleur est bien un QColor
-                    if isinstance(color, QColor):
-                        item.setBackground(QBrush(color))
-                    else:
-                        # Fallback sur une couleur par défaut si la couleur n'est pas valide
-                        fallback_color = QColor('#E2E8F0')
-                        item.setBackground(QBrush(fallback_color))
+                is_special_day = is_weekend or is_holiday or is_bridge
+                priority = getattr(desiderata, 'priority', 'primary')
+                
+                # Obtenir la couleur du système de couleurs
+                if priority == 'primary':
+                    color = color_system.colors['desiderata']['primary']['weekend' if is_special_day else 'normal']
+                else:  # secondary
+                    color = color_system.colors['desiderata']['secondary']['weekend' if is_special_day else 'normal']
+                
+                # Utiliser la méthode update_cell de PlanningTableComponent
+                self.update_cell(current_date, desiderata.period, "", color)
                 
                 current_date += timedelta(days=1)
 
         # Affichage des pré-attributions par dessus les desiderata
         # Utiliser la méthode sécurisée pour récupérer les pré-attributions
         attributions = self._get_pre_attributions().get(person.name, {})
-        for (d, p), post in attributions.items():
-            row = d.day - 1
-            month_col = (d.year - self.start_date.year) * 12 + d.month - self.start_date.month
-            base_col = month_col * 5
-            period_col = {1: 2, 2: 3, 3: 4}  # Mapping période -> colonne relative
-            col = base_col + period_col[p]
-            
-            item = self.item(row, col)
-            if item:
-                item.setText(post)
-                # Utiliser la méthode get_color du système de couleurs
-                available_color = color_system.get_color('available')
-                text_color = color_system.get_color('text', 'primary')
-                if available_color:
-                    item.setBackground(QBrush(available_color))
-                    if text_color:
-                        item.setForeground(QBrush(text_color))
-                    item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                    # Utiliser une police en gras pour les pré-attributions
-                    font = item.font()
-                    font.setBold(True)
-                    item.setFont(font)
-                else:
-                    # Fallback sur des couleurs par défaut
-                    item.setBackground(QBrush(QColor('#D1E6D6')))
-                    item.setForeground(QBrush(QColor('#2D3748')))
+        for (date_val, period), post in attributions.items():
+            # Utiliser la méthode update_cell de PlanningTableComponent
+            available_color = color_system.get_color('available') or QColor('#D1E6D6')
+            self.update_cell(
+                date_val, 
+                period, 
+                post, 
+                available_color, 
+                color_system.get_color('text', 'primary') or QColor('#2D3748')
+            )
 
 
 class AttributionHistoryWidget(QTableWidget):

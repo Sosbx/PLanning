@@ -1,285 +1,12 @@
 # © 2024 HILAL Arkane. Tous droits réservés.
 # gui/styles.py
 
-import sys
-import platform
-from PyQt6.QtGui import QColor, QGuiApplication, QScreen
-from PyQt6.QtCore import QOperatingSystemVersion, QSysInfo
-
-# Cette version améliorée de PlatformHelper offre des ajustements plus précis 
-# pour chaque plateforme et gère les différences de rendu
-
-class PlatformHelper:
-    """Helper class to detect platform and screen properties for cross-platform compatibility."""
-    
-    @staticmethod
-    def get_platform():
-        """Détecte la plateforme actuelle (Windows, macOS, Linux)."""
-        if sys.platform.startswith('win'):
-            return 'Windows'
-        elif sys.platform.startswith('darwin'):
-            return 'macOS'
-        elif sys.platform.startswith('linux'):
-            return 'Linux'
-        else:
-            return 'Unknown'
-    
-    @staticmethod
-    def get_dpi_scale_factor():
-        """Calcule le facteur d'échelle DPI pour l'écran principal."""
-        try:
-            # Obtenir l'écran principal
-            screen = QGuiApplication.primaryScreen()
-            if screen:
-                # Obtenir le facteur d'échelle logique
-                logical_dpi = screen.logicalDotsPerInch()
-                # DPI de référence (96 pour Windows, 72 pour macOS)
-                reference_dpi = 72.0 if sys.platform.startswith('darwin') else 96.0
-                return logical_dpi / reference_dpi
-            return 1.0
-        except Exception:
-            # En cas d'erreur, retourner 1.0 comme valeur par défaut
-            return 1.0
-    
-    @staticmethod
-    def get_platform_font_adjustments():
-        """Retourne les ajustements de taille de police spécifiques à la plateforme."""
-        platform = PlatformHelper.get_platform()
-        dpi_scale = PlatformHelper.get_dpi_scale_factor()
-        
-        if platform == 'Windows':
-            # Sur Windows, ajuster les tailles en fonction de la résolution
-            # Windows a tendance à utiliser des polices plus grandes
-            base_adjustment = 0.85  # Réduction de base pour compenser
-            
-            # Ajuster davantage si l'échelle DPI est élevée
-            if dpi_scale > 1.25:
-                base_adjustment *= 0.9
-                
-            return {
-                'base_size_factor': base_adjustment,
-                'header_size_factor': base_adjustment * 0.95,  # Légèrement plus petit pour les en-têtes
-                'period_size_factor': base_adjustment * 0.9,
-                'weekday_size_factor': base_adjustment * 0.9,
-                'force_pixel_size': True  # Utiliser setPixelSize au lieu de setPointSize
-            }
-        elif platform == 'macOS':
-            # Sur macOS, utiliser les tailles par défaut avec légers ajustements
-            return {
-                'base_size_factor': 1.0,
-                'header_size_factor': 1.0,
-                'period_size_factor': 1.0,
-                'weekday_size_factor': 1.0,
-                'force_pixel_size': False
-            }
-        else:
-            # Pour Linux et autres plateformes
-            return {
-                'base_size_factor': 0.95,
-                'header_size_factor': 0.9,
-                'period_size_factor': 0.95,
-                'weekday_size_factor': 0.95,
-                'force_pixel_size': False
-            }
-    
-    @staticmethod
-    def get_platform_color_adjustments():
-        """Retourne les ajustements de couleur spécifiques à la plateforme."""
-        platform = PlatformHelper.get_platform()
-        
-        if platform == 'Windows':
-            # Sur Windows, utiliser des couleurs explicites et ajuster la saturation
-            return {
-                'color_saturation_factor': 1.05,  # Légère augmentation de saturation
-                'force_explicit_colors': True,    # Forcer l'utilisation de RGB explicite
-                'brighten_backgrounds': True,     # Éclaircir légèrement les fonds
-                'brightness_factor': 1.05,        # Facteur d'éclaircissement
-                'increase_contrast': True,        # Augmenter le contraste
-                'contrast_factor': 1.1           # Facteur de contraste
-            }
-        elif platform == 'macOS':
-            # Pour macOS, maintenir les couleurs d'origine
-            return {
-                'color_saturation_factor': 1.0,
-                'force_explicit_colors': False,
-                'brighten_backgrounds': False,
-                'brightness_factor': 1.0,
-                'increase_contrast': False,
-                'contrast_factor': 1.0
-            }
-        else:
-            # Pour Linux, légère adaptation
-            return {
-                'color_saturation_factor': 1.02,
-                'force_explicit_colors': True,
-                'brighten_backgrounds': False,
-                'brightness_factor': 1.0,
-                'increase_contrast': False,
-                'contrast_factor': 1.0
-            }
-    
-    @staticmethod
-    def adjust_color_for_platform(color):
-        """
-        Ajuste une couleur pour la plateforme actuelle.
-        
-        Args:
-            color: QColor à ajuster
-            
-        Returns:
-            QColor ajustée pour la plateforme
-        """
-        if not isinstance(color, QColor):
-            # Si ce n'est pas un QColor, tenter de le convertir
-            color = QColor(color)
-        
-        adjustments = PlatformHelper.get_platform_color_adjustments()
-        platform = PlatformHelper.get_platform()
-        
-        # Si nous n'avons pas besoin d'ajuster la couleur et que ce n'est pas Windows
-        if (adjustments['color_saturation_factor'] == 1.0 and 
-            not adjustments['force_explicit_colors'] and
-            not adjustments['brighten_backgrounds'] and
-            not adjustments['increase_contrast'] and
-            platform != 'Windows'):
-            return color
-        
-        # Convertir en HSL pour ajustements
-        h, s, l, a = color.getHslF()
-        
-        # Ajuster la saturation
-        s = min(1.0, s * adjustments['color_saturation_factor'])
-        
-        # Éclaircir les couleurs de fond si nécessaire
-        if adjustments['brighten_backgrounds'] and l > 0.7:  # Couleurs claires seulement
-            l = min(1.0, l * adjustments['brightness_factor'])
-        
-        # Augmenter le contraste si nécessaire
-        if adjustments['increase_contrast']:
-            if l > 0.5:  # Pour les couleurs claires
-                l = min(1.0, l * adjustments['contrast_factor'])
-            else:  # Pour les couleurs foncées
-                l = max(0.0, l / adjustments['contrast_factor'])
-        
-        # Créer une nouvelle couleur avec les paramètres ajustés
-        adjusted_color = QColor()
-        adjusted_color.setHslF(h, s, l, a)
-        
-        return adjusted_color
-    
-    @staticmethod
-    def get_explicit_color_string(color):
-        """
-        Convertit une QColor en chaîne RGB explicite pour Windows.
-        
-        Args:
-            color: QColor à convertir
-            
-        Returns:
-            Chaîne au format 'rgb(r, g, b)' pour CSS
-        """
-        if not isinstance(color, QColor):
-            color = QColor(color)
-        
-        return f"rgb({color.red()}, {color.green()}, {color.blue()})"
-    
-    @staticmethod
-    def should_use_solid_colors():
-        """Détermine si on doit utiliser des couleurs solides plutôt que des dégradés."""
-        platform = PlatformHelper.get_platform()
-        return platform == 'Windows'
-    
-    @staticmethod
-    def adjust_font(font, size_key='base_size'):
-        """
-        Ajuste une police pour la plateforme actuelle.
-        
-        Args:
-            font: QFont à ajuster
-            size_key: Clé pour le type de taille ('base_size', 'header_size', etc.)
-            
-        Returns:
-            QFont ajustée
-        """
-        adjustments = PlatformHelper.get_platform_font_adjustments()
-        
-        # Appliquer l'ajustement de taille
-        factor_key = f"{size_key}_factor"
-        if factor_key in adjustments:
-            factor = adjustments[factor_key]
-            current_size = font.pointSize()
-            
-            if current_size <= 0:  # Si la taille n'est pas définie
-                current_size = 12  # Taille par défaut
-            
-            new_size = int(current_size * factor)
-            
-            # Utiliser setPixelSize sur Windows pour plus de cohérence
-            if adjustments.get('force_pixel_size', False):
-                # Convertir de point à pixel
-                pixel_size = int(new_size * 1.33)  # Approximation points -> pixels
-                font.setPixelSize(pixel_size)
-            else:
-                font.setPointSize(new_size)
-        
-        return font
-    
-    @staticmethod
-    def get_gradient_style(start_color, end_color, direction='vertical'):
-        """
-        Génère un style de dégradé compatible avec toutes les plateformes.
-        Sur Windows, utilise des couleurs RGB explicites.
-        
-        Args:
-            start_color: QColor de début
-            end_color: QColor de fin
-            direction: 'vertical' ou 'horizontal'
-            
-        Returns:
-            Chaîne de style CSS pour le dégradé
-        """
-        platform = PlatformHelper.get_platform()
-        
-        # Convertir les QColor en objets si nécessaire
-        if not isinstance(start_color, QColor):
-            start_color = QColor(start_color)
-        if not isinstance(end_color, QColor):
-            end_color = QColor(end_color)
-        
-        # Sur Windows, utiliser des couleurs solides si nécessaire
-        if platform == 'Windows' and PlatformHelper.should_use_solid_colors():
-            return f"background-color: {PlatformHelper.get_explicit_color_string(start_color)};"
-        
-        # Définir les points pour le dégradé
-        if direction == 'vertical':
-            points = "x1:0, y1:0, x2:0, y2:1"
-        else:  # horizontal
-            points = "x1:0, y1:0, x2:1, y2:0"
-        
-        # Sur Windows, utiliser des couleurs RGB explicites
-        if platform == 'Windows':
-            return f"""
-                background-color: qlineargradient(
-                    {points},
-                    stop:0 rgb({start_color.red()}, {start_color.green()}, {start_color.blue()}), 
-                    stop:1 rgb({end_color.red()}, {end_color.green()}, {end_color.blue()})
-                );
-            """
-        else:
-            # Pour macOS et autres plateformes
-            return f"""
-                background-color: qlineargradient(
-                    {points},
-                    stop:0 {start_color.name()}, 
-                    stop:1 {end_color.name()}
-                );
-            """
+from PyQt6.QtGui import QColor
 
 class ColorSystem:
     def __init__(self):
-        # Palette optimisée pour l'accessibilité avec ajustements spécifiques à la plateforme
-        # Couleurs de base
-        base_colors = {
+        # Palette optimisée pour l'accessibilité
+        self.colors = {
             'primary': QColor('#1A5A96'),        # Bleu principal
             'secondary': QColor('#505A64'),      # Gris foncé
             'success': QColor('#2E8540'),        # Vert succès
@@ -289,80 +16,57 @@ class ColorSystem:
             'light': QColor('#F5F7FA'),          # Gris très pâle
             'dark': QColor('#2C3E50'),           # Gris très foncé
             'window_background': QColor('#F5F7FA'), # Fond d'application
+            
+            'text': {
+                'primary': QColor('#2C3E50'),    # Texte principal
+                'secondary': QColor('#505A64'),  # Texte secondaire
+                'light': QColor('#FFFFFF'),      # Texte clair
+                'dark': QColor('#1A1A1A'),       # Texte foncé
+                'disabled': QColor('#A0AEC0')    # Texte désactivé
+            },
+            
+            'container': {
+                'background': QColor('#FFFFFF'), # Fond de conteneur
+                'border': QColor('#CBD5E1'),     # Bordure de conteneur
+                'hover': QColor('#E9EEF4'),      # Effet de survol
+                'disabled': QColor('#EDF2F7')    # Conteneur désactivé
+            },
+            
+            'table': {
+                'header': QColor('#C6D1E1'),     # En-tête de tableau
+                'border': QColor('#B4C2D3'),     # Bordure de tableau
+                'hover': QColor('#D8E1ED'),      # Ligne survolée
+                'selected': QColor('#B8C7DB'),   # Ligne sélectionnée
+                'alternate': QColor('#E2E8F0'),  # Ligne alternée
+                'background': QColor('#EDF2F7')  # Fond de tableau
+            },
+            
+            'focus': {
+                'outline': QColor('#1A5A96')     # Contour de focus
+            },
+            
             'weekend': QColor('#E2E8F0'),        # Fond pour les weekends (gris pâle)
             'weekday': QColor('#FFFFFF'),        # Fond pour les jours de semaine
             'available': QColor('#D4EDDA'),      # Disponibilité
-        }
-        
-        # Couleurs de texte
-        text_colors = {
-            'primary': QColor('#2C3E50'),    # Texte principal
-            'secondary': QColor('#505A64'),  # Texte secondaire
-            'light': QColor('#FFFFFF'),      # Texte clair
-            'dark': QColor('#1A1A1A'),       # Texte foncé
-            'disabled': QColor('#A0AEC0')    # Texte désactivé
-        }
-        
-        # Couleurs de conteneur
-        container_colors = {
-            'background': QColor('#FFFFFF'), # Fond de conteneur
-            'border': QColor('#CBD5E1'),     # Bordure de conteneur
-            'hover': QColor('#E9EEF4'),      # Effet de survol
-            'disabled': QColor('#EDF2F7')    # Conteneur désactivé
-        }
-        
-        # Couleurs de tableau
-        table_colors = {
-            'header': QColor('#C6D1E1'),     # En-tête de tableau
-            'border': QColor('#B4C2D3'),     # Bordure de tableau
-            'hover': QColor('#D8E1ED'),      # Ligne survolée
-            'selected': QColor('#B8C7DB'),   # Ligne sélectionnée
-            'alternate': QColor('#E2E8F0'),  # Ligne alternée
-            'background': QColor('#EDF2F7')  # Fond de tableau
-        }
-        
-        # Couleurs de focus
-        focus_colors = {
-            'outline': QColor('#1A5A96')     # Contour de focus
-        }
-        
-        # Couleurs de desiderata
-        desiderata_colors = {
-            'primary': {
-                'normal': QColor('#FFD4D4'),  # Rouge clair pour jours normaux
-                'weekend': QColor('#FFA8A8')  # Rouge plus foncé pour weekends
+            
+            'desiderata': {
+                'primary': {
+                    'normal': QColor('#FFD4D4'),  # Rouge clair pour jours normaux
+                    'weekend': QColor('#FFA8A8')  # Rouge plus foncé pour weekends
+                },
+                'secondary': {
+                    'normal': QColor('#D4E4FF'),  # Bleu clair pour jours normaux
+                    'weekend': QColor('#A8C8FF')  # Bleu plus foncé pour weekends
+                }
             },
-            'secondary': {
-                'normal': QColor('#D4E4FF'),  # Bleu clair pour jours normaux
-                'weekend': QColor('#A8C8FF')  # Bleu plus foncé pour weekends
+            
+            # Couleurs pour les différents types de postes
+            'post_types': {
+                'consultation': QColor('#D0E2F3'),  # Bleu pâle pour consultations
+                'visite': QColor('#D4EDDA'),        # Vert pâle pour visites
+                'garde': QColor('#E2D4ED')          # Violet pâle pour gardes
             }
         }
-        
-        # Couleurs pour les différents types de postes
-        post_type_colors = {
-            'consultation': QColor('#D0E2F3'),  # Bleu pâle pour consultations
-            'visite': QColor('#D4EDDA'),        # Vert pâle pour visites
-            'garde': QColor('#E2D4ED')          # Violet pâle pour gardes
-        }
-        
-        # Appliquer les ajustements de couleur spécifiques à la plateforme
-        self.colors = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in base_colors.items()}
-        
-        # Ajouter les dictionnaires de couleurs imbriqués avec ajustements
-        self.colors['text'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in text_colors.items()}
-        self.colors['container'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in container_colors.items()}
-        self.colors['table'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in table_colors.items()}
-        self.colors['focus'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in focus_colors.items()}
-        
-        # Traiter les couleurs de desiderata (structure imbriquée à deux niveaux)
-        self.colors['desiderata'] = {}
-        for priority, contexts in desiderata_colors.items():
-            self.colors['desiderata'][priority] = {}
-            for context, color in contexts.items():
-                self.colors['desiderata'][priority][context] = PlatformHelper.adjust_color_for_platform(color)
-        
-        # Ajouter les couleurs des types de postes
-        self.colors['post_types'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in post_type_colors.items()}
         
         # Styles pour les boutons et autres éléments
         self.styles = {
@@ -627,13 +331,8 @@ class ColorSystem:
 class StyleConstants:
     """Constants for styling the application."""
     
-    # Facteur d'échelle global basé sur la plateforme et la résolution
-    PLATFORM = PlatformHelper.get_platform()
-    DPI_SCALE = PlatformHelper.get_dpi_scale_factor()
-    FONT_ADJUSTMENTS = PlatformHelper.get_platform_font_adjustments()
-    
-    # Facteur d'échelle combiné (plateforme + résolution)
-    SCALE_FACTOR = DPI_SCALE
+    # Facteur d'échelle global (pourrait être ajusté en fonction de la résolution)
+    SCALE_FACTOR = 1.0
     
     # Espacement proportionnel à l'échelle
     SPACING = {

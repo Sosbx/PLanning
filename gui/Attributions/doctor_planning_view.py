@@ -245,8 +245,33 @@ class DoctorPlanningView(QWidget):
         self.splitter.addWidget(left_widget)
         self.splitter.addWidget(right_widget)
         
-        # Définir les tailles initiales (70% - 30%)
-        self.splitter.setSizes([700, 300])
+        # Définir les tailles initiales (85% - 15%)
+        self.splitter.setSizes([850, 150])
+        
+        # Style personnalisé pour le splitter
+        custom_splitter_style = """
+            QSplitter::handle {
+                background-color: #CBD5E1;
+            }
+            
+            QSplitter::handle:horizontal {
+                width: 4px;
+                margin: 4px 0px;
+                border-radius: 2px;
+                background-color: #CBD5E1;
+            }
+            
+            QSplitter::handle:hover {
+                background-color: #1A5A96;
+            }
+        """
+        self.splitter.setStyleSheet(custom_splitter_style)
+        
+        # Connecter le signal splitterMoved pour sauvegarder l'état
+        self.splitter.splitterMoved.connect(self.saveState)
+        
+        # Restaurer l'état précédent si disponible
+        self.restoreState()
         
         layout.addWidget(self.splitter)
     
@@ -333,32 +358,51 @@ class DoctorPlanningView(QWidget):
                     slot.assignee if slot.assignee else "Non assigné"
                 ))
 
-        # Mettre à jour les titres des sections
-        period_names = {1: "Matin", 2: "Après-midi", 3: "Soir"}
+        # Mettre à jour les titres des sections de manière plus compacte
+        period_names = {1: "M", 2: "AM", 3: "S"}  # Abréviations: Matin, Après-Midi, Soir
         day_type_names = {
-            "weekday": "Semaine",
-            "saturday": "Samedi",
-            "sunday_holiday": "Dimanche/Férié"
+            "weekday": "Sem",
+            "saturday": "Sam",
+            "sunday_holiday": "Dim/Fér"
         }
         day_type_name = day_type_names.get(day_type, '')
+        date_str = current_date.strftime('%d/%m')
 
         if period is None:
-            title = f"Postes du {current_date.strftime('%d/%m/%Y')} ({day_type_name})"
+            title = f"{date_str} ({day_type_name})"
         else:
             period_name = period_names.get(period, '')
-            title = f"Postes du {current_date.strftime('%d/%m/%Y')} - {period_name} ({day_type_name})"
+            title = f"{date_str} {period_name} ({day_type_name})"
 
-        self.assigned_section.title_label.setText(f"Détails des postes - {title}")
-        self.available_section.title_label.setText(f"Médecins disponibles - {title}")
-        self.secondary_section.title_label.setText(f"Médecins avec desiderata secondaire - {title}")
+        self.assigned_section.title_label.setText(f"Postes - {title}")
+        self.available_section.title_label.setText(f"Disponibles - {title}")
+        self.secondary_section.title_label.setText(f"Desiderata sec. - {title}")
 
         # Mettre à jour les tables
         self._update_assigned_section(display_posts)
         self._update_available_doctors(current_date, period, day_type)
         self._update_secondary_desiderata(current_date, period, day_type)
 
+    # Les méthodes _toggle_panel_size et toggle_compact_mode ont été supprimées car elles ne sont plus nécessaires
+    
+    def saveState(self):
+        """Sauvegarde l'état du splitter"""
+        if hasattr(self, 'splitter') and self.splitter:
+            sizes = self.splitter.sizes()
+            # Sauvegarder les tailles dans les paramètres de l'application
+            if hasattr(self.planning, 'main_window') and self.planning.main_window:
+                self.planning.main_window.settings.setValue("doctor_planning_view/splitter_sizes", sizes)
+    
+    def restoreState(self):
+        """Restaure l'état du splitter"""
+        if hasattr(self, 'splitter') and self.splitter and hasattr(self.planning, 'main_window') and self.planning.main_window:
+            # Restaurer la taille du splitter
+            sizes = self.planning.main_window.settings.value("doctor_planning_view/splitter_sizes")
+            if sizes:
+                self.splitter.setSizes(sizes)
+    
     def _update_assigned_section(self, display_posts):
-        """Met à jour la section des postes attribués"""
+        """Met à jour la section des postes attribués avec des indicateurs visuels"""
         self.detail_table.setRowCount(len(display_posts))
         for i, (post_type, assignee) in enumerate(display_posts):
             # Poste
@@ -369,11 +413,16 @@ class DoctorPlanningView(QWidget):
             # Médecin assigné
             doctor_item = QTableWidgetItem(assignee)
             doctor_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.detail_table.setItem(i, 1, doctor_item)
-
+            
             # Style pour les postes non assignés
             if assignee == "Non assigné":
                 doctor_item.setForeground(QBrush(QColor(150, 150, 150)))
+                doctor_item.setBackground(QBrush(QColor(255, 240, 240)))  # Fond légèrement rouge
+                doctor_item.setToolTip("Ce poste n'est pas encore assigné")
+            else:
+                doctor_item.setBackground(QBrush(QColor(240, 255, 240)))  # Fond légèrement vert
+                
+            self.detail_table.setItem(i, 1, doctor_item)
 
     def _update_available_doctors(self, current_date: date, period: Optional[int], day_type: str):
         """
