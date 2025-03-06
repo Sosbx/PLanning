@@ -40498,3 +40498,2150 @@ DOCTORS:
 2025-03-06 16:04:07,491 [INFO] Traitement du poste NZ
 2025-03-06 16:04:07,491 [INFO] - Ajouté au groupe soir/nuit
 2025-03-06 16:04:17,404 [INFO] Données sauvegardées
+2025-03-06 16:07:40,928 [INFO] Données chargées
+2025-03-06 16:07:40,956 [INFO] Poste personnalisé chargé: NR
+2025-03-06 16:07:40,956 [INFO] Poste personnalisé chargé: NZ
+2025-03-06 16:07:41,333 [INFO] Postes personnalisés chargés: ['NR', 'NZ']
+2025-03-06 16:07:41,407 [INFO] Chargement des postes personnalisés: {'NR': CustomPost(name='NR', start_time=datetime.time(19, 0), end_time=datetime.time(23, 0), day_types={'weekday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x10fcfd4d0>), 'NZ': CustomPost(name='NZ', start_time=datetime.time(20, 0), end_time=datetime.time(23, 0), day_types={'weekday', 'saturday', 'sunday_holiday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x10fcfd550>)}
+2025-03-06 16:07:41,407 [INFO] Mise à jour des groupes avec les postes personnalisés
+2025-03-06 16:07:41,407 [INFO] Traitement du poste NR
+2025-03-06 16:07:41,407 [INFO] - Ajouté au groupe soir/nuit
+2025-03-06 16:07:41,407 [INFO] Traitement du poste NZ
+2025-03-06 16:07:41,407 [INFO] - Ajouté au groupe soir/nuit
+2025-03-06 16:07:58,576 [INFO] Données sauvegardées
+2025-03-06 16:17:05,236 [INFO] Données chargées
+2025-03-06 16:17:05,528 [INFO] Poste personnalisé chargé: NR
+2025-03-06 16:17:05,528 [INFO] Poste personnalisé chargé: NZ
+2025-03-06 16:17:05,903 [INFO] Postes personnalisés chargés: ['NR', 'NZ']
+2025-03-06 16:17:05,981 [INFO] Chargement des postes personnalisés: {'NR': CustomPost(name='NR', start_time=datetime.time(19, 0), end_time=datetime.time(23, 0), day_types={'weekday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x111c754d0>), 'NZ': CustomPost(name='NZ', start_time=datetime.time(20, 0), end_time=datetime.time(23, 0), day_types={'weekday', 'saturday', 'sunday_holiday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x111c75550>)}
+2025-03-06 16:17:05,981 [INFO] Mise à jour des groupes avec les postes personnalisés
+2025-03-06 16:17:05,981 [INFO] Traitement du poste NR
+2025-03-06 16:17:05,981 [INFO] - Ajouté au groupe soir/nuit
+2025-03-06 16:17:05,981 [INFO] Traitement du poste NZ
+2025-03-06 16:17:05,981 [INFO] - Ajouté au groupe soir/nuit
+2025-03-06 16:17:14,315 [INFO] Postes personnalisés chargés: ['NR', 'NZ']
+2025-03-06 16:17:14,315 [INFO] ================================================================================
+2025-03-06 16:17:14,315 [INFO] INITIALISATION DU PLANNING: 2025-03-06 - 2025-07-04
+2025-03-06 16:17:14,315 [INFO] ================================================================================
+2025-03-06 16:17:14,315 [INFO] 
+INITIALISATION DU PLANNING
+2025-03-06 16:17:14,315 [INFO] ================================================================================
+2025-03-06 16:17:14,334 [ERROR] Slot manquant pour ML le 2025-05-11 (assigné à AVIT)
+2025-03-06 16:17:14,335 [ERROR] Slot manquant pour HA le 2025-05-21 (assigné à AVIT)
+2025-03-06 16:17:14,335 [ERROR] Slot manquant pour CA le 2025-05-13 (assigné à AVIT)
+2025-03-06 16:17:14,335 [ERROR] Slot manquant pour HS le 2025-05-10 (assigné à AVIT)
+2025-03-06 16:17:14,335 [ERROR] Slot manquant pour CA le 2025-04-04 (assigné à AVIT)
+2025-03-06 16:17:14,335 [ERROR] Slot manquant pour MC le 2025-05-04 (assigné à AVIT)
+2025-03-06 16:17:14,335 [WARNING] Certaines pré-attributions de postes à quota zéro n'ont pas été correctement appliquées
+2025-03-06 16:17:14,335 [INFO] 
+RÉSUMÉ DES SLOTS INITIALISÉS
+2025-03-06 16:17:14,335 [INFO] ================================================================================
+2025-03-06 16:17:14,335 [INFO] 
+SEMAINE
+2025-03-06 16:17:14,335 [INFO] ----------------------------------------
+2025-03-06 16:17:14,335 [INFO] NL (lundi-jeudi)   : 128 slots
+2025-03-06 16:17:14,335 [INFO] NL (vendredi)      :  30 slots
+2025-03-06 16:17:14,335 [INFO] 
+Autres postes:
+2025-03-06 16:17:14,335 [INFO] CA  : 158 slots
+2025-03-06 16:17:14,335 [INFO] CM  :  94 slots
+2025-03-06 16:17:14,335 [INFO] CS  :  79 slots
+2025-03-06 16:17:14,335 [INFO] CT  :  78 slots
+2025-03-06 16:17:14,335 [INFO] HA  :  79 slots
+2025-03-06 16:17:14,335 [INFO] HM  :  79 slots
+2025-03-06 16:17:14,336 [INFO] HS  :  79 slots
+2025-03-06 16:17:14,336 [INFO] ML  : 158 slots
+2025-03-06 16:17:14,336 [INFO] MM  :  79 slots
+2025-03-06 16:17:14,336 [INFO] NC  :  79 slots
+2025-03-06 16:17:14,336 [INFO] NM  : 158 slots
+2025-03-06 16:17:14,336 [INFO] RS  :  79 slots
+2025-03-06 16:17:14,336 [INFO] SM  :  79 slots
+2025-03-06 16:17:14,336 [INFO] SS  :  79 slots
+2025-03-06 16:17:14,336 [INFO] 
+SAMEDI
+2025-03-06 16:17:14,336 [INFO] ----------------------------------------
+2025-03-06 16:17:14,336 [INFO] NL  :  28 slots
+2025-03-06 16:17:14,336 [INFO] 
+Autres postes:
+2025-03-06 16:17:14,336 [INFO] AC  :  14 slots
+2025-03-06 16:17:14,336 [INFO] AL  :  28 slots
+2025-03-06 16:17:14,336 [INFO] CA  :  28 slots
+2025-03-06 16:17:14,336 [INFO] CM  :  18 slots
+2025-03-06 16:17:14,336 [INFO] CS  :  14 slots
+2025-03-06 16:17:14,336 [INFO] HA  :  14 slots
+2025-03-06 16:17:14,336 [INFO] HM  :  14 slots
+2025-03-06 16:17:14,336 [INFO] HS  :  14 slots
+2025-03-06 16:17:14,336 [INFO] ML  :  28 slots
+2025-03-06 16:17:14,336 [INFO] MM  :  14 slots
+2025-03-06 16:17:14,336 [INFO] NA  :  14 slots
+2025-03-06 16:17:14,336 [INFO] NM  :  28 slots
+2025-03-06 16:17:14,336 [INFO] RA  :  14 slots
+2025-03-06 16:17:14,336 [INFO] RS  :  14 slots
+2025-03-06 16:17:14,336 [INFO] SA  :  14 slots
+2025-03-06 16:17:14,336 [INFO] SS  :  14 slots
+2025-03-06 16:17:14,336 [INFO] 
+DIMANCHE/FÉRIÉ
+2025-03-06 16:17:14,336 [INFO] ----------------------------------------
+2025-03-06 16:17:14,336 [INFO] NL  :  56 slots
+2025-03-06 16:17:14,336 [INFO] 
+Autres postes:
+2025-03-06 16:17:14,336 [INFO] AC  :  28 slots
+2025-03-06 16:17:14,336 [INFO] AL  :  56 slots
+2025-03-06 16:17:14,336 [INFO] CA  :  56 slots
+2025-03-06 16:17:14,337 [INFO] CM  :  56 slots
+2025-03-06 16:17:14,337 [INFO] CS  :  28 slots
+2025-03-06 16:17:14,337 [INFO] HA  :  28 slots
+2025-03-06 16:17:14,337 [INFO] HM  :  28 slots
+2025-03-06 16:17:14,337 [INFO] HS  :  28 slots
+2025-03-06 16:17:14,337 [INFO] MC  :  28 slots
+2025-03-06 16:17:14,337 [INFO] ML  :  56 slots
+2025-03-06 16:17:14,337 [INFO] NA  :  28 slots
+2025-03-06 16:17:14,337 [INFO] NM  :  56 slots
+2025-03-06 16:17:14,337 [INFO] RA  :  28 slots
+2025-03-06 16:17:14,337 [INFO] RM  :  28 slots
+2025-03-06 16:17:14,337 [INFO] RS  :  28 slots
+2025-03-06 16:17:14,337 [INFO] SA  :  28 slots
+2025-03-06 16:17:14,337 [INFO] SM  :  28 slots
+2025-03-06 16:17:14,337 [INFO] SS  :  28 slots
+2025-03-06 16:17:14,337 [INFO] 
+TOTAUX NL PAR CATÉGORIE:
+2025-03-06 16:17:14,337 [INFO] ----------------------------------------
+2025-03-06 16:17:14,337 [INFO] NLv (Vendredi)        :  30 slots
+2025-03-06 16:17:14,337 [INFO] NLs (Samedi)          :  28 slots
+2025-03-06 16:17:14,337 [INFO] NLd (Dimanche/Férié)  :  56 slots
+2025-03-06 16:17:14,337 [INFO] Total NL              : 242 slots
+2025-03-06 16:17:14,337 [INFO] 
+STATISTIQUES FINALES
+2025-03-06 16:17:14,337 [INFO] ----------------------------------------
+2025-03-06 16:17:14,337 [INFO] Nombre total de jours NLd   : 28
+2025-03-06 16:17:14,337 [INFO] Nombre total de slots NLd   : 56
+2025-03-06 16:17:14,337 [INFO] Nettoyage des postes personnalisés
+2025-03-06 16:17:14,339 [INFO] Postes personnalisés sauvegardés
+2025-03-06 16:17:14,339 [INFO] Postes personnalisés nettoyés. 0 postes supprimés
+2025-03-06 16:17:14,351 [INFO] ====================================================================================================
+2025-03-06 16:17:14,351 [INFO] ANALYSE DU PLANNING: 06/03/2025 - 04/07/2025
+2025-03-06 16:17:14,351 [INFO] ====================================================================================================
+2025-03-06 16:17:14,352 [INFO] 
+DÉTAIL DES JOURS
+2025-03-06 16:17:14,352 [INFO] ================================================================================
+2025-03-06 16:17:14,352 [INFO] Jours de semaine      :  79
+2025-03-06 16:17:14,352 [INFO] Samedis normaux       :  14
+2025-03-06 16:17:14,352 [INFO] 
+JOURS TRAITÉS COMME DIMANCHE/FÉRIÉ:
+2025-03-06 16:17:14,352 [INFO] Dimanches             :  17
+2025-03-06 16:17:14,352 [INFO] Jours fériés          :   5
+2025-03-06 16:17:14,352 [INFO] Jours de pont         :   6
+2025-03-06 16:17:14,352 [INFO]    dont samedis       :   3
+2025-03-06 16:17:14,352 [INFO] TOTAL Dim/Férié/Pont  :  28
+2025-03-06 16:17:14,352 [INFO] 
+CONFIGURATIONS SPÉCIFIQUES:
+2025-03-06 16:17:14,352 [INFO] --------------------------------------------------------------------------------
+2025-03-06 16:17:14,352 [INFO] * du 16/06/2025 au 16/06/2025 - Semaine : 14 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,352 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,352 [INFO] * du 04/08/2025 au 04/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,352 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,352 [INFO] * du 05/08/2025 au 05/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,352 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,352 [INFO] * du 06/08/2025 au 06/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,352 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,352 [INFO] * du 07/08/2025 au 07/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,352 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,352 [INFO] * du 08/08/2025 au 08/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,352 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,352 [INFO] * du 11/08/2025 au 11/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,352 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,353 [INFO] * du 12/08/2025 au 12/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,353 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,353 [INFO] * du 13/08/2025 au 13/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,353 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,353 [INFO] * du 14/08/2025 au 14/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,353 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,353 [INFO] * du 03/08/2025 au 03/08/2025 - Dimanche/Férié : 18 postes (2ML, 1CM, 1HM, 1RM, 1SM, 1CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 1AL, 1AC, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,353 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,353 [INFO] * du 10/08/2025 au 10/08/2025 - Dimanche/Férié : 18 postes (2ML, 1CM, 1HM, 1RM, 1SM, 1CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 1AL, 1AC, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,353 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,353 [INFO] * du 01/09/2025 au 01/09/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,353 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,353 [INFO] * du 08/09/2025 au 08/09/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,353 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,353 [INFO] * du 19/05/2025 au 19/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,353 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,353 [INFO] * du 20/05/2025 au 20/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,353 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,353 [INFO] * du 21/05/2025 au 21/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,353 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,353 [INFO] * du 22/05/2025 au 22/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,353 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,353 [INFO] * du 23/05/2025 au 23/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,354 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,354 [INFO] * du 04/06/2025 au 04/06/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,354 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,354 [INFO] * du 05/06/2025 au 05/06/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,354 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,354 [INFO] * du 06/06/2025 au 06/06/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,354 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,354 [INFO] * du 26/05/2025 au 26/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,354 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,354 [INFO] * du 27/05/2025 au 27/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,354 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,354 [INFO] * du 28/05/2025 au 28/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,354 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,354 [INFO] * du 17/05/2025 au 17/05/2025 - Samedi : 17 postes (2ML, 1MM, 2CM, 1HM, 2CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 2AL, 1AC, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,354 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,354 [INFO] * du 24/05/2025 au 24/05/2025 - Samedi : 17 postes (2ML, 1MM, 2CM, 1HM, 2CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 2AL, 1AC, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,354 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,354 [INFO] * du 07/06/2025 au 07/06/2025 - Samedi : 17 postes (2ML, 1MM, 2CM, 1HM, 2CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 2AL, 1AC, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,354 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,354 [INFO] * du 14/06/2025 au 14/06/2025 - Samedi : 17 postes (2ML, 1MM, 2CM, 1HM, 2CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 2AL, 1AC, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,354 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,354 [INFO] * du 10/06/2025 au 10/06/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,354 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,354 [INFO] * du 23/06/2025 au 23/06/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,354 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,354 [INFO] * du 30/06/2025 au 30/06/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,354 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,355 [INFO] * du 17/08/2025 au 17/08/2025 - Dimanche/Férié : 18 postes (2ML, 1CM, 1HM, 1RM, 1SM, 1CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 1AL, 1AC, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,355 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,355 [INFO] * du 02/08/2025 au 02/08/2025 - Samedi : 16 postes (2ML, 1MM, 1CM, 1HM, 1CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 2AL, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,355 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,355 [INFO] * du 15/08/2025 au 15/08/2025 - Dimanche/Férié : 17 postes (2ML, 1CM, 1HM, 1RM, 1SM, 1CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 2AL, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,355 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,355 [INFO] * du 16/08/2025 au 16/08/2025 - Dimanche/Férié : 17 postes (2ML, 1CM, 1HM, 1RM, 1SM, 1CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 2AL, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,355 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,355 [INFO] --------------------------------------------------------------------------------
+2025-03-06 16:17:14,355 [INFO] Total jours période   : 121
+2025-03-06 16:17:14,355 [INFO] ================================================================================
+2025-03-06 16:17:14,355 [INFO] 
+ÉTAPE 1: Calcul du nombre total de postes
+2025-03-06 16:17:14,355 [INFO] 
+====================================================================================================
+2025-03-06 16:17:14,355 [INFO] ANALYSE DES POSTES: 06/03/2025 - 04/07/2025
+2025-03-06 16:17:14,355 [INFO] ====================================================================================================
+2025-03-06 16:17:14,358 [INFO] 
+TOTAL DES POSTES PAR TYPE:
+2025-03-06 16:17:14,358 [INFO] 
+WEEKDAY:
+2025-03-06 16:17:14,358 [INFO] NL (lundi-jeudi) : 128
+2025-03-06 16:17:14,358 [INFO] NLv (vendredi)   :  30
+2025-03-06 16:17:14,358 [INFO] Total NL semaine : 158
+2025-03-06 16:17:14,359 [INFO] CA  : 158
+2025-03-06 16:17:14,359 [INFO] CM  :  94
+2025-03-06 16:17:14,359 [INFO] CS  :  79
+2025-03-06 16:17:14,359 [INFO] CT  :  79
+2025-03-06 16:17:14,359 [INFO] HA  :  79
+2025-03-06 16:17:14,359 [INFO] HM  :  79
+2025-03-06 16:17:14,359 [INFO] HS  :  79
+2025-03-06 16:17:14,359 [INFO] ML  : 158
+2025-03-06 16:17:14,359 [INFO] MM  :  79
+2025-03-06 16:17:14,359 [INFO] NC  :  79
+2025-03-06 16:17:14,359 [INFO] NM  : 158
+2025-03-06 16:17:14,359 [INFO] RS  :  79
+2025-03-06 16:17:14,359 [INFO] SM  :  79
+2025-03-06 16:17:14,359 [INFO] SS  :  79
+2025-03-06 16:17:14,359 [INFO] 
+POSTES WEEKEND:
+2025-03-06 16:17:14,359 [INFO] RM  :  28
+2025-03-06 16:17:14,359 [INFO] RS  :  42
+2025-03-06 16:17:14,359 [INFO] CM  :  74
+2025-03-06 16:17:14,359 [INFO] CA  :  84
+2025-03-06 16:17:14,359 [INFO] SS  :  42
+2025-03-06 16:17:14,359 [INFO] HS  :  42
+2025-03-06 16:17:14,359 [INFO] HA  :  42
+2025-03-06 16:17:14,359 [INFO] RA  :  42
+2025-03-06 16:17:14,359 [INFO] NM  :  84
+2025-03-06 16:17:14,359 [INFO] SA  :  42
+2025-03-06 16:17:14,359 [INFO] MM  :  14
+2025-03-06 16:17:14,359 [INFO] CS  :  42
+2025-03-06 16:17:14,359 [INFO] HM  :  42
+2025-03-06 16:17:14,359 [INFO] ML  :  84
+2025-03-06 16:17:14,359 [INFO] NL  :  84
+2025-03-06 16:17:14,359 [INFO] MC  :  28
+2025-03-06 16:17:14,359 [INFO] AC  :  42
+2025-03-06 16:17:14,359 [INFO] SM  :  28
+2025-03-06 16:17:14,359 [INFO] AL  :  84
+2025-03-06 16:17:14,359 [INFO] NA  :  42
+2025-03-06 16:17:14,359 [INFO] 
+GROUPES WEEKEND:
+2025-03-06 16:17:14,359 [INFO] CmS   :  46
+2025-03-06 16:17:14,359 [INFO] CmD   : 140
+2025-03-06 16:17:14,359 [INFO] CaSD  : 210
+2025-03-06 16:17:14,360 [INFO] CsSD  : 168
+2025-03-06 16:17:14,360 [INFO] VmS   :  28
+2025-03-06 16:17:14,360 [INFO] VmD   :  84
+2025-03-06 16:17:14,360 [INFO] VaSD  : 126
+2025-03-06 16:17:14,360 [INFO] NAMw  : 126
+2025-03-06 16:17:14,360 [INFO] NLw   : 114
+2025-03-06 16:17:14,360 [INFO] 
+GROUPES SEMAINE:
+2025-03-06 16:17:14,360 [INFO] XmM   : 158
+2025-03-06 16:17:14,360 [INFO] XM    : 173
+2025-03-06 16:17:14,360 [INFO] XA    : 316
+2025-03-06 16:17:14,360 [INFO] XS    : 316
+2025-03-06 16:17:14,360 [INFO] NMC   : 237
+2025-03-06 16:17:14,360 [INFO] Vm    : 158
+2025-03-06 16:17:14,360 [INFO] NL    : 128
+2025-03-06 16:17:14,360 [INFO] NLv   :  30
+2025-03-06 16:17:14,360 [INFO] 
+DISTRIBUTION TOTALE DES POSTES
+2025-03-06 16:17:14,360 [INFO] ================================================================================
+2025-03-06 16:17:14,360 [INFO] 
+ÉTAPE 2: Analyse des postes réservés aux CAT
+2025-03-06 16:17:14,360 [INFO] Analyzing CAT posts.
+2025-03-06 16:17:14,360 [INFO] CAT posts calculated: {'weekday': {'ML': 8, 'MC': 0, 'MM': 2, 'CM': 3, 'HM': 0, 'RM': 0, 'SM': 1, 'CA': 7, 'HA': 7, 'RA': 0, 'SA': 0, 'CS': 1, 'HS': 2, 'RS': 2, 'SS': 1, 'AL': 0, 'AC': 0, 'NC': 2, 'NA': 0, 'NM': 4, 'NL': 3, 'NLv': 1, 'CT': 0, 'NR': 0, 'NZ': 0}, 'saturday': {'ML': 0, 'MC': 0, 'MM': 0, 'CM': 0, 'HM': 0, 'RM': 0, 'SM': 0, 'CA': 0, 'HA': 0, 'RA': 0, 'SA': 0, 'CS': 0, 'HS': 0, 'RS': 0, 'SS': 0, 'AL': 1, 'AC': 1, 'NC': 0, 'NA': 1, 'NM': 1, 'NL': 1, 'CT': 0, 'NZ': 0}, 'sunday_holiday': {'ML': 0, 'MC': 0, 'MM': 0, 'CM': 0, 'HM': 0, 'RM': 0, 'SM': 0, 'CA': 0, 'HA': 0, 'RA': 0, 'SA': 0, 'CS': 0, 'HS': 0, 'RS': 0, 'SS': 0, 'AL': 0, 'AC': 0, 'NC': 0, 'NA': 1, 'NM': 1, 'NL': 1, 'CT': 0, 'NZ': 0}}
+2025-03-06 16:17:14,360 [INFO] 
+DISTRIBUTION DES POSTES CAT
+2025-03-06 16:17:14,360 [INFO] ================================================================================
+2025-03-06 16:17:14,360 [INFO] 
+ÉTAPE 3: Ajustement des postes pour les médecins
+2025-03-06 16:17:14,360 [INFO] 
+Ajustement des postes pour les médecins
+2025-03-06 16:17:14,360 [INFO] 
+AJUSTEMENT POSTES SEMAINE:
+2025-03-06 16:17:14,360 [INFO] RS  : Total= 79, CAT= 2 x 5 = 10, Ajusté= 69
+2025-03-06 16:17:14,360 [INFO] CM  : Total= 94, CAT= 3 x 5 = 15, Ajusté= 79
+2025-03-06 16:17:14,360 [INFO] CA  : Total=158, CAT= 7 x 5 = 35, Ajusté=123
+2025-03-06 16:17:14,360 [INFO] SS  : Total= 79, CAT= 1 x 5 =  5, Ajusté= 74
+2025-03-06 16:17:14,360 [INFO] HS  : Total= 79, CAT= 2 x 5 = 10, Ajusté= 69
+2025-03-06 16:17:14,360 [INFO] HA  : Total= 79, CAT= 7 x 5 = 35, Ajusté= 44
+2025-03-06 16:17:14,360 [INFO] NM  : Total=158, CAT= 4 x 5 = 20, Ajusté=138
+2025-03-06 16:17:14,360 [INFO] CT  : Total= 79, CAT= 0 x 5 =  0, Ajusté= 79
+2025-03-06 16:17:14,360 [INFO] NC  : Total= 79, CAT= 2 x 5 = 10, Ajusté= 69
+2025-03-06 16:17:14,360 [INFO] MM  : Total= 79, CAT= 2 x 5 = 10, Ajusté= 69
+2025-03-06 16:17:14,360 [INFO] CS  : Total= 79, CAT= 1 x 5 =  5, Ajusté= 74
+2025-03-06 16:17:14,360 [INFO] HM  : Total= 79, CAT= 0 x 5 =  0, Ajusté= 79
+2025-03-06 16:17:14,360 [INFO] ML  : Total=158, CAT= 8 x 5 = 40, Ajusté=118
+2025-03-06 16:17:14,360 [INFO] SM  : Total= 79, CAT= 1 x 5 =  5, Ajusté= 74
+2025-03-06 16:17:14,361 [INFO] NL  : Total=128, CAT= 3 x 5 = 15, Ajusté=113
+2025-03-06 16:17:14,361 [INFO] NLv : Total= 30, CAT= 1 x 5 =  5, Ajusté= 25
+2025-03-06 16:17:14,361 [INFO] 
+AJUSTEMENT POSTES SATURDAY:
+2025-03-06 16:17:14,361 [INFO] RS  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,361 [INFO] CM  : Total= 18, CAT= 0 x 5 =  0, Ajusté= 18
+2025-03-06 16:17:14,361 [INFO] CA  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,361 [INFO] SS  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,361 [INFO] HS  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,361 [INFO] HA  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,361 [INFO] RA  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,361 [INFO] NM  : Total= 28, CAT= 1 x 5 =  5, Ajusté= 23
+2025-03-06 16:17:14,361 [INFO] SA  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,361 [INFO] MM  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,361 [INFO] CS  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,361 [INFO] HM  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,361 [INFO] ML  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,361 [INFO] NL  : Total= 28, CAT= 1 x 5 =  5, Ajusté= 23
+2025-03-06 16:17:14,361 [INFO] AC  : Total= 14, CAT= 1 x 5 =  5, Ajusté=  9
+2025-03-06 16:17:14,361 [INFO] AL  : Total= 28, CAT= 1 x 5 =  5, Ajusté= 23
+2025-03-06 16:17:14,361 [INFO] NA  : Total= 14, CAT= 1 x 5 =  5, Ajusté=  9
+2025-03-06 16:17:14,361 [INFO] 
+AJUSTEMENT POSTES SUNDAY_HOLIDAY:
+2025-03-06 16:17:14,361 [INFO] RM  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,361 [INFO] RS  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,361 [INFO] CM  : Total= 56, CAT= 0 x 5 =  0, Ajusté= 56
+2025-03-06 16:17:14,361 [INFO] CA  : Total= 56, CAT= 0 x 5 =  0, Ajusté= 56
+2025-03-06 16:17:14,361 [INFO] SS  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,361 [INFO] HS  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,361 [INFO] HA  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,361 [INFO] RA  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,361 [INFO] NM  : Total= 56, CAT= 1 x 5 =  5, Ajusté= 51
+2025-03-06 16:17:14,361 [INFO] SA  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,361 [INFO] CS  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,361 [INFO] HM  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,361 [INFO] ML  : Total= 56, CAT= 0 x 5 =  0, Ajusté= 56
+2025-03-06 16:17:14,361 [INFO] NL  : Total= 56, CAT= 1 x 5 =  5, Ajusté= 51
+2025-03-06 16:17:14,361 [INFO] MC  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,361 [INFO] AC  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,361 [INFO] SM  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,362 [INFO] AL  : Total= 56, CAT= 0 x 5 =  0, Ajusté= 56
+2025-03-06 16:17:14,362 [INFO] NA  : Total= 28, CAT= 1 x 5 =  5, Ajusté= 23
+2025-03-06 16:17:14,362 [INFO] 
+AJUSTEMENT GROUPES SEMAINE:
+2025-03-06 16:17:14,362 [INFO] XmM   : Total=158, CAT= 3 x 5 = 15, Ajusté=143
+2025-03-06 16:17:14,362 [INFO] XM    : Total=173, CAT= 3 x 5 = 15, Ajusté=158
+2025-03-06 16:17:14,362 [INFO] XA    : Total=316, CAT=14 x 5 = 70, Ajusté=246
+2025-03-06 16:17:14,362 [INFO] XS    : Total=316, CAT= 6 x 5 = 30, Ajusté=286
+2025-03-06 16:17:14,362 [INFO] NMC   : Total=237, CAT= 6 x 5 = 30, Ajusté=207
+2025-03-06 16:17:14,362 [INFO] Vm    : Total=158, CAT= 8 x 5 = 40, Ajusté=118
+2025-03-06 16:17:14,362 [INFO] 
+AJUSTEMENT GROUPES WEEKEND:
+2025-03-06 16:17:14,362 [INFO] CmS   : Total= 46, CAT= 0 x 5 =  0, Ajusté= 46
+2025-03-06 16:17:14,362 [INFO] CmD   : Total=140, CAT= 0 x 5 =  0, Ajusté=140
+2025-03-06 16:17:14,362 [INFO] CaSD  : Total=210, CAT= 0 x 5 =  0, Ajusté=210
+2025-03-06 16:17:14,362 [INFO] CsSD  : Total=168, CAT= 0 x 5 =  0, Ajusté=168
+2025-03-06 16:17:14,362 [INFO] VmS   : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,362 [INFO] VmD   : Total= 84, CAT= 0 x 5 =  0, Ajusté= 84
+2025-03-06 16:17:14,362 [INFO] VaSD  : Total=126, CAT= 2 x 5 = 10, Ajusté=116
+2025-03-06 16:17:14,362 [INFO] NAMw  : Total=126, CAT= 4 x 5 = 20, Ajusté=106
+2025-03-06 16:17:14,362 [INFO] NLw    : Total=114 (NLs 28 + NLd 56 + NLv 30)  CAT= 3 (NLs 1 + NLd 1 + NLv 1) x 5 = 15  Ajusté= 99
+2025-03-06 16:17:14,362 [INFO] 
+DISTRIBUTION AJUSTÉE POUR LES MÉDECINS
+2025-03-06 16:17:14,362 [INFO] ================================================================================
+2025-03-06 16:17:14,362 [INFO] 
+WEEKDAY:
+2025-03-06 16:17:14,362 [INFO] ------------------------------------------------------------
+2025-03-06 16:17:14,362 [INFO] Type   Total    Plein temps (min-max)     Mi-temps (min-max)       
+2025-03-06 16:17:14,362 [INFO] CA          123 [ 4-5 ]               [ 2-2 ]
+2025-03-06 16:17:14,362 [INFO] CM           79 [ 2-3 ]               [ 1-2 ]
+2025-03-06 16:17:14,362 [INFO] CS           74 [ 2-3 ]               [ 1-2 ]
+2025-03-06 16:17:14,362 [INFO] CT           79 [ 2-3 ]               [ 1-2 ]
+2025-03-06 16:17:14,362 [INFO] HA           44 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,362 [INFO] HM           79 [ 2-3 ]               [ 1-2 ]
+2025-03-06 16:17:14,362 [INFO] HS           69 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,362 [INFO] ML          118 [ 4-5 ]               [ 2-2 ]
+2025-03-06 16:17:14,362 [INFO] MM           69 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,362 [INFO] NC           69 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,362 [INFO] NL          113 [ 4-5 ]               [ 2-2 ]
+2025-03-06 16:17:14,363 [INFO] NM          138 [ 5-6 ]               [ 2-3 ]
+2025-03-06 16:17:14,363 [INFO] RS           69 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,363 [INFO] SM           74 [ 2-3 ]               [ 1-2 ]
+2025-03-06 16:17:14,363 [INFO] SS           74 [ 2-3 ]               [ 1-2 ]
+2025-03-06 16:17:14,363 [INFO] 
+SATURDAY:
+2025-03-06 16:17:14,363 [INFO] ------------------------------------------------------------
+2025-03-06 16:17:14,363 [INFO] Type   Total    Plein temps (min-max)     Mi-temps (min-max)       
+2025-03-06 16:17:14,363 [INFO] AC            9 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,363 [INFO] AL           23 [ 0-1 ]               [ 0-1 ]
+2025-03-06 16:17:14,363 [INFO] CA           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,363 [INFO] CM           18 [ 0-1 ]               [ 0-1 ]
+2025-03-06 16:17:14,363 [INFO] CS           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,363 [INFO] HA           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,363 [INFO] HM           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,363 [INFO] HS           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,363 [INFO] ML           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,363 [INFO] MM           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,363 [INFO] NA            9 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,363 [INFO] NL           23 [ 0-1 ]               [ 0-1 ]
+2025-03-06 16:17:14,363 [INFO] NM           23 [ 0-1 ]               [ 0-1 ]
+2025-03-06 16:17:14,363 [INFO] RA           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,363 [INFO] RS           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,363 [INFO] SA           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,363 [INFO] SS           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,363 [INFO] 
+SUNDAY/HOLIDAY:
+2025-03-06 16:17:14,363 [INFO] ------------------------------------------------------------
+2025-03-06 16:17:14,363 [INFO] Type   Total    Plein temps (min-max)     Mi-temps (min-max)       
+2025-03-06 16:17:14,363 [INFO] AC           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,363 [INFO] AL           56 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,363 [INFO] CA           56 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,363 [INFO] CM           56 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,363 [INFO] CS           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,363 [INFO] HA           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,363 [INFO] HM           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,363 [INFO] HS           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,363 [INFO] MC           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,363 [INFO] ML           56 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,364 [INFO] NA           23 [ 0-1 ]               [ 0-1 ]
+2025-03-06 16:17:14,364 [INFO] NL           51 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,364 [INFO] NM           51 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,364 [INFO] RA           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,364 [INFO] RM           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,364 [INFO] RS           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,364 [INFO] SA           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,364 [INFO] SM           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,364 [INFO] SS           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,364 [INFO] 
+GROUPES SEMAINE:
+2025-03-06 16:17:14,364 [INFO] ------------------------------------------------------------
+2025-03-06 16:17:14,364 [INFO] Type   Total    Plein temps (min-max)     Mi-temps (min-max)       
+2025-03-06 16:17:14,364 [INFO] NL          113 [ 4-5 ]               [ 2-2 ]
+2025-03-06 16:17:14,364 [INFO] NLv          25 [ 0-1 ]               [ 0-1 ]
+2025-03-06 16:17:14,364 [INFO] XmM         143 [ 5-6 ]               [ 2-3 ]
+2025-03-06 16:17:14,364 [INFO] XM          158 [ 5-6 ]               [ 2-3 ]
+2025-03-06 16:17:14,364 [INFO] XA          246 [ 9-10]               [ 4-5 ]
+2025-03-06 16:17:14,364 [INFO] XS          286 [10-11]               [ 5-5 ]
+2025-03-06 16:17:14,364 [INFO] NMC         207 [ 7-8 ]               [ 3-4 ]
+2025-03-06 16:17:14,364 [INFO] Vm          118 [ 4-5 ]               [ 2-2 ]
+2025-03-06 16:17:14,364 [INFO] 
+GROUPES WEEKEND:
+2025-03-06 16:17:14,364 [INFO] ------------------------------------------------------------
+2025-03-06 16:17:14,364 [INFO] Type   Total    Plein temps (min-max)     Mi-temps (min-max)       
+2025-03-06 16:17:14,364 [INFO] CmS          46 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,364 [INFO] CmD         140 [ 5-6 ]               [ 2-3 ]
+2025-03-06 16:17:14,364 [INFO] CaSD        210 [ 7-8 ]               [ 3-4 ]
+2025-03-06 16:17:14,364 [INFO] CsSD        168 [ 6-7 ]               [ 3-3 ]
+2025-03-06 16:17:14,364 [INFO] VmS          28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,364 [INFO] VmD          84 [ 3-4 ]               [ 1-2 ]
+2025-03-06 16:17:14,364 [INFO] VaSD        116 [ 4-5 ]               [ 2-2 ]
+2025-03-06 16:17:14,364 [INFO] NAMw        106 [ 3-4 ]               [ 1-2 ]
+2025-03-06 16:17:14,364 [INFO] NLw          99 [ 3-4 ]               [ 1-2 ]
+2025-03-06 16:17:14,364 [INFO] EFFECTIFS:
+2025-03-06 16:17:14,364 [INFO] Médecins plein temps: 25
+2025-03-06 16:17:14,365 [INFO] Médecins mi-temps  :  4
+2025-03-06 16:17:14,365 [INFO] Total parts        : 54
+2025-03-06 16:17:14,365 [INFO] ====================================================================================================
+2025-03-06 16:17:14,365 [INFO] 
+DISTRIBUTION IDÉALE PAR MÉDECIN TYPE
+2025-03-06 16:17:14,365 [INFO] ====================================================================================================
+2025-03-06 16:17:14,365 [INFO] Nombre de médecins plein temps: 25
+2025-03-06 16:17:14,365 [INFO] Nombre de médecins mi-temps: 4
+2025-03-06 16:17:14,365 [INFO] Total demi-parts: 54
+2025-03-06 16:17:14,365 [INFO] 
+2025-03-06 16:17:14,365 [INFO] 
+GARDES DE NUIT SEMAINE
+2025-03-06 16:17:14,365 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,365 [INFO] Type     Total      Plein temps               Mi-temps                 
+2025-03-06 16:17:14,365 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,365 [INFO] NL       113.0      [ 4-5 ] (4.2)           [ 2-2 ] (2.1)
+2025-03-06 16:17:14,365 [INFO] NLv      25.0       [ 0-1 ] (0.9)           [ 0-1 ] (0.5)
+2025-03-06 16:17:14,365 [INFO] 
+AUTRES POSTES SEMAINE
+2025-03-06 16:17:14,365 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,365 [INFO] Type     Total      Plein temps               Mi-temps                 
+2025-03-06 16:17:14,365 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,365 [INFO] CA       123.0      [ 4-5 ] (4.6)           [ 2-2 ] (2.3)
+2025-03-06 16:17:14,366 [INFO] CM       79.0       [ 2-3 ] (2.9)           [ 1-2 ] (1.5)
+2025-03-06 16:17:14,366 [INFO] CS       74.0       [ 2-3 ] (2.7)           [ 1-2 ] (1.4)
+2025-03-06 16:17:14,366 [INFO] CT       79.0       [ 2-3 ] (2.9)           [ 1-2 ] (1.5)
+2025-03-06 16:17:14,366 [INFO] HA       44.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,366 [INFO] HM       79.0       [ 2-3 ] (2.9)           [ 1-2 ] (1.5)
+2025-03-06 16:17:14,366 [INFO] HS       69.0       [ 2-3 ] (2.6)           [ 1-1 ] (1.3)
+2025-03-06 16:17:14,366 [INFO] ML       118.0      [ 4-5 ] (4.4)           [ 2-2 ] (2.2)
+2025-03-06 16:17:14,366 [INFO] MM       69.0       [ 2-3 ] (2.6)           [ 1-1 ] (1.3)
+2025-03-06 16:17:14,366 [INFO] NC       69.0       [ 2-3 ] (2.6)           [ 1-1 ] (1.3)
+2025-03-06 16:17:14,366 [INFO] NM       138.0      [ 5-6 ] (5.1)           [ 2-3 ] (2.6)
+2025-03-06 16:17:14,366 [INFO] RS       69.0       [ 2-3 ] (2.6)           [ 1-1 ] (1.3)
+2025-03-06 16:17:14,366 [INFO] SM       74.0       [ 2-3 ] (2.7)           [ 1-2 ] (1.4)
+2025-03-06 16:17:14,366 [INFO] SS       74.0       [ 2-3 ] (2.7)           [ 1-2 ] (1.4)
+2025-03-06 16:17:14,366 [INFO] 
+GROUPES SEMAINE
+2025-03-06 16:17:14,366 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,366 [INFO] Type     Total      Plein temps               Mi-temps                 
+2025-03-06 16:17:14,366 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,366 [INFO] NMC      207.0      [ 7-8 ] (7.7)           [ 3-4 ] (3.8)
+2025-03-06 16:17:14,366 [INFO] Vm       118.0      [ 4-5 ] (4.4)           [ 2-2 ] (2.2)
+2025-03-06 16:17:14,366 [INFO] XA       246.0      [ 9-10] (9.1)           [ 4-5 ] (4.6)
+2025-03-06 16:17:14,366 [INFO] XM       158.0      [ 5-6 ] (5.9)           [ 2-3 ] (2.9)
+2025-03-06 16:17:14,366 [INFO] XS       286.0      [10-11] (10.6)           [ 5-5 ] (5.3)
+2025-03-06 16:17:14,366 [INFO] XmM      143.0      [ 5-6 ] (5.3)           [ 2-3 ] (2.6)
+2025-03-06 16:17:14,366 [INFO] 
+POSTES WEEKEND
+2025-03-06 16:17:14,366 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,366 [INFO] Type     Total      Plein temps               Mi-temps                 
+2025-03-06 16:17:14,366 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,366 [INFO] AC       37.0       [ 1-2 ] (1.4)           [ 0-1 ] (0.7)
+2025-03-06 16:17:14,366 [INFO] AL       79.0       [ 2-3 ] (2.9)           [ 1-2 ] (1.5)
+2025-03-06 16:17:14,366 [INFO] CA       84.0       [ 3-4 ] (3.1)           [ 1-2 ] (1.6)
+2025-03-06 16:17:14,366 [INFO] CM       74.0       [ 2-3 ] (2.7)           [ 1-2 ] (1.4)
+2025-03-06 16:17:14,366 [INFO] CS       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,366 [INFO] HA       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,366 [INFO] HM       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,366 [INFO] HS       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,366 [INFO] MC       28.0       [ 1-2 ] (1.0)           [ 0-1 ] (0.5)
+2025-03-06 16:17:14,366 [INFO] ML       84.0       [ 3-4 ] (3.1)           [ 1-2 ] (1.6)
+2025-03-06 16:17:14,366 [INFO] MM       14.0       [ 0-1 ] (0.5)           [ 0-0 ] (0.3)
+2025-03-06 16:17:14,366 [INFO] NA       32.0       [ 1-2 ] (1.2)           [ 0-1 ] (0.6)
+2025-03-06 16:17:14,367 [INFO] NL       74.0       [ 2-3 ] (2.7)           [ 1-2 ] (1.4)
+2025-03-06 16:17:14,367 [INFO] NM       74.0       [ 2-3 ] (2.7)           [ 1-2 ] (1.4)
+2025-03-06 16:17:14,367 [INFO] RA       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,367 [INFO] RM       28.0       [ 1-2 ] (1.0)           [ 0-1 ] (0.5)
+2025-03-06 16:17:14,367 [INFO] RS       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,367 [INFO] SA       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,367 [INFO] SM       28.0       [ 1-2 ] (1.0)           [ 0-1 ] (0.5)
+2025-03-06 16:17:14,367 [INFO] SS       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,367 [INFO] 
+GROUPES WEEKEND
+2025-03-06 16:17:14,367 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,367 [INFO] Type     Total      Plein temps               Mi-temps                 
+2025-03-06 16:17:14,367 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,367 [INFO] CaSD     210.0      [ 7-8 ] (7.8)           [ 3-4 ] (3.9)
+2025-03-06 16:17:14,367 [INFO] CmD      140.0      [ 5-6 ] (5.2)           [ 2-3 ] (2.6)
+2025-03-06 16:17:14,367 [INFO] CmS      46.0       [ 1-2 ] (1.7)           [ 0-1 ] (0.9)
+2025-03-06 16:17:14,367 [INFO] CsSD     168.0      [ 6-7 ] (6.2)           [ 3-3 ] (3.1)
+2025-03-06 16:17:14,367 [INFO] NAMw     106.0      [ 3-4 ] (3.9)           [ 1-2 ] (2.0)
+2025-03-06 16:17:14,367 [INFO] NLw      99.0       [ 3-4 ] (3.7)           [ 1-2 ] (1.8)
+2025-03-06 16:17:14,367 [INFO] VaSD     116.0      [ 4-5 ] (4.3)           [ 2-2 ] (2.1)
+2025-03-06 16:17:14,367 [INFO] VmD      84.0       [ 3-4 ] (3.1)           [ 1-2 ] (1.6)
+2025-03-06 16:17:14,367 [INFO] VmS      28.0       [ 1-2 ] (1.0)           [ 0-1 ] (0.5)
+2025-03-06 16:17:14,367 [INFO] Analyzing unavailability for 29 doctors over 121 days (363 total periods)
+2025-03-06 16:17:14,368 [INFO] 
+INDISPONIBILITÉS DES MÉDECINS:
+2025-03-06 16:17:14,368 [INFO] --------------------------------------------------------------------------------
+2025-03-06 16:17:14,369 [INFO] HUGUENIN       : Primaire: 15.70% ( 7.85% ajusté), Secondaire:  7.44% ( 3.72% ajusté), Total: 23.14% (11.57% ajusté)
+2025-03-06 16:17:14,369 [INFO] FRIOT          : Primaire:  0.00%, Secondaire: 21.21%, Total: 21.21%
+2025-03-06 16:17:14,369 [INFO] VERVOUX        : Primaire:  4.13% ( 2.06% ajusté), Secondaire: 15.15% ( 7.58% ajusté), Total: 19.28% ( 9.64% ajusté)
+2025-03-06 16:17:14,369 [INFO] DIARA          : Primaire: 14.88%, Secondaire:  2.20%, Total: 17.08%
+2025-03-06 16:17:14,369 [INFO] MASSEYS        : Primaire:  0.00% ( 0.00% ajusté), Secondaire: 16.80% ( 8.40% ajusté), Total: 16.80% ( 8.40% ajusté)
+2025-03-06 16:17:14,369 [INFO] CHANTELOT      : Primaire:  7.44%, Secondaire:  8.82%, Total: 16.25%
+2025-03-06 16:17:14,369 [INFO] ROUGIE         : Primaire:  0.00% ( 0.00% ajusté), Secondaire: 15.98% ( 7.99% ajusté), Total: 15.98% ( 7.99% ajusté)
+2025-03-06 16:17:14,369 [INFO] GRAMOND        : Primaire:  5.23%, Secondaire:  9.64%, Total: 14.88%
+2025-03-06 16:17:14,369 [INFO] VILARDELPESO   : Primaire:  2.20%, Secondaire: 11.85%, Total: 14.05%
+2025-03-06 16:17:14,369 [INFO] BEGUE          : Primaire:  5.79%, Secondaire:  6.06%, Total: 11.85%
+2025-03-06 16:17:14,369 [INFO] BASCOU         : Primaire:  4.41%, Secondaire:  7.44%, Total: 11.85%
+2025-03-06 16:17:14,369 [INFO] DUPRE          : Primaire:  1.38%, Secondaire: 10.19%, Total: 11.57%
+2025-03-06 16:17:14,369 [INFO] BERGOUIGNAN    : Primaire:  0.00%, Secondaire: 11.29%, Total: 11.29%
+2025-03-06 16:17:14,369 [INFO] NTAMI          : Primaire:  2.48%, Secondaire:  8.26%, Total: 10.74%
+2025-03-06 16:17:14,369 [INFO] HILAL          : Primaire:  7.44%, Secondaire:  2.48%, Total:  9.92%
+2025-03-06 16:17:14,369 [INFO] DUBAYLE        : Primaire:  0.55%, Secondaire:  9.09%, Total:  9.64%
+2025-03-06 16:17:14,369 [INFO] LEPAULT        : Primaire:  0.00%, Secondaire:  9.09%, Total:  9.09%
+2025-03-06 16:17:14,369 [INFO] CHALVIGNAC     : Primaire:  0.00%, Secondaire:  8.26%, Total:  8.26%
+2025-03-06 16:17:14,369 [INFO] GARIN          : Primaire:  0.00%, Secondaire:  7.99%, Total:  7.99%
+2025-03-06 16:17:14,369 [INFO] WAKIEU         : Primaire:  0.83%, Secondaire:  6.61%, Total:  7.44%
+2025-03-06 16:17:14,369 [INFO] OWONA          : Primaire:  1.65%, Secondaire:  5.23%, Total:  6.89%
+2025-03-06 16:17:14,369 [INFO] JOUANOLOU      : Primaire:  5.51%, Secondaire:  1.10%, Total:  6.61%
+2025-03-06 16:17:14,369 [INFO] FAIZ           : Primaire:  5.79%, Secondaire:  0.00%, Total:  5.79%
+2025-03-06 16:17:14,369 [INFO] EPAILLY        : Primaire:  5.51%, Secondaire:  0.00%, Total:  5.51%
+2025-03-06 16:17:14,369 [INFO] NEHME          : Primaire:  2.48%, Secondaire:  3.03%, Total:  5.51%
+2025-03-06 16:17:14,369 [INFO] DALLAY         : Primaire:  4.96%, Secondaire:  0.00%, Total:  4.96%
+2025-03-06 16:17:14,369 [INFO] DARTY          : Primaire:  1.38%, Secondaire:  3.31%, Total:  4.68%
+2025-03-06 16:17:14,369 [INFO] DALE           : Primaire:  0.00%, Secondaire:  4.13%, Total:  4.13%
+2025-03-06 16:17:14,369 [INFO] AVIT           : Primaire:  0.00%, Secondaire:  0.00%, Total:  0.00%
+2025-03-06 16:17:14,369 [INFO] 
+JOURS LES PLUS CRITIQUES:
+2025-03-06 16:17:14,369 [INFO] --------------------------------------------------------------------------------
+2025-03-06 16:17:14,369 [INFO] 25/06/2025 : 45 médecins indisponibles (Primaire: 12, Secondaire: 33)
+2025-03-06 16:17:14,369 [INFO] 28/05/2025 : 39 médecins indisponibles (Primaire: 14, Secondaire: 25)
+2025-03-06 16:17:14,369 [INFO] 24/05/2025 : 38 médecins indisponibles (Primaire: 19, Secondaire: 19)
+2025-03-06 16:17:14,369 [INFO] 25/05/2025 : 35 médecins indisponibles (Primaire: 21, Secondaire: 14)
+2025-03-06 16:17:14,369 [INFO] 22/06/2025 : 33 médecins indisponibles (Primaire: 7, Secondaire: 26)
+2025-03-06 16:17:14,370 [INFO] 
+TABLEAU RÉCAPITULATIF DE L'ANALYSE
+2025-03-06 16:17:14,370 [INFO] ==========================================================================================
+2025-03-06 16:17:14,370 [INFO] 
+POSTES SEMAINE
+2025-03-06 16:17:14,370 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,370 [INFO] 
+==========================================================================================
+2025-03-06 16:17:14,370 [INFO] Type                    Total      CAT   Médecins Temps Plein [min-max]   Mi-temps [min-max]
+2025-03-06 16:17:14,370 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,370 [INFO] CA                        158       35        123                [4-5]                [2-2]
+2025-03-06 16:17:14,370 [INFO] CM                         94       15         79                [2-3]                [1-2]
+2025-03-06 16:17:14,370 [INFO] CS                         79        5         74                [2-3]                [1-2]
+2025-03-06 16:17:14,370 [INFO] CT                         79        0         79                [2-3]                [1-2]
+2025-03-06 16:17:14,370 [INFO] HA                         79       35         44                [1-2]                [0-1]
+2025-03-06 16:17:14,370 [INFO] HM                         79        0         79                [2-3]                [1-2]
+2025-03-06 16:17:14,370 [INFO] HS                         79       10         69                [2-3]                [1-1]
+2025-03-06 16:17:14,370 [INFO] ML                        158       40        118                [4-5]                [2-2]
+2025-03-06 16:17:14,370 [INFO] MM                         79       10         69                [2-3]                [1-1]
+2025-03-06 16:17:14,370 [INFO] NC                         79       10         69                [2-3]                [1-1]
+2025-03-06 16:17:14,370 [INFO] NL                        158       15        113                [4-5]                [2-2]
+2025-03-06 16:17:14,370 [INFO] NM                        158       20        138                [5-6]                [2-3]
+2025-03-06 16:17:14,370 [INFO] RS                         79       10         69                [2-3]                [1-1]
+2025-03-06 16:17:14,370 [INFO] SM                         79        5         74                [2-3]                [1-2]
+2025-03-06 16:17:14,370 [INFO] SS                         79        5         74                [2-3]                [1-2]
+2025-03-06 16:17:14,370 [INFO] 
+GROUPES SEMAINE
+2025-03-06 16:17:14,370 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,370 [INFO] 
+==========================================================================================
+2025-03-06 16:17:14,370 [INFO] Type                    Total      CAT   Médecins Temps Plein [min-max]   Mi-temps [min-max]
+2025-03-06 16:17:14,370 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,370 [INFO] NL                        128       15        113                [4-5]                [2-2]
+2025-03-06 16:17:14,370 [INFO] NLv                        30       15         25                [0-1]                [0-1]
+2025-03-06 16:17:14,371 [INFO] NMC                       237       30        207                [7-8]                [3-4]
+2025-03-06 16:17:14,371 [INFO] Vm                        158       40        118                [4-5]                [2-2]
+2025-03-06 16:17:14,371 [INFO] XA                        316       70        246               [9-10]                [4-5]
+2025-03-06 16:17:14,371 [INFO] XM                        173       15        158                [5-6]                [2-3]
+2025-03-06 16:17:14,371 [INFO] XS                        316       30        286              [10-11]                [5-5]
+2025-03-06 16:17:14,371 [INFO] XmM                       158       15        143                [5-6]                [2-3]
+2025-03-06 16:17:14,371 [INFO] 
+POSTES SAMEDI
+2025-03-06 16:17:14,371 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,371 [INFO] 
+==========================================================================================
+2025-03-06 16:17:14,371 [INFO] Type                    Total      CAT   Médecins Temps Plein [min-max]   Mi-temps [min-max]
+2025-03-06 16:17:14,371 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,371 [INFO] AC                         14        5          9                [0-1]                [0-0]
+2025-03-06 16:17:14,371 [INFO] AL                         28        5         23                [0-1]                [0-1]
+2025-03-06 16:17:14,371 [INFO] CA                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,371 [INFO] CM                         18        0         18                [0-1]                [0-1]
+2025-03-06 16:17:14,371 [INFO] CS                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,371 [INFO] HA                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,371 [INFO] HM                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,371 [INFO] HS                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,371 [INFO] ML                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,371 [INFO] MM                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,371 [INFO] NA                         14        5          9                [0-1]                [0-0]
+2025-03-06 16:17:14,371 [INFO] NL                         28        5         23                [0-1]                [0-1]
+2025-03-06 16:17:14,371 [INFO] NM                         28        5         23                [0-1]                [0-1]
+2025-03-06 16:17:14,371 [INFO] RA                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,371 [INFO] RS                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,371 [INFO] SA                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,371 [INFO] SS                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,371 [INFO] 
+POSTES DIMANCHE/FÉRIÉS
+2025-03-06 16:17:14,371 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,371 [INFO] 
+==========================================================================================
+2025-03-06 16:17:14,371 [INFO] Type                    Total      CAT   Médecins Temps Plein [min-max]   Mi-temps [min-max]
+2025-03-06 16:17:14,371 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,371 [INFO] AC                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,371 [INFO] AL                         56        0         56                [2-3]                [1-1]
+2025-03-06 16:17:14,371 [INFO] CA                         56        0         56                [2-3]                [1-1]
+2025-03-06 16:17:14,371 [INFO] CM                         56        0         56                [2-3]                [1-1]
+2025-03-06 16:17:14,371 [INFO] CS                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,371 [INFO] HA                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,371 [INFO] HM                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,371 [INFO] HS                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,371 [INFO] MC                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,371 [INFO] ML                         56        0         56                [2-3]                [1-1]
+2025-03-06 16:17:14,371 [INFO] NA                         28        5         23                [0-1]                [0-1]
+2025-03-06 16:17:14,372 [INFO] NL                         56        5         51                [1-2]                [0-1]
+2025-03-06 16:17:14,372 [INFO] NM                         56        5         51                [1-2]                [0-1]
+2025-03-06 16:17:14,372 [INFO] RA                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,372 [INFO] RM                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,372 [INFO] RS                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,372 [INFO] SA                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,372 [INFO] SM                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,372 [INFO] SS                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,372 [INFO] 
+GROUPES WEEKEND
+2025-03-06 16:17:14,372 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,372 [INFO] 
+==========================================================================================
+2025-03-06 16:17:14,372 [INFO] Type                    Total      CAT   Médecins Temps Plein [min-max]   Mi-temps [min-max]
+2025-03-06 16:17:14,372 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,372 [INFO] CaSD                      210        0        210                [7-8]                [3-4]
+2025-03-06 16:17:14,372 [INFO] CmD                       140        0        140                [5-6]                [2-3]
+2025-03-06 16:17:14,372 [INFO] CmS                        46        0         46                [1-2]                [0-1]
+2025-03-06 16:17:14,372 [INFO] CsSD                      168        0        168                [6-7]                [3-3]
+2025-03-06 16:17:14,372 [INFO] NAMw                      126       20        106                [3-4]                [1-2]
+2025-03-06 16:17:14,372 [INFO] NLw                       114       15         99                [3-4]                [1-2]
+2025-03-06 16:17:14,372 [INFO] VaSD                      126       10        116                [4-5]                [2-2]
+2025-03-06 16:17:14,372 [INFO] VmD                        84        0         84                [3-4]                [1-2]
+2025-03-06 16:17:14,372 [INFO] VmS                        28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,372 [INFO] 
+ÉTAPE 4: ANALYSE DES COMBINAISONS
+2025-03-06 16:17:14,372 [INFO] 
+Vérification structure pre_analysis_results:
+2025-03-06 16:17:14,372 [INFO] Structure weekday_groups pour le premier médecin:
+2025-03-06 16:17:14,372 [INFO] - XmM: {'min': 2, 'max': 3, 'target': 2.6481481481481484}
+2025-03-06 16:17:14,372 [INFO] - XM: {'min': 2, 'max': 3, 'target': 2.925925925925926}
+2025-03-06 16:17:14,372 [INFO] - XA: {'min': 4, 'max': 5, 'target': 4.555555555555555}
+2025-03-06 16:17:14,372 [INFO] - XS: {'min': 5, 'max': 5, 'target': 5.296296296296297}
+2025-03-06 16:17:14,372 [INFO] - NMC: {'min': 3, 'max': 4, 'target': 3.8333333333333335}
+2025-03-06 16:17:14,372 [INFO] - Vm: {'min': 2, 'max': 2, 'target': 2.185185185185185}
+2025-03-06 16:17:14,372 [INFO] - NL: {'min': 2, 'max': 2, 'target': 2.0925925925925926}
+2025-03-06 16:17:14,372 [INFO] - NLv: {'min': 0, 'max': 1, 'target': 0.46296296296296297}
+2025-03-06 16:17:14,372 [INFO] 
+ANALYSE GLOBALE DES COMBINAISONS
+2025-03-06 16:17:14,372 [INFO] ====================================================================================================
+2025-03-06 16:17:14,372 [INFO] Groupes disponibles dans weekday_groups:
+2025-03-06 16:17:14,372 [INFO] - XmM
+2025-03-06 16:17:14,372 [INFO] - XM
+2025-03-06 16:17:14,372 [INFO] - XA
+2025-03-06 16:17:14,372 [INFO] - XS
+2025-03-06 16:17:14,372 [INFO] - NMC
+2025-03-06 16:17:14,372 [INFO] - Vm
+2025-03-06 16:17:14,372 [INFO] - NL
+2025-03-06 16:17:14,373 [INFO] - NLv
+2025-03-06 16:17:14,373 [INFO] 
+ANALYSE DES COMBINAISONS WEEKEND
+2025-03-06 16:17:14,373 [INFO] ====================================================================================================
+2025-03-06 16:17:14,373 [INFO] COMBO    ÉLIGIBLES       GROUPES                   RATIO        STATUT    
+2025-03-06 16:17:14,373 [INFO] --------------------------------------------------------------------------------
+2025-03-06 16:17:14,373 [INFO] MLCA     29/29           VmS+CaSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,373 [INFO] MLHA     29/29           VmS+CaSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,373 [INFO] MLSA     29/29           VmS+CaSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,373 [INFO] MLRA     29/29           VmS+CaSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,373 [INFO] MCCA     29/29           CaSD+VmD                  1.04         ATTENTION 
+2025-03-06 16:17:14,373 [INFO] MCHA     29/29           CaSD+VmD                  2.07         OK        
+2025-03-06 16:17:14,373 [INFO] MCRA     29/29           CaSD+VmD                  2.07         OK        
+2025-03-06 16:17:14,373 [INFO] MCSA     29/29           CaSD+VmD                  2.07         OK        
+2025-03-06 16:17:14,373 [INFO] MLACCMCA 0/29            VmS                       0.00         CRITIQUE  
+2025-03-06 16:17:14,373 [INFO] MMCA     25/29           CaSD                      0.89         ATTENTION 
+2025-03-06 16:17:14,373 [INFO] CACS     29/29           CaSD+CsSD                 1.04         ATTENTION 
+2025-03-06 16:17:14,373 [INFO] HMHA     29/29           CaSD+CmS                  2.07         OK        
+2025-03-06 16:17:14,373 [INFO] HAHS     29/29           CaSD+CsSD                 2.07         OK        
+2025-03-06 16:17:14,374 [INFO] SMSA     29/29           CmD+CaSD                  2.07         OK        
+2025-03-06 16:17:14,374 [INFO] SASS     29/29           CaSD+CsSD                 2.07         OK        
+2025-03-06 16:17:14,374 [INFO] RMRA     29/29           CmD+CaSD                  2.07         OK        
+2025-03-06 16:17:14,374 [INFO] RARS     29/29           CaSD+CsSD                 2.07         OK        
+2025-03-06 16:17:14,374 [INFO] CMAC     29/29           CmS+VaSD                  1.61         OK        
+2025-03-06 16:17:14,374 [INFO] MMAC     25/29           VaSD                      1.79         OK        
+2025-03-06 16:17:14,374 [INFO] CMAL     29/29           CmS+VaSD                  1.26         OK        
+2025-03-06 16:17:14,374 [INFO] MMAL     25/29           VaSD                      1.09         ATTENTION 
+2025-03-06 16:17:14,374 [INFO] HMAL     29/29           CmS+VaSD                  1.26         OK        
+2025-03-06 16:17:14,374 [INFO] HMAC     29/29           CmS+VaSD                  2.07         OK        
+2025-03-06 16:17:14,374 [INFO] RMAL     29/29           CmD+VaSD                  1.26         OK        
+2025-03-06 16:17:14,374 [INFO] RMAC     29/29           CmD+VaSD                  3.22         OK        
+2025-03-06 16:17:14,374 [INFO] SMAL     29/29           CmD+VaSD                  1.26         OK        
+2025-03-06 16:17:14,374 [INFO] SMAC     29/29           CmD+VaSD                  3.22         OK        
+2025-03-06 16:17:14,374 [INFO] MCAL     29/29           VaSD+VmD                  1.26         OK        
+2025-03-06 16:17:14,374 [INFO] CMRS     29/29           CmS+CsSD                  1.61         OK        
+2025-03-06 16:17:14,375 [INFO] CMSS     29/29           CmS+CsSD                  1.61         OK        
+2025-03-06 16:17:14,375 [INFO] CMHS     29/29           CmS+CsSD                  1.61         OK        
+2025-03-06 16:17:14,375 [INFO] MLCS     29/29           VmS+CsSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,375 [INFO] MLRS     29/29           VmS+CsSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,375 [INFO] MLSS     29/29           VmS+CsSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,375 [INFO] MLHS     29/29           VmS+CsSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,375 [INFO] MMCS     25/29           CsSD                      1.79         OK        
+2025-03-06 16:17:14,375 [INFO] MCCS     29/29           CsSD+VmD                  2.07         OK        
+2025-03-06 16:17:14,375 [INFO] MCRS     29/29           CsSD+VmD                  2.07         OK        
+2025-03-06 16:17:14,375 [INFO] MCSS     29/29           CsSD+VmD                  2.07         OK        
+2025-03-06 16:17:14,375 [INFO] MCHS     29/29           CsSD+VmD                  2.07         OK        
+2025-03-06 16:17:14,375 [INFO] 
+ANALYSE DES COMBINAISONS WEEKDAY
+2025-03-06 16:17:14,375 [INFO] ====================================================================================================
+2025-03-06 16:17:14,375 [INFO] COMBO    ÉLIGIBLES       GROUPES                   RATIO        STATUT    
+2025-03-06 16:17:14,375 [INFO] --------------------------------------------------------------------------------
+2025-03-06 16:17:14,375 [INFO] MLCA     29/29           XA+Vm                     0.24         CRITIQUE  
+2025-03-06 16:17:14,375 [INFO] MLHA     29/29           XA+Vm                     0.25         CRITIQUE  
+2025-03-06 16:17:14,375 [INFO] MLSA     0/29            XA+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,375 [INFO] MLRA     0/29            XA+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,376 [INFO] MCCA     0/29            XA+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,376 [INFO] MCHA     0/29            XA+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,376 [INFO] MCRA     0/29            XA+Vm                     inf          OK        
+2025-03-06 16:17:14,376 [INFO] MCSA     0/29            XA+Vm                     inf          OK        
+2025-03-06 16:17:14,376 [INFO] MLACCMCA 0/29            Vm                        0.00         CRITIQUE  
+2025-03-06 16:17:14,376 [INFO] MMCA     29/29           XA+XmM                    0.24         CRITIQUE  
+2025-03-06 16:17:14,376 [INFO] CACS     29/29           XS+XA                     0.24         CRITIQUE  
+2025-03-06 16:17:14,376 [INFO] HMHA     29/29           XA+XM                     0.37         CRITIQUE  
+2025-03-06 16:17:14,376 [INFO] HAHS     29/29           XS+XA                     0.42         CRITIQUE  
+2025-03-06 16:17:14,376 [INFO] SMSA     0/29            XA+XmM                    0.00         CRITIQUE  
+2025-03-06 16:17:14,376 [INFO] SASS     0/29            XS+XA                     0.00         CRITIQUE  
+2025-03-06 16:17:14,376 [INFO] RMRA     0/29            XA+XmM                    inf          OK        
+2025-03-06 16:17:14,376 [INFO] RARS     0/29            XS+XA                     0.00         CRITIQUE  
+2025-03-06 16:17:14,376 [INFO] CMAC     0/29            XM                        0.00         CRITIQUE  
+2025-03-06 16:17:14,376 [INFO] MMAC     0/29            XmM                       0.00         CRITIQUE  
+2025-03-06 16:17:14,376 [INFO] CMAL     0/29            XM                        0.00         CRITIQUE  
+2025-03-06 16:17:14,376 [INFO] MMAL     0/29            XmM                       0.00         CRITIQUE  
+2025-03-06 16:17:14,377 [INFO] HMAL     0/29            XM                        0.00         CRITIQUE  
+2025-03-06 16:17:14,377 [INFO] HMAC     0/29            XM                        0.00         CRITIQUE  
+2025-03-06 16:17:14,377 [INFO] RMAL     0/29            XmM                       inf          OK        
+2025-03-06 16:17:14,377 [INFO] RMAC     0/29            XmM                       inf          OK        
+2025-03-06 16:17:14,377 [INFO] SMAL     0/29            XmM                       0.00         CRITIQUE  
+2025-03-06 16:17:14,377 [INFO] SMAC     0/29            XmM                       0.00         CRITIQUE  
+2025-03-06 16:17:14,377 [INFO] MCAL     0/29            Vm                        inf          OK        
+2025-03-06 16:17:14,377 [INFO] CMRS     29/29           XS+XM                     0.37         CRITIQUE  
+2025-03-06 16:17:14,377 [INFO] CMSS     29/29           XS+XM                     0.37         CRITIQUE  
+2025-03-06 16:17:14,377 [INFO] CMHS     29/29           XS+XM                     0.37         CRITIQUE  
+2025-03-06 16:17:14,377 [INFO] CMNC     29/29           XM                        0.37         CRITIQUE  
+2025-03-06 16:17:14,377 [INFO] SMCS     29/29           XS+XmM                    0.39         CRITIQUE  
+2025-03-06 16:17:14,377 [INFO] SMHS     29/29           XS+XmM                    0.39         CRITIQUE  
+2025-03-06 16:17:14,377 [INFO] MLCS     29/29           XS+Vm                     0.25         CRITIQUE  
+2025-03-06 16:17:14,377 [INFO] MLRS     29/29           XS+Vm                     0.25         CRITIQUE  
+2025-03-06 16:17:14,377 [INFO] MLSS     29/29           XS+Vm                     0.25         CRITIQUE  
+2025-03-06 16:17:14,377 [INFO] MLHS     29/29           XS+Vm                     0.25         CRITIQUE  
+2025-03-06 16:17:14,378 [INFO] MMCS     29/29           XS+XmM                    0.39         CRITIQUE  
+2025-03-06 16:17:14,378 [INFO] MCCS     0/29            XS+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,378 [INFO] MCRS     0/29            XS+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,378 [INFO] MCSS     0/29            XS+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,378 [INFO] MCHS     0/29            XS+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,378 [INFO] 
+RÉSUMÉ DE L'ANALYSE DES COMBINAISONS
+2025-03-06 16:17:14,378 [INFO] ====================================================================================================
+2025-03-06 16:17:14,378 [INFO] 
+WEEKEND:
+2025-03-06 16:17:14,378 [INFO] Critiques  : 1
+2025-03-06 16:17:14,378 [INFO] Attention  : 12
+2025-03-06 16:17:14,378 [INFO] OK        : 27
+2025-03-06 16:17:14,378 [INFO] 
+WEEKDAY:
+2025-03-06 16:17:14,378 [INFO] Critiques  : 37
+2025-03-06 16:17:14,378 [INFO] Attention  : 0
+2025-03-06 16:17:14,378 [INFO] OK        : 6
+2025-03-06 16:17:14,378 [INFO] 
+APPLICATION DES PRÉ-ATTRIBUTIONS
+2025-03-06 16:17:14,378 [INFO] ================================================================================
+2025-03-06 16:17:14,378 [INFO] Pré-attribution appliquée : AVIT - CA - 2025-04-04
+2025-03-06 16:17:14,378 [INFO] Pré-attribution appliquée : AVIT - MC - 2025-05-04
+2025-03-06 16:17:14,378 [INFO] Pré-attribution appliquée : AVIT - HS - 2025-05-10
+2025-03-06 16:17:14,378 [INFO] Pré-attribution appliquée : AVIT - ML - 2025-05-11
+2025-03-06 16:17:14,378 [INFO] Pré-attribution appliquée : AVIT - CA - 2025-05-13
+2025-03-06 16:17:14,378 [INFO] Pré-attribution appliquée : AVIT - HA - 2025-05-21
+2025-03-06 16:17:14,378 [INFO] 
+RÉSULTAT DES PRÉ-ATTRIBUTIONS
+2025-03-06 16:17:14,378 [INFO] ============================================================
+2025-03-06 16:17:14,378 [INFO] ====================================================================================================
+2025-03-06 16:17:14,378 [INFO] ANALYSE DU PLANNING: 06/03/2025 - 04/07/2025
+2025-03-06 16:17:14,378 [INFO] ====================================================================================================
+2025-03-06 16:17:14,379 [INFO] 
+DÉTAIL DES JOURS
+2025-03-06 16:17:14,379 [INFO] ================================================================================
+2025-03-06 16:17:14,379 [INFO] Jours de semaine      :  79
+2025-03-06 16:17:14,379 [INFO] Samedis normaux       :  14
+2025-03-06 16:17:14,379 [INFO] 
+JOURS TRAITÉS COMME DIMANCHE/FÉRIÉ:
+2025-03-06 16:17:14,379 [INFO] Dimanches             :  17
+2025-03-06 16:17:14,379 [INFO] Jours fériés          :   5
+2025-03-06 16:17:14,379 [INFO] Jours de pont         :   6
+2025-03-06 16:17:14,379 [INFO]    dont samedis       :   3
+2025-03-06 16:17:14,379 [INFO] TOTAL Dim/Férié/Pont  :  28
+2025-03-06 16:17:14,379 [INFO] 
+CONFIGURATIONS SPÉCIFIQUES:
+2025-03-06 16:17:14,379 [INFO] --------------------------------------------------------------------------------
+2025-03-06 16:17:14,379 [INFO] * du 16/06/2025 au 16/06/2025 - Semaine : 14 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,379 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,379 [INFO] * du 04/08/2025 au 04/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,379 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,379 [INFO] * du 05/08/2025 au 05/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,379 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,379 [INFO] * du 06/08/2025 au 06/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,379 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,379 [INFO] * du 07/08/2025 au 07/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,379 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,379 [INFO] * du 08/08/2025 au 08/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,379 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,379 [INFO] * du 11/08/2025 au 11/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,379 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,379 [INFO] * du 12/08/2025 au 12/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,379 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,379 [INFO] * du 13/08/2025 au 13/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,379 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,379 [INFO] * du 14/08/2025 au 14/08/2025 - Semaine : 14 postes (2ML, 1MM, 1CM, 1HM, 1SM, 1CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL)
+2025-03-06 16:17:14,380 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 03/08/2025 au 03/08/2025 - Dimanche/Férié : 18 postes (2ML, 1CM, 1HM, 1RM, 1SM, 1CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 1AL, 1AC, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,380 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 10/08/2025 au 10/08/2025 - Dimanche/Férié : 18 postes (2ML, 1CM, 1HM, 1RM, 1SM, 1CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 1AL, 1AC, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,380 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 01/09/2025 au 01/09/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,380 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 08/09/2025 au 08/09/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,380 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 19/05/2025 au 19/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 20/05/2025 au 20/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 21/05/2025 au 21/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 22/05/2025 au 22/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 23/05/2025 au 23/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 04/06/2025 au 04/06/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 05/06/2025 au 05/06/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 06/06/2025 au 06/06/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 26/05/2025 au 26/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 27/05/2025 au 27/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 28/05/2025 au 28/05/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 17/05/2025 au 17/05/2025 - Samedi : 17 postes (2ML, 1MM, 2CM, 1HM, 2CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 2AL, 1AC, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 24/05/2025 au 24/05/2025 - Samedi : 17 postes (2ML, 1MM, 2CM, 1HM, 2CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 2AL, 1AC, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 07/06/2025 au 07/06/2025 - Samedi : 17 postes (2ML, 1MM, 2CM, 1HM, 2CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 2AL, 1AC, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 14/06/2025 au 14/06/2025 - Samedi : 17 postes (2ML, 1MM, 2CM, 1HM, 2CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 2AL, 1AC, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,380 [INFO] * du 10/06/2025 au 10/06/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,380 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,381 [INFO] * du 23/06/2025 au 23/06/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,381 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,381 [INFO] * du 30/06/2025 au 30/06/2025 - Semaine : 15 postes (2ML, 1MM, 2CM, 1HM, 1SM, 2CA, 1HA, 1CS, 1HS, 1RS, 1SS, 1NC, 2NM, 2NL, 1CT)
+2025-03-06 16:17:14,381 [INFO]   → 1 jours concernés
+2025-03-06 16:17:14,381 [INFO] * du 17/08/2025 au 17/08/2025 - Dimanche/Férié : 18 postes (2ML, 1CM, 1HM, 1RM, 1SM, 1CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 1AL, 1AC, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,381 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,381 [INFO] * du 02/08/2025 au 02/08/2025 - Samedi : 16 postes (2ML, 1MM, 1CM, 1HM, 1CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 2AL, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,381 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,381 [INFO] * du 15/08/2025 au 15/08/2025 - Dimanche/Férié : 17 postes (2ML, 1CM, 1HM, 1RM, 1SM, 1CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 2AL, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,381 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,381 [INFO] * du 16/08/2025 au 16/08/2025 - Dimanche/Férié : 17 postes (2ML, 1CM, 1HM, 1RM, 1SM, 1CA, 1HA, 1RA, 1SA, 1CS, 1HS, 1RS, 1SS, 2AL, 1NA, 2NM, 2NL)
+2025-03-06 16:17:14,381 [INFO]   → 0 jours concernés
+2025-03-06 16:17:14,381 [INFO] --------------------------------------------------------------------------------
+2025-03-06 16:17:14,381 [INFO] Total jours période   : 121
+2025-03-06 16:17:14,381 [INFO] ================================================================================
+2025-03-06 16:17:14,381 [INFO] 
+ÉTAPE 1: Calcul du nombre total de postes
+2025-03-06 16:17:14,381 [INFO] 
+====================================================================================================
+2025-03-06 16:17:14,381 [INFO] ANALYSE DES POSTES: 06/03/2025 - 04/07/2025
+2025-03-06 16:17:14,381 [INFO] ====================================================================================================
+2025-03-06 16:17:14,384 [INFO] 
+TOTAL DES POSTES PAR TYPE:
+2025-03-06 16:17:14,384 [INFO] 
+WEEKDAY:
+2025-03-06 16:17:14,384 [INFO] NL (lundi-jeudi) : 128
+2025-03-06 16:17:14,384 [INFO] NLv (vendredi)   :  30
+2025-03-06 16:17:14,384 [INFO] Total NL semaine : 158
+2025-03-06 16:17:14,384 [INFO] CA  : 158
+2025-03-06 16:17:14,384 [INFO] CM  :  94
+2025-03-06 16:17:14,384 [INFO] CS  :  79
+2025-03-06 16:17:14,384 [INFO] CT  :  79
+2025-03-06 16:17:14,384 [INFO] HA  :  79
+2025-03-06 16:17:14,384 [INFO] HM  :  79
+2025-03-06 16:17:14,384 [INFO] HS  :  79
+2025-03-06 16:17:14,384 [INFO] ML  : 158
+2025-03-06 16:17:14,384 [INFO] MM  :  79
+2025-03-06 16:17:14,384 [INFO] NC  :  79
+2025-03-06 16:17:14,384 [INFO] NM  : 158
+2025-03-06 16:17:14,384 [INFO] RS  :  79
+2025-03-06 16:17:14,384 [INFO] SM  :  79
+2025-03-06 16:17:14,384 [INFO] SS  :  79
+2025-03-06 16:17:14,384 [INFO] 
+POSTES WEEKEND:
+2025-03-06 16:17:14,384 [INFO] RM  :  28
+2025-03-06 16:17:14,384 [INFO] RS  :  42
+2025-03-06 16:17:14,384 [INFO] CM  :  74
+2025-03-06 16:17:14,384 [INFO] CA  :  84
+2025-03-06 16:17:14,384 [INFO] SS  :  42
+2025-03-06 16:17:14,384 [INFO] HS  :  42
+2025-03-06 16:17:14,384 [INFO] HA  :  42
+2025-03-06 16:17:14,384 [INFO] RA  :  42
+2025-03-06 16:17:14,384 [INFO] NM  :  84
+2025-03-06 16:17:14,384 [INFO] SA  :  42
+2025-03-06 16:17:14,384 [INFO] MM  :  14
+2025-03-06 16:17:14,384 [INFO] CS  :  42
+2025-03-06 16:17:14,384 [INFO] HM  :  42
+2025-03-06 16:17:14,384 [INFO] ML  :  84
+2025-03-06 16:17:14,384 [INFO] NL  :  84
+2025-03-06 16:17:14,384 [INFO] MC  :  28
+2025-03-06 16:17:14,384 [INFO] AC  :  42
+2025-03-06 16:17:14,384 [INFO] SM  :  28
+2025-03-06 16:17:14,384 [INFO] AL  :  84
+2025-03-06 16:17:14,384 [INFO] NA  :  42
+2025-03-06 16:17:14,385 [INFO] 
+GROUPES WEEKEND:
+2025-03-06 16:17:14,385 [INFO] CmS   :  46
+2025-03-06 16:17:14,385 [INFO] CmD   : 140
+2025-03-06 16:17:14,385 [INFO] CaSD  : 210
+2025-03-06 16:17:14,385 [INFO] CsSD  : 168
+2025-03-06 16:17:14,385 [INFO] VmS   :  28
+2025-03-06 16:17:14,385 [INFO] VmD   :  84
+2025-03-06 16:17:14,385 [INFO] VaSD  : 126
+2025-03-06 16:17:14,385 [INFO] NAMw  : 126
+2025-03-06 16:17:14,385 [INFO] NLw   : 114
+2025-03-06 16:17:14,385 [INFO] 
+GROUPES SEMAINE:
+2025-03-06 16:17:14,385 [INFO] XmM   : 158
+2025-03-06 16:17:14,385 [INFO] XM    : 173
+2025-03-06 16:17:14,385 [INFO] XA    : 316
+2025-03-06 16:17:14,385 [INFO] XS    : 316
+2025-03-06 16:17:14,385 [INFO] NMC   : 237
+2025-03-06 16:17:14,385 [INFO] Vm    : 158
+2025-03-06 16:17:14,385 [INFO] NL    : 128
+2025-03-06 16:17:14,385 [INFO] NLv   :  30
+2025-03-06 16:17:14,385 [INFO] 
+DISTRIBUTION TOTALE DES POSTES
+2025-03-06 16:17:14,385 [INFO] ================================================================================
+2025-03-06 16:17:14,385 [INFO] 
+ÉTAPE 2: Analyse des postes réservés aux CAT
+2025-03-06 16:17:14,385 [INFO] Analyzing CAT posts.
+2025-03-06 16:17:14,385 [INFO] CAT posts calculated: {'weekday': {'ML': 8, 'MC': 0, 'MM': 2, 'CM': 3, 'HM': 0, 'RM': 0, 'SM': 1, 'CA': 7, 'HA': 7, 'RA': 0, 'SA': 0, 'CS': 1, 'HS': 2, 'RS': 2, 'SS': 1, 'AL': 0, 'AC': 0, 'NC': 2, 'NA': 0, 'NM': 4, 'NL': 3, 'NLv': 1, 'CT': 0, 'NR': 0, 'NZ': 0}, 'saturday': {'ML': 0, 'MC': 0, 'MM': 0, 'CM': 0, 'HM': 0, 'RM': 0, 'SM': 0, 'CA': 0, 'HA': 0, 'RA': 0, 'SA': 0, 'CS': 0, 'HS': 0, 'RS': 0, 'SS': 0, 'AL': 1, 'AC': 1, 'NC': 0, 'NA': 1, 'NM': 1, 'NL': 1, 'CT': 0, 'NZ': 0}, 'sunday_holiday': {'ML': 0, 'MC': 0, 'MM': 0, 'CM': 0, 'HM': 0, 'RM': 0, 'SM': 0, 'CA': 0, 'HA': 0, 'RA': 0, 'SA': 0, 'CS': 0, 'HS': 0, 'RS': 0, 'SS': 0, 'AL': 0, 'AC': 0, 'NC': 0, 'NA': 1, 'NM': 1, 'NL': 1, 'CT': 0, 'NZ': 0}}
+2025-03-06 16:17:14,385 [INFO] 
+DISTRIBUTION DES POSTES CAT
+2025-03-06 16:17:14,385 [INFO] ================================================================================
+2025-03-06 16:17:14,385 [INFO] 
+ÉTAPE 3: Ajustement des postes pour les médecins
+2025-03-06 16:17:14,385 [INFO] 
+Ajustement des postes pour les médecins
+2025-03-06 16:17:14,385 [INFO] 
+AJUSTEMENT POSTES SEMAINE:
+2025-03-06 16:17:14,385 [INFO] RS  : Total= 79, CAT= 2 x 5 = 10, Ajusté= 69
+2025-03-06 16:17:14,385 [INFO] CM  : Total= 94, CAT= 3 x 5 = 15, Ajusté= 79
+2025-03-06 16:17:14,385 [INFO] CA  : Total=158, CAT= 7 x 5 = 35, Ajusté=123
+2025-03-06 16:17:14,385 [INFO] SS  : Total= 79, CAT= 1 x 5 =  5, Ajusté= 74
+2025-03-06 16:17:14,385 [INFO] HS  : Total= 79, CAT= 2 x 5 = 10, Ajusté= 69
+2025-03-06 16:17:14,385 [INFO] HA  : Total= 79, CAT= 7 x 5 = 35, Ajusté= 44
+2025-03-06 16:17:14,385 [INFO] NM  : Total=158, CAT= 4 x 5 = 20, Ajusté=138
+2025-03-06 16:17:14,385 [INFO] CT  : Total= 79, CAT= 0 x 5 =  0, Ajusté= 79
+2025-03-06 16:17:14,385 [INFO] NC  : Total= 79, CAT= 2 x 5 = 10, Ajusté= 69
+2025-03-06 16:17:14,385 [INFO] MM  : Total= 79, CAT= 2 x 5 = 10, Ajusté= 69
+2025-03-06 16:17:14,385 [INFO] CS  : Total= 79, CAT= 1 x 5 =  5, Ajusté= 74
+2025-03-06 16:17:14,385 [INFO] HM  : Total= 79, CAT= 0 x 5 =  0, Ajusté= 79
+2025-03-06 16:17:14,385 [INFO] ML  : Total=158, CAT= 8 x 5 = 40, Ajusté=118
+2025-03-06 16:17:14,386 [INFO] SM  : Total= 79, CAT= 1 x 5 =  5, Ajusté= 74
+2025-03-06 16:17:14,386 [INFO] NL  : Total=128, CAT= 3 x 5 = 15, Ajusté=113
+2025-03-06 16:17:14,386 [INFO] NLv : Total= 30, CAT= 1 x 5 =  5, Ajusté= 25
+2025-03-06 16:17:14,386 [INFO] 
+AJUSTEMENT POSTES SATURDAY:
+2025-03-06 16:17:14,386 [INFO] RS  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,386 [INFO] CM  : Total= 18, CAT= 0 x 5 =  0, Ajusté= 18
+2025-03-06 16:17:14,386 [INFO] CA  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,386 [INFO] SS  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,386 [INFO] HS  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,386 [INFO] HA  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,386 [INFO] RA  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,386 [INFO] NM  : Total= 28, CAT= 1 x 5 =  5, Ajusté= 23
+2025-03-06 16:17:14,386 [INFO] SA  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,386 [INFO] MM  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,386 [INFO] CS  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,386 [INFO] HM  : Total= 14, CAT= 0 x 5 =  0, Ajusté= 14
+2025-03-06 16:17:14,386 [INFO] ML  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,386 [INFO] NL  : Total= 28, CAT= 1 x 5 =  5, Ajusté= 23
+2025-03-06 16:17:14,386 [INFO] AC  : Total= 14, CAT= 1 x 5 =  5, Ajusté=  9
+2025-03-06 16:17:14,386 [INFO] AL  : Total= 28, CAT= 1 x 5 =  5, Ajusté= 23
+2025-03-06 16:17:14,386 [INFO] NA  : Total= 14, CAT= 1 x 5 =  5, Ajusté=  9
+2025-03-06 16:17:14,386 [INFO] 
+AJUSTEMENT POSTES SUNDAY_HOLIDAY:
+2025-03-06 16:17:14,386 [INFO] RM  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,386 [INFO] RS  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,386 [INFO] CM  : Total= 56, CAT= 0 x 5 =  0, Ajusté= 56
+2025-03-06 16:17:14,386 [INFO] CA  : Total= 56, CAT= 0 x 5 =  0, Ajusté= 56
+2025-03-06 16:17:14,386 [INFO] SS  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,386 [INFO] HS  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,386 [INFO] HA  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,386 [INFO] RA  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,386 [INFO] NM  : Total= 56, CAT= 1 x 5 =  5, Ajusté= 51
+2025-03-06 16:17:14,386 [INFO] SA  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,386 [INFO] CS  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,386 [INFO] HM  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,386 [INFO] ML  : Total= 56, CAT= 0 x 5 =  0, Ajusté= 56
+2025-03-06 16:17:14,386 [INFO] NL  : Total= 56, CAT= 1 x 5 =  5, Ajusté= 51
+2025-03-06 16:17:14,386 [INFO] MC  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,386 [INFO] AC  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,386 [INFO] SM  : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,386 [INFO] AL  : Total= 56, CAT= 0 x 5 =  0, Ajusté= 56
+2025-03-06 16:17:14,386 [INFO] NA  : Total= 28, CAT= 1 x 5 =  5, Ajusté= 23
+2025-03-06 16:17:14,386 [INFO] 
+AJUSTEMENT GROUPES SEMAINE:
+2025-03-06 16:17:14,386 [INFO] XmM   : Total=158, CAT= 3 x 5 = 15, Ajusté=143
+2025-03-06 16:17:14,387 [INFO] XM    : Total=173, CAT= 3 x 5 = 15, Ajusté=158
+2025-03-06 16:17:14,387 [INFO] XA    : Total=316, CAT=14 x 5 = 70, Ajusté=246
+2025-03-06 16:17:14,387 [INFO] XS    : Total=316, CAT= 6 x 5 = 30, Ajusté=286
+2025-03-06 16:17:14,387 [INFO] NMC   : Total=237, CAT= 6 x 5 = 30, Ajusté=207
+2025-03-06 16:17:14,387 [INFO] Vm    : Total=158, CAT= 8 x 5 = 40, Ajusté=118
+2025-03-06 16:17:14,387 [INFO] 
+AJUSTEMENT GROUPES WEEKEND:
+2025-03-06 16:17:14,387 [INFO] CmS   : Total= 46, CAT= 0 x 5 =  0, Ajusté= 46
+2025-03-06 16:17:14,387 [INFO] CmD   : Total=140, CAT= 0 x 5 =  0, Ajusté=140
+2025-03-06 16:17:14,387 [INFO] CaSD  : Total=210, CAT= 0 x 5 =  0, Ajusté=210
+2025-03-06 16:17:14,387 [INFO] CsSD  : Total=168, CAT= 0 x 5 =  0, Ajusté=168
+2025-03-06 16:17:14,387 [INFO] VmS   : Total= 28, CAT= 0 x 5 =  0, Ajusté= 28
+2025-03-06 16:17:14,387 [INFO] VmD   : Total= 84, CAT= 0 x 5 =  0, Ajusté= 84
+2025-03-06 16:17:14,387 [INFO] VaSD  : Total=126, CAT= 2 x 5 = 10, Ajusté=116
+2025-03-06 16:17:14,387 [INFO] NAMw  : Total=126, CAT= 4 x 5 = 20, Ajusté=106
+2025-03-06 16:17:14,387 [INFO] NLw    : Total=114 (NLs 28 + NLd 56 + NLv 30)  CAT= 3 (NLs 1 + NLd 1 + NLv 1) x 5 = 15  Ajusté= 99
+2025-03-06 16:17:14,387 [INFO] 
+DISTRIBUTION AJUSTÉE POUR LES MÉDECINS
+2025-03-06 16:17:14,387 [INFO] ================================================================================
+2025-03-06 16:17:14,387 [INFO] 
+WEEKDAY:
+2025-03-06 16:17:14,387 [INFO] ------------------------------------------------------------
+2025-03-06 16:17:14,387 [INFO] Type   Total    Plein temps (min-max)     Mi-temps (min-max)       
+2025-03-06 16:17:14,387 [INFO] CA          123 [ 4-5 ]               [ 2-2 ]
+2025-03-06 16:17:14,387 [INFO] CM           79 [ 2-3 ]               [ 1-2 ]
+2025-03-06 16:17:14,387 [INFO] CS           74 [ 2-3 ]               [ 1-2 ]
+2025-03-06 16:17:14,387 [INFO] CT           79 [ 2-3 ]               [ 1-2 ]
+2025-03-06 16:17:14,387 [INFO] HA           44 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,387 [INFO] HM           79 [ 2-3 ]               [ 1-2 ]
+2025-03-06 16:17:14,387 [INFO] HS           69 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,387 [INFO] ML          118 [ 4-5 ]               [ 2-2 ]
+2025-03-06 16:17:14,387 [INFO] MM           69 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,387 [INFO] NC           69 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,387 [INFO] NL          113 [ 4-5 ]               [ 2-2 ]
+2025-03-06 16:17:14,387 [INFO] NM          138 [ 5-6 ]               [ 2-3 ]
+2025-03-06 16:17:14,387 [INFO] RS           69 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,387 [INFO] SM           74 [ 2-3 ]               [ 1-2 ]
+2025-03-06 16:17:14,387 [INFO] SS           74 [ 2-3 ]               [ 1-2 ]
+2025-03-06 16:17:14,387 [INFO] 
+SATURDAY:
+2025-03-06 16:17:14,387 [INFO] ------------------------------------------------------------
+2025-03-06 16:17:14,387 [INFO] Type   Total    Plein temps (min-max)     Mi-temps (min-max)       
+2025-03-06 16:17:14,387 [INFO] AC            9 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,387 [INFO] AL           23 [ 0-1 ]               [ 0-1 ]
+2025-03-06 16:17:14,387 [INFO] CA           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,387 [INFO] CM           18 [ 0-1 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] CS           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,388 [INFO] HA           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,388 [INFO] HM           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,388 [INFO] HS           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,388 [INFO] ML           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] MM           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,388 [INFO] NA            9 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,388 [INFO] NL           23 [ 0-1 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] NM           23 [ 0-1 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] RA           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,388 [INFO] RS           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,388 [INFO] SA           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,388 [INFO] SS           14 [ 0-1 ]               [ 0-0 ]
+2025-03-06 16:17:14,388 [INFO] 
+SUNDAY/HOLIDAY:
+2025-03-06 16:17:14,388 [INFO] ------------------------------------------------------------
+2025-03-06 16:17:14,388 [INFO] Type   Total    Plein temps (min-max)     Mi-temps (min-max)       
+2025-03-06 16:17:14,388 [INFO] AC           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] AL           56 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,388 [INFO] CA           56 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,388 [INFO] CM           56 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,388 [INFO] CS           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] HA           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] HM           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] HS           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] MC           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] ML           56 [ 2-3 ]               [ 1-1 ]
+2025-03-06 16:17:14,388 [INFO] NA           23 [ 0-1 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] NL           51 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] NM           51 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] RA           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] RM           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] RS           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] SA           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] SM           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] SS           28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] 
+GROUPES SEMAINE:
+2025-03-06 16:17:14,388 [INFO] ------------------------------------------------------------
+2025-03-06 16:17:14,388 [INFO] Type   Total    Plein temps (min-max)     Mi-temps (min-max)       
+2025-03-06 16:17:14,388 [INFO] NL          113 [ 4-5 ]               [ 2-2 ]
+2025-03-06 16:17:14,388 [INFO] NLv          25 [ 0-1 ]               [ 0-1 ]
+2025-03-06 16:17:14,388 [INFO] XmM         143 [ 5-6 ]               [ 2-3 ]
+2025-03-06 16:17:14,388 [INFO] XM          158 [ 5-6 ]               [ 2-3 ]
+2025-03-06 16:17:14,388 [INFO] XA          246 [ 9-10]               [ 4-5 ]
+2025-03-06 16:17:14,389 [INFO] XS          286 [10-11]               [ 5-5 ]
+2025-03-06 16:17:14,389 [INFO] NMC         207 [ 7-8 ]               [ 3-4 ]
+2025-03-06 16:17:14,389 [INFO] Vm          118 [ 4-5 ]               [ 2-2 ]
+2025-03-06 16:17:14,389 [INFO] 
+GROUPES WEEKEND:
+2025-03-06 16:17:14,389 [INFO] ------------------------------------------------------------
+2025-03-06 16:17:14,389 [INFO] Type   Total    Plein temps (min-max)     Mi-temps (min-max)       
+2025-03-06 16:17:14,389 [INFO] CmS          46 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,389 [INFO] CmD         140 [ 5-6 ]               [ 2-3 ]
+2025-03-06 16:17:14,389 [INFO] CaSD        210 [ 7-8 ]               [ 3-4 ]
+2025-03-06 16:17:14,389 [INFO] CsSD        168 [ 6-7 ]               [ 3-3 ]
+2025-03-06 16:17:14,389 [INFO] VmS          28 [ 1-2 ]               [ 0-1 ]
+2025-03-06 16:17:14,389 [INFO] VmD          84 [ 3-4 ]               [ 1-2 ]
+2025-03-06 16:17:14,389 [INFO] VaSD        116 [ 4-5 ]               [ 2-2 ]
+2025-03-06 16:17:14,389 [INFO] NAMw        106 [ 3-4 ]               [ 1-2 ]
+2025-03-06 16:17:14,389 [INFO] NLw          99 [ 3-4 ]               [ 1-2 ]
+2025-03-06 16:17:14,389 [INFO] EFFECTIFS:
+2025-03-06 16:17:14,389 [INFO] Médecins plein temps: 25
+2025-03-06 16:17:14,389 [INFO] Médecins mi-temps  :  4
+2025-03-06 16:17:14,389 [INFO] Total parts        : 54
+2025-03-06 16:17:14,389 [INFO] ====================================================================================================
+2025-03-06 16:17:14,389 [INFO] 
+DISTRIBUTION IDÉALE PAR MÉDECIN TYPE
+2025-03-06 16:17:14,389 [INFO] ====================================================================================================
+2025-03-06 16:17:14,389 [INFO] Nombre de médecins plein temps: 25
+2025-03-06 16:17:14,389 [INFO] Nombre de médecins mi-temps: 4
+2025-03-06 16:17:14,390 [INFO] Total demi-parts: 54
+2025-03-06 16:17:14,390 [INFO] 
+2025-03-06 16:17:14,390 [INFO] 
+GARDES DE NUIT SEMAINE
+2025-03-06 16:17:14,390 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,390 [INFO] Type     Total      Plein temps               Mi-temps                 
+2025-03-06 16:17:14,390 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,390 [INFO] NL       113.0      [ 4-5 ] (4.2)           [ 2-2 ] (2.1)
+2025-03-06 16:17:14,390 [INFO] NLv      25.0       [ 0-1 ] (0.9)           [ 0-1 ] (0.5)
+2025-03-06 16:17:14,390 [INFO] 
+AUTRES POSTES SEMAINE
+2025-03-06 16:17:14,390 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,390 [INFO] Type     Total      Plein temps               Mi-temps                 
+2025-03-06 16:17:14,390 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,390 [INFO] CA       123.0      [ 4-5 ] (4.6)           [ 2-2 ] (2.3)
+2025-03-06 16:17:14,390 [INFO] CM       79.0       [ 2-3 ] (2.9)           [ 1-2 ] (1.5)
+2025-03-06 16:17:14,390 [INFO] CS       74.0       [ 2-3 ] (2.7)           [ 1-2 ] (1.4)
+2025-03-06 16:17:14,390 [INFO] CT       79.0       [ 2-3 ] (2.9)           [ 1-2 ] (1.5)
+2025-03-06 16:17:14,390 [INFO] HA       44.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,390 [INFO] HM       79.0       [ 2-3 ] (2.9)           [ 1-2 ] (1.5)
+2025-03-06 16:17:14,390 [INFO] HS       69.0       [ 2-3 ] (2.6)           [ 1-1 ] (1.3)
+2025-03-06 16:17:14,390 [INFO] ML       118.0      [ 4-5 ] (4.4)           [ 2-2 ] (2.2)
+2025-03-06 16:17:14,390 [INFO] MM       69.0       [ 2-3 ] (2.6)           [ 1-1 ] (1.3)
+2025-03-06 16:17:14,390 [INFO] NC       69.0       [ 2-3 ] (2.6)           [ 1-1 ] (1.3)
+2025-03-06 16:17:14,390 [INFO] NM       138.0      [ 5-6 ] (5.1)           [ 2-3 ] (2.6)
+2025-03-06 16:17:14,390 [INFO] RS       69.0       [ 2-3 ] (2.6)           [ 1-1 ] (1.3)
+2025-03-06 16:17:14,390 [INFO] SM       74.0       [ 2-3 ] (2.7)           [ 1-2 ] (1.4)
+2025-03-06 16:17:14,390 [INFO] SS       74.0       [ 2-3 ] (2.7)           [ 1-2 ] (1.4)
+2025-03-06 16:17:14,390 [INFO] 
+GROUPES SEMAINE
+2025-03-06 16:17:14,390 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,390 [INFO] Type     Total      Plein temps               Mi-temps                 
+2025-03-06 16:17:14,390 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,390 [INFO] NMC      207.0      [ 7-8 ] (7.7)           [ 3-4 ] (3.8)
+2025-03-06 16:17:14,390 [INFO] Vm       118.0      [ 4-5 ] (4.4)           [ 2-2 ] (2.2)
+2025-03-06 16:17:14,390 [INFO] XA       246.0      [ 9-10] (9.1)           [ 4-5 ] (4.6)
+2025-03-06 16:17:14,390 [INFO] XM       158.0      [ 5-6 ] (5.9)           [ 2-3 ] (2.9)
+2025-03-06 16:17:14,390 [INFO] XS       286.0      [10-11] (10.6)           [ 5-5 ] (5.3)
+2025-03-06 16:17:14,390 [INFO] XmM      143.0      [ 5-6 ] (5.3)           [ 2-3 ] (2.6)
+2025-03-06 16:17:14,390 [INFO] 
+POSTES WEEKEND
+2025-03-06 16:17:14,390 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,390 [INFO] Type     Total      Plein temps               Mi-temps                 
+2025-03-06 16:17:14,390 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,390 [INFO] AC       37.0       [ 1-2 ] (1.4)           [ 0-1 ] (0.7)
+2025-03-06 16:17:14,390 [INFO] AL       79.0       [ 2-3 ] (2.9)           [ 1-2 ] (1.5)
+2025-03-06 16:17:14,390 [INFO] CA       84.0       [ 3-4 ] (3.1)           [ 1-2 ] (1.6)
+2025-03-06 16:17:14,390 [INFO] CM       74.0       [ 2-3 ] (2.7)           [ 1-2 ] (1.4)
+2025-03-06 16:17:14,390 [INFO] CS       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,391 [INFO] HA       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,391 [INFO] HM       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,391 [INFO] HS       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,391 [INFO] MC       28.0       [ 1-2 ] (1.0)           [ 0-1 ] (0.5)
+2025-03-06 16:17:14,391 [INFO] ML       84.0       [ 3-4 ] (3.1)           [ 1-2 ] (1.6)
+2025-03-06 16:17:14,391 [INFO] MM       14.0       [ 0-1 ] (0.5)           [ 0-0 ] (0.3)
+2025-03-06 16:17:14,391 [INFO] NA       32.0       [ 1-2 ] (1.2)           [ 0-1 ] (0.6)
+2025-03-06 16:17:14,391 [INFO] NL       74.0       [ 2-3 ] (2.7)           [ 1-2 ] (1.4)
+2025-03-06 16:17:14,391 [INFO] NM       74.0       [ 2-3 ] (2.7)           [ 1-2 ] (1.4)
+2025-03-06 16:17:14,391 [INFO] RA       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,391 [INFO] RM       28.0       [ 1-2 ] (1.0)           [ 0-1 ] (0.5)
+2025-03-06 16:17:14,391 [INFO] RS       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,391 [INFO] SA       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,391 [INFO] SM       28.0       [ 1-2 ] (1.0)           [ 0-1 ] (0.5)
+2025-03-06 16:17:14,391 [INFO] SS       42.0       [ 1-2 ] (1.6)           [ 0-1 ] (0.8)
+2025-03-06 16:17:14,391 [INFO] 
+GROUPES WEEKEND
+2025-03-06 16:17:14,391 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,391 [INFO] Type     Total      Plein temps               Mi-temps                 
+2025-03-06 16:17:14,391 [INFO] ----------------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,391 [INFO] CaSD     210.0      [ 7-8 ] (7.8)           [ 3-4 ] (3.9)
+2025-03-06 16:17:14,391 [INFO] CmD      140.0      [ 5-6 ] (5.2)           [ 2-3 ] (2.6)
+2025-03-06 16:17:14,391 [INFO] CmS      46.0       [ 1-2 ] (1.7)           [ 0-1 ] (0.9)
+2025-03-06 16:17:14,391 [INFO] CsSD     168.0      [ 6-7 ] (6.2)           [ 3-3 ] (3.1)
+2025-03-06 16:17:14,391 [INFO] NAMw     106.0      [ 3-4 ] (3.9)           [ 1-2 ] (2.0)
+2025-03-06 16:17:14,391 [INFO] NLw      99.0       [ 3-4 ] (3.7)           [ 1-2 ] (1.8)
+2025-03-06 16:17:14,391 [INFO] VaSD     116.0      [ 4-5 ] (4.3)           [ 2-2 ] (2.1)
+2025-03-06 16:17:14,391 [INFO] VmD      84.0       [ 3-4 ] (3.1)           [ 1-2 ] (1.6)
+2025-03-06 16:17:14,391 [INFO] VmS      28.0       [ 1-2 ] (1.0)           [ 0-1 ] (0.5)
+2025-03-06 16:17:14,391 [INFO] Analyzing unavailability for 29 doctors over 121 days (363 total periods)
+2025-03-06 16:17:14,392 [INFO] 
+INDISPONIBILITÉS DES MÉDECINS:
+2025-03-06 16:17:14,392 [INFO] --------------------------------------------------------------------------------
+2025-03-06 16:17:14,392 [INFO] HUGUENIN       : Primaire: 15.70% ( 7.85% ajusté), Secondaire:  7.44% ( 3.72% ajusté), Total: 23.14% (11.57% ajusté)
+2025-03-06 16:17:14,392 [INFO] FRIOT          : Primaire:  0.00%, Secondaire: 21.21%, Total: 21.21%
+2025-03-06 16:17:14,392 [INFO] VERVOUX        : Primaire:  4.13% ( 2.06% ajusté), Secondaire: 15.15% ( 7.58% ajusté), Total: 19.28% ( 9.64% ajusté)
+2025-03-06 16:17:14,393 [INFO] DIARA          : Primaire: 14.88%, Secondaire:  2.20%, Total: 17.08%
+2025-03-06 16:17:14,393 [INFO] MASSEYS        : Primaire:  0.00% ( 0.00% ajusté), Secondaire: 16.80% ( 8.40% ajusté), Total: 16.80% ( 8.40% ajusté)
+2025-03-06 16:17:14,393 [INFO] CHANTELOT      : Primaire:  7.44%, Secondaire:  8.82%, Total: 16.25%
+2025-03-06 16:17:14,393 [INFO] ROUGIE         : Primaire:  0.00% ( 0.00% ajusté), Secondaire: 15.98% ( 7.99% ajusté), Total: 15.98% ( 7.99% ajusté)
+2025-03-06 16:17:14,393 [INFO] GRAMOND        : Primaire:  5.23%, Secondaire:  9.64%, Total: 14.88%
+2025-03-06 16:17:14,393 [INFO] VILARDELPESO   : Primaire:  2.20%, Secondaire: 11.85%, Total: 14.05%
+2025-03-06 16:17:14,393 [INFO] BEGUE          : Primaire:  5.79%, Secondaire:  6.06%, Total: 11.85%
+2025-03-06 16:17:14,393 [INFO] BASCOU         : Primaire:  4.41%, Secondaire:  7.44%, Total: 11.85%
+2025-03-06 16:17:14,393 [INFO] DUPRE          : Primaire:  1.38%, Secondaire: 10.19%, Total: 11.57%
+2025-03-06 16:17:14,393 [INFO] BERGOUIGNAN    : Primaire:  0.00%, Secondaire: 11.29%, Total: 11.29%
+2025-03-06 16:17:14,393 [INFO] NTAMI          : Primaire:  2.48%, Secondaire:  8.26%, Total: 10.74%
+2025-03-06 16:17:14,393 [INFO] HILAL          : Primaire:  7.44%, Secondaire:  2.48%, Total:  9.92%
+2025-03-06 16:17:14,393 [INFO] DUBAYLE        : Primaire:  0.55%, Secondaire:  9.09%, Total:  9.64%
+2025-03-06 16:17:14,393 [INFO] LEPAULT        : Primaire:  0.00%, Secondaire:  9.09%, Total:  9.09%
+2025-03-06 16:17:14,393 [INFO] CHALVIGNAC     : Primaire:  0.00%, Secondaire:  8.26%, Total:  8.26%
+2025-03-06 16:17:14,393 [INFO] GARIN          : Primaire:  0.00%, Secondaire:  7.99%, Total:  7.99%
+2025-03-06 16:17:14,393 [INFO] WAKIEU         : Primaire:  0.83%, Secondaire:  6.61%, Total:  7.44%
+2025-03-06 16:17:14,393 [INFO] OWONA          : Primaire:  1.65%, Secondaire:  5.23%, Total:  6.89%
+2025-03-06 16:17:14,393 [INFO] JOUANOLOU      : Primaire:  5.51%, Secondaire:  1.10%, Total:  6.61%
+2025-03-06 16:17:14,393 [INFO] FAIZ           : Primaire:  5.79%, Secondaire:  0.00%, Total:  5.79%
+2025-03-06 16:17:14,393 [INFO] EPAILLY        : Primaire:  5.51%, Secondaire:  0.00%, Total:  5.51%
+2025-03-06 16:17:14,393 [INFO] NEHME          : Primaire:  2.48%, Secondaire:  3.03%, Total:  5.51%
+2025-03-06 16:17:14,393 [INFO] DALLAY         : Primaire:  4.96%, Secondaire:  0.00%, Total:  4.96%
+2025-03-06 16:17:14,393 [INFO] DARTY          : Primaire:  1.38%, Secondaire:  3.31%, Total:  4.68%
+2025-03-06 16:17:14,393 [INFO] DALE           : Primaire:  0.00%, Secondaire:  4.13%, Total:  4.13%
+2025-03-06 16:17:14,393 [INFO] AVIT           : Primaire:  0.00%, Secondaire:  0.00%, Total:  0.00%
+2025-03-06 16:17:14,393 [INFO] 
+JOURS LES PLUS CRITIQUES:
+2025-03-06 16:17:14,393 [INFO] --------------------------------------------------------------------------------
+2025-03-06 16:17:14,393 [INFO] 25/06/2025 : 45 médecins indisponibles (Primaire: 12, Secondaire: 33)
+2025-03-06 16:17:14,393 [INFO] 28/05/2025 : 39 médecins indisponibles (Primaire: 14, Secondaire: 25)
+2025-03-06 16:17:14,393 [INFO] 24/05/2025 : 38 médecins indisponibles (Primaire: 19, Secondaire: 19)
+2025-03-06 16:17:14,393 [INFO] 25/05/2025 : 35 médecins indisponibles (Primaire: 21, Secondaire: 14)
+2025-03-06 16:17:14,393 [INFO] 22/06/2025 : 33 médecins indisponibles (Primaire: 7, Secondaire: 26)
+2025-03-06 16:17:14,394 [INFO] 
+TABLEAU RÉCAPITULATIF DE L'ANALYSE
+2025-03-06 16:17:14,394 [INFO] ==========================================================================================
+2025-03-06 16:17:14,394 [INFO] 
+POSTES SEMAINE
+2025-03-06 16:17:14,394 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,394 [INFO] 
+==========================================================================================
+2025-03-06 16:17:14,394 [INFO] Type                    Total      CAT   Médecins Temps Plein [min-max]   Mi-temps [min-max]
+2025-03-06 16:17:14,394 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,394 [INFO] CA                        158       35        123                [4-5]                [2-2]
+2025-03-06 16:17:14,394 [INFO] CM                         94       15         79                [2-3]                [1-2]
+2025-03-06 16:17:14,394 [INFO] CS                         79        5         74                [2-3]                [1-2]
+2025-03-06 16:17:14,394 [INFO] CT                         79        0         79                [2-3]                [1-2]
+2025-03-06 16:17:14,394 [INFO] HA                         79       35         44                [1-2]                [0-1]
+2025-03-06 16:17:14,394 [INFO] HM                         79        0         79                [2-3]                [1-2]
+2025-03-06 16:17:14,394 [INFO] HS                         79       10         69                [2-3]                [1-1]
+2025-03-06 16:17:14,394 [INFO] ML                        158       40        118                [4-5]                [2-2]
+2025-03-06 16:17:14,394 [INFO] MM                         79       10         69                [2-3]                [1-1]
+2025-03-06 16:17:14,394 [INFO] NC                         79       10         69                [2-3]                [1-1]
+2025-03-06 16:17:14,394 [INFO] NL                        158       15        113                [4-5]                [2-2]
+2025-03-06 16:17:14,394 [INFO] NM                        158       20        138                [5-6]                [2-3]
+2025-03-06 16:17:14,394 [INFO] RS                         79       10         69                [2-3]                [1-1]
+2025-03-06 16:17:14,394 [INFO] SM                         79        5         74                [2-3]                [1-2]
+2025-03-06 16:17:14,394 [INFO] SS                         79        5         74                [2-3]                [1-2]
+2025-03-06 16:17:14,394 [INFO] 
+GROUPES SEMAINE
+2025-03-06 16:17:14,395 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,397 [INFO] 
+==========================================================================================
+2025-03-06 16:17:14,397 [INFO] Type                    Total      CAT   Médecins Temps Plein [min-max]   Mi-temps [min-max]
+2025-03-06 16:17:14,397 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,397 [INFO] NL                        128       15        113                [4-5]                [2-2]
+2025-03-06 16:17:14,397 [INFO] NLv                        30       15         25                [0-1]                [0-1]
+2025-03-06 16:17:14,397 [INFO] NMC                       237       30        207                [7-8]                [3-4]
+2025-03-06 16:17:14,397 [INFO] Vm                        158       40        118                [4-5]                [2-2]
+2025-03-06 16:17:14,397 [INFO] XA                        316       70        246               [9-10]                [4-5]
+2025-03-06 16:17:14,397 [INFO] XM                        173       15        158                [5-6]                [2-3]
+2025-03-06 16:17:14,397 [INFO] XS                        316       30        286              [10-11]                [5-5]
+2025-03-06 16:17:14,397 [INFO] XmM                       158       15        143                [5-6]                [2-3]
+2025-03-06 16:17:14,397 [INFO] 
+POSTES SAMEDI
+2025-03-06 16:17:14,397 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,397 [INFO] 
+==========================================================================================
+2025-03-06 16:17:14,397 [INFO] Type                    Total      CAT   Médecins Temps Plein [min-max]   Mi-temps [min-max]
+2025-03-06 16:17:14,397 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,397 [INFO] AC                         14        5          9                [0-1]                [0-0]
+2025-03-06 16:17:14,397 [INFO] AL                         28        5         23                [0-1]                [0-1]
+2025-03-06 16:17:14,397 [INFO] CA                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,397 [INFO] CM                         18        0         18                [0-1]                [0-1]
+2025-03-06 16:17:14,397 [INFO] CS                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,397 [INFO] HA                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,397 [INFO] HM                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,397 [INFO] HS                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,397 [INFO] ML                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,397 [INFO] MM                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,397 [INFO] NA                         14        5          9                [0-1]                [0-0]
+2025-03-06 16:17:14,397 [INFO] NL                         28        5         23                [0-1]                [0-1]
+2025-03-06 16:17:14,398 [INFO] NM                         28        5         23                [0-1]                [0-1]
+2025-03-06 16:17:14,398 [INFO] RA                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,398 [INFO] RS                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,398 [INFO] SA                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,398 [INFO] SS                         14        0         14                [0-1]                [0-0]
+2025-03-06 16:17:14,398 [INFO] 
+POSTES DIMANCHE/FÉRIÉS
+2025-03-06 16:17:14,398 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,398 [INFO] 
+==========================================================================================
+2025-03-06 16:17:14,398 [INFO] Type                    Total      CAT   Médecins Temps Plein [min-max]   Mi-temps [min-max]
+2025-03-06 16:17:14,398 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,398 [INFO] AC                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,398 [INFO] AL                         56        0         56                [2-3]                [1-1]
+2025-03-06 16:17:14,398 [INFO] CA                         56        0         56                [2-3]                [1-1]
+2025-03-06 16:17:14,398 [INFO] CM                         56        0         56                [2-3]                [1-1]
+2025-03-06 16:17:14,398 [INFO] CS                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,398 [INFO] HA                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,398 [INFO] HM                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,398 [INFO] HS                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,398 [INFO] MC                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,398 [INFO] ML                         56        0         56                [2-3]                [1-1]
+2025-03-06 16:17:14,398 [INFO] NA                         28        5         23                [0-1]                [0-1]
+2025-03-06 16:17:14,398 [INFO] NL                         56        5         51                [1-2]                [0-1]
+2025-03-06 16:17:14,398 [INFO] NM                         56        5         51                [1-2]                [0-1]
+2025-03-06 16:17:14,398 [INFO] RA                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,398 [INFO] RM                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,398 [INFO] RS                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,398 [INFO] SA                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,398 [INFO] SM                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,398 [INFO] SS                         28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,398 [INFO] 
+GROUPES WEEKEND
+2025-03-06 16:17:14,398 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,398 [INFO] 
+==========================================================================================
+2025-03-06 16:17:14,398 [INFO] Type                    Total      CAT   Médecins Temps Plein [min-max]   Mi-temps [min-max]
+2025-03-06 16:17:14,398 [INFO] ------------------------------------------------------------------------------------------
+2025-03-06 16:17:14,398 [INFO] CaSD                      210        0        210                [7-8]                [3-4]
+2025-03-06 16:17:14,398 [INFO] CmD                       140        0        140                [5-6]                [2-3]
+2025-03-06 16:17:14,398 [INFO] CmS                        46        0         46                [1-2]                [0-1]
+2025-03-06 16:17:14,399 [INFO] CsSD                      168        0        168                [6-7]                [3-3]
+2025-03-06 16:17:14,399 [INFO] NAMw                      126       20        106                [3-4]                [1-2]
+2025-03-06 16:17:14,399 [INFO] NLw                       114       15         99                [3-4]                [1-2]
+2025-03-06 16:17:14,399 [INFO] VaSD                      126       10        116                [4-5]                [2-2]
+2025-03-06 16:17:14,399 [INFO] VmD                        84        0         84                [3-4]                [1-2]
+2025-03-06 16:17:14,399 [INFO] VmS                        28        0         28                [1-2]                [0-1]
+2025-03-06 16:17:14,399 [INFO] 
+ÉTAPE 4: ANALYSE DES COMBINAISONS
+2025-03-06 16:17:14,399 [INFO] 
+Vérification structure pre_analysis_results:
+2025-03-06 16:17:14,399 [INFO] Structure weekday_groups pour le premier médecin:
+2025-03-06 16:17:14,399 [INFO] - XmM: {'min': 2, 'max': 3, 'target': 2.6481481481481484}
+2025-03-06 16:17:14,399 [INFO] - XM: {'min': 2, 'max': 3, 'target': 2.925925925925926}
+2025-03-06 16:17:14,399 [INFO] - XA: {'min': 4, 'max': 5, 'target': 4.555555555555555}
+2025-03-06 16:17:14,399 [INFO] - XS: {'min': 5, 'max': 5, 'target': 5.296296296296297}
+2025-03-06 16:17:14,399 [INFO] - NMC: {'min': 3, 'max': 4, 'target': 3.8333333333333335}
+2025-03-06 16:17:14,399 [INFO] - Vm: {'min': 2, 'max': 2, 'target': 2.185185185185185}
+2025-03-06 16:17:14,399 [INFO] - NL: {'min': 2, 'max': 2, 'target': 2.0925925925925926}
+2025-03-06 16:17:14,399 [INFO] - NLv: {'min': 0, 'max': 1, 'target': 0.46296296296296297}
+2025-03-06 16:17:14,399 [INFO] 
+ANALYSE GLOBALE DES COMBINAISONS
+2025-03-06 16:17:14,399 [INFO] ====================================================================================================
+2025-03-06 16:17:14,399 [INFO] Groupes disponibles dans weekday_groups:
+2025-03-06 16:17:14,399 [INFO] - XmM
+2025-03-06 16:17:14,399 [INFO] - XM
+2025-03-06 16:17:14,399 [INFO] - XA
+2025-03-06 16:17:14,399 [INFO] - XS
+2025-03-06 16:17:14,399 [INFO] - NMC
+2025-03-06 16:17:14,399 [INFO] - Vm
+2025-03-06 16:17:14,399 [INFO] - NL
+2025-03-06 16:17:14,399 [INFO] - NLv
+2025-03-06 16:17:14,399 [INFO] 
+ANALYSE DES COMBINAISONS WEEKEND
+2025-03-06 16:17:14,399 [INFO] ====================================================================================================
+2025-03-06 16:17:14,399 [INFO] COMBO    ÉLIGIBLES       GROUPES                   RATIO        STATUT    
+2025-03-06 16:17:14,399 [INFO] --------------------------------------------------------------------------------
+2025-03-06 16:17:14,399 [INFO] MLCA     29/29           VmS+CaSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,399 [INFO] MLHA     29/29           VmS+CaSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,399 [INFO] MLSA     29/29           VmS+CaSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,399 [INFO] MLRA     29/29           VmS+CaSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,400 [INFO] MCCA     29/29           CaSD+VmD                  1.04         ATTENTION 
+2025-03-06 16:17:14,400 [INFO] MCHA     29/29           CaSD+VmD                  2.07         OK        
+2025-03-06 16:17:14,400 [INFO] MCRA     29/29           CaSD+VmD                  2.07         OK        
+2025-03-06 16:17:14,400 [INFO] MCSA     29/29           CaSD+VmD                  2.07         OK        
+2025-03-06 16:17:14,400 [INFO] MLACCMCA 0/29            VmS                       0.00         CRITIQUE  
+2025-03-06 16:17:14,400 [INFO] MMCA     25/29           CaSD                      0.89         ATTENTION 
+2025-03-06 16:17:14,400 [INFO] CACS     29/29           CaSD+CsSD                 1.04         ATTENTION 
+2025-03-06 16:17:14,400 [INFO] HMHA     29/29           CaSD+CmS                  2.07         OK        
+2025-03-06 16:17:14,400 [INFO] HAHS     29/29           CaSD+CsSD                 2.07         OK        
+2025-03-06 16:17:14,400 [INFO] SMSA     29/29           CmD+CaSD                  2.07         OK        
+2025-03-06 16:17:14,400 [INFO] SASS     29/29           CaSD+CsSD                 2.07         OK        
+2025-03-06 16:17:14,400 [INFO] RMRA     29/29           CmD+CaSD                  2.07         OK        
+2025-03-06 16:17:14,400 [INFO] RARS     29/29           CaSD+CsSD                 2.07         OK        
+2025-03-06 16:17:14,400 [INFO] CMAC     29/29           CmS+VaSD                  1.61         OK        
+2025-03-06 16:17:14,401 [INFO] MMAC     25/29           VaSD                      1.79         OK        
+2025-03-06 16:17:14,401 [INFO] CMAL     29/29           CmS+VaSD                  1.26         OK        
+2025-03-06 16:17:14,401 [INFO] MMAL     25/29           VaSD                      1.09         ATTENTION 
+2025-03-06 16:17:14,401 [INFO] HMAL     29/29           CmS+VaSD                  1.26         OK        
+2025-03-06 16:17:14,401 [INFO] HMAC     29/29           CmS+VaSD                  2.07         OK        
+2025-03-06 16:17:14,401 [INFO] RMAL     29/29           CmD+VaSD                  1.26         OK        
+2025-03-06 16:17:14,401 [INFO] RMAC     29/29           CmD+VaSD                  3.22         OK        
+2025-03-06 16:17:14,401 [INFO] SMAL     29/29           CmD+VaSD                  1.26         OK        
+2025-03-06 16:17:14,401 [INFO] SMAC     29/29           CmD+VaSD                  3.22         OK        
+2025-03-06 16:17:14,401 [INFO] MCAL     29/29           VaSD+VmD                  1.26         OK        
+2025-03-06 16:17:14,401 [INFO] CMRS     29/29           CmS+CsSD                  1.61         OK        
+2025-03-06 16:17:14,401 [INFO] CMSS     29/29           CmS+CsSD                  1.61         OK        
+2025-03-06 16:17:14,401 [INFO] CMHS     29/29           CmS+CsSD                  1.61         OK        
+2025-03-06 16:17:14,401 [INFO] MLCS     29/29           VmS+CsSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,401 [INFO] MLRS     29/29           VmS+CsSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,401 [INFO] MLSS     29/29           VmS+CsSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,402 [INFO] MLHS     29/29           VmS+CsSD                  1.04         ATTENTION 
+2025-03-06 16:17:14,402 [INFO] MMCS     25/29           CsSD                      1.79         OK        
+2025-03-06 16:17:14,402 [INFO] MCCS     29/29           CsSD+VmD                  2.07         OK        
+2025-03-06 16:17:14,402 [INFO] MCRS     29/29           CsSD+VmD                  2.07         OK        
+2025-03-06 16:17:14,402 [INFO] MCSS     29/29           CsSD+VmD                  2.07         OK        
+2025-03-06 16:17:14,402 [INFO] MCHS     29/29           CsSD+VmD                  2.07         OK        
+2025-03-06 16:17:14,402 [INFO] 
+ANALYSE DES COMBINAISONS WEEKDAY
+2025-03-06 16:17:14,402 [INFO] ====================================================================================================
+2025-03-06 16:17:14,402 [INFO] COMBO    ÉLIGIBLES       GROUPES                   RATIO        STATUT    
+2025-03-06 16:17:14,402 [INFO] --------------------------------------------------------------------------------
+2025-03-06 16:17:14,402 [INFO] MLCA     29/29           XA+Vm                     0.24         CRITIQUE  
+2025-03-06 16:17:14,402 [INFO] MLHA     29/29           XA+Vm                     0.25         CRITIQUE  
+2025-03-06 16:17:14,402 [INFO] MLSA     0/29            XA+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,402 [INFO] MLRA     0/29            XA+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,402 [INFO] MCCA     0/29            XA+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,402 [INFO] MCHA     0/29            XA+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,402 [INFO] MCRA     0/29            XA+Vm                     inf          OK        
+2025-03-06 16:17:14,402 [INFO] MCSA     0/29            XA+Vm                     inf          OK        
+2025-03-06 16:17:14,403 [INFO] MLACCMCA 0/29            Vm                        0.00         CRITIQUE  
+2025-03-06 16:17:14,403 [INFO] MMCA     29/29           XA+XmM                    0.24         CRITIQUE  
+2025-03-06 16:17:14,403 [INFO] CACS     29/29           XS+XA                     0.24         CRITIQUE  
+2025-03-06 16:17:14,403 [INFO] HMHA     29/29           XA+XM                     0.37         CRITIQUE  
+2025-03-06 16:17:14,403 [INFO] HAHS     29/29           XS+XA                     0.42         CRITIQUE  
+2025-03-06 16:17:14,403 [INFO] SMSA     0/29            XA+XmM                    0.00         CRITIQUE  
+2025-03-06 16:17:14,403 [INFO] SASS     0/29            XS+XA                     0.00         CRITIQUE  
+2025-03-06 16:17:14,403 [INFO] RMRA     0/29            XA+XmM                    inf          OK        
+2025-03-06 16:17:14,403 [INFO] RARS     0/29            XS+XA                     0.00         CRITIQUE  
+2025-03-06 16:17:14,403 [INFO] CMAC     0/29            XM                        0.00         CRITIQUE  
+2025-03-06 16:17:14,403 [INFO] MMAC     0/29            XmM                       0.00         CRITIQUE  
+2025-03-06 16:17:14,403 [INFO] CMAL     0/29            XM                        0.00         CRITIQUE  
+2025-03-06 16:17:14,403 [INFO] MMAL     0/29            XmM                       0.00         CRITIQUE  
+2025-03-06 16:17:14,403 [INFO] HMAL     0/29            XM                        0.00         CRITIQUE  
+2025-03-06 16:17:14,403 [INFO] HMAC     0/29            XM                        0.00         CRITIQUE  
+2025-03-06 16:17:14,403 [INFO] RMAL     0/29            XmM                       inf          OK        
+2025-03-06 16:17:14,403 [INFO] RMAC     0/29            XmM                       inf          OK        
+2025-03-06 16:17:14,404 [INFO] SMAL     0/29            XmM                       0.00         CRITIQUE  
+2025-03-06 16:17:14,404 [INFO] SMAC     0/29            XmM                       0.00         CRITIQUE  
+2025-03-06 16:17:14,404 [INFO] MCAL     0/29            Vm                        inf          OK        
+2025-03-06 16:17:14,404 [INFO] CMRS     29/29           XS+XM                     0.37         CRITIQUE  
+2025-03-06 16:17:14,404 [INFO] CMSS     29/29           XS+XM                     0.37         CRITIQUE  
+2025-03-06 16:17:14,404 [INFO] CMHS     29/29           XS+XM                     0.37         CRITIQUE  
+2025-03-06 16:17:14,404 [INFO] CMNC     29/29           XM                        0.37         CRITIQUE  
+2025-03-06 16:17:14,404 [INFO] SMCS     29/29           XS+XmM                    0.39         CRITIQUE  
+2025-03-06 16:17:14,404 [INFO] SMHS     29/29           XS+XmM                    0.39         CRITIQUE  
+2025-03-06 16:17:14,404 [INFO] MLCS     29/29           XS+Vm                     0.25         CRITIQUE  
+2025-03-06 16:17:14,404 [INFO] MLRS     29/29           XS+Vm                     0.25         CRITIQUE  
+2025-03-06 16:17:14,404 [INFO] MLSS     29/29           XS+Vm                     0.25         CRITIQUE  
+2025-03-06 16:17:14,404 [INFO] MLHS     29/29           XS+Vm                     0.25         CRITIQUE  
+2025-03-06 16:17:14,404 [INFO] MMCS     29/29           XS+XmM                    0.39         CRITIQUE  
+2025-03-06 16:17:14,404 [INFO] MCCS     0/29            XS+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,404 [INFO] MCRS     0/29            XS+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,404 [INFO] MCSS     0/29            XS+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,405 [INFO] MCHS     0/29            XS+Vm                     0.00         CRITIQUE  
+2025-03-06 16:17:14,405 [INFO] 
+RÉSUMÉ DE L'ANALYSE DES COMBINAISONS
+2025-03-06 16:17:14,405 [INFO] ====================================================================================================
+2025-03-06 16:17:14,405 [INFO] 
+WEEKEND:
+2025-03-06 16:17:14,405 [INFO] Critiques  : 1
+2025-03-06 16:17:14,405 [INFO] Attention  : 12
+2025-03-06 16:17:14,405 [INFO] OK        : 27
+2025-03-06 16:17:14,405 [INFO] 
+WEEKDAY:
+2025-03-06 16:17:14,405 [INFO] Critiques  : 37
+2025-03-06 16:17:14,405 [INFO] Attention  : 0
+2025-03-06 16:17:14,405 [INFO] OK        : 6
+2025-03-06 16:17:14,405 [INFO] 
+DISTRIBUTION DES NL WEEKEND
+2025-03-06 16:17:14,405 [INFO] ================================================================================
+2025-03-06 16:17:14,405 [INFO] 
+QUOTAS AJUSTÉS APRÈS PRÉ-ATTRIBUTIONS:
+2025-03-06 16:17:14,405 [INFO] CAT:
+2025-03-06 16:17:14,405 [INFO] NLv: 5 (pré-attribués: 0)
+2025-03-06 16:17:14,407 [INFO] NLs: 5 (pré-attribués: 0)
+2025-03-06 16:17:14,407 [INFO] NLd: 5 (pré-attribués: 0)
+2025-03-06 16:17:14,407 [INFO] 
+MÉDECINS:
+2025-03-06 16:17:14,407 [INFO] NLv: 25 (pré-attribués: 0)
+2025-03-06 16:17:14,407 [INFO] NLs: 23 (pré-attribués: 0)
+2025-03-06 16:17:14,407 [INFO] NLd: 51 (pré-attribués: 0)
+2025-03-06 16:17:14,408 [INFO] 
+Vérification NLv:
+2025-03-06 16:17:14,408 [INFO] Requis : 30 slots
+2025-03-06 16:17:14,408 [INFO] Disponible : 30 slots
+2025-03-06 16:17:14,408 [INFO] 
+Vérification NLs:
+2025-03-06 16:17:14,408 [INFO] Requis : 28 slots
+2025-03-06 16:17:14,408 [INFO] Disponible : 28 slots
+2025-03-06 16:17:14,408 [INFO] 
+Vérification NLd:
+2025-03-06 16:17:14,408 [INFO] Requis : 56 slots
+2025-03-06 16:17:14,408 [INFO] Disponible : 56 slots
+2025-03-06 16:17:14,408 [INFO] Distribution NL aux CAT
+2025-03-06 16:17:14,409 [INFO] 
+DISTRIBUTION DES NL AUX MÉDECINS
+2025-03-06 16:17:14,409 [INFO] ============================================================
+2025-03-06 16:17:14,409 [INFO] 
+INTERVALLES PAR MÉDECIN:
+2025-03-06 16:17:14,409 [INFO] 
+Compteurs initiaux pour ROUGIE:
+2025-03-06 16:17:14,409 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,409 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,409 [INFO] 
+Compteurs initiaux pour FRIOT:
+2025-03-06 16:17:14,409 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,409 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,409 [INFO] 
+Compteurs initiaux pour GARIN:
+2025-03-06 16:17:14,409 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,409 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,409 [INFO] 
+Compteurs initiaux pour VILARDELPESO:
+2025-03-06 16:17:14,409 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,409 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,409 [INFO] 
+Compteurs initiaux pour HUGUENIN:
+2025-03-06 16:17:14,409 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,409 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,409 [INFO] 
+Compteurs initiaux pour HILAL:
+2025-03-06 16:17:14,410 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,410 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,410 [INFO] 
+Compteurs initiaux pour LEPAULT:
+2025-03-06 16:17:14,410 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,410 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,410 [INFO] 
+Compteurs initiaux pour OWONA:
+2025-03-06 16:17:14,410 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,410 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,410 [INFO] 
+Compteurs initiaux pour VERVOUX:
+2025-03-06 16:17:14,410 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,410 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,410 [INFO] 
+Compteurs initiaux pour EPAILLY:
+2025-03-06 16:17:14,410 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,410 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,410 [INFO] 
+Compteurs initiaux pour DARTY:
+2025-03-06 16:17:14,410 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,410 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,410 [INFO] 
+Compteurs initiaux pour DUBAYLE:
+2025-03-06 16:17:14,410 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,410 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,410 [INFO] 
+Compteurs initiaux pour AVIT:
+2025-03-06 16:17:14,410 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,410 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,410 [INFO] 
+Compteurs initiaux pour BERGOUIGNAN:
+2025-03-06 16:17:14,410 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,410 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,411 [INFO] 
+Compteurs initiaux pour BEGUE:
+2025-03-06 16:17:14,411 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,411 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,411 [INFO] 
+Compteurs initiaux pour CHANTELOT:
+2025-03-06 16:17:14,411 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,411 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,411 [INFO] 
+Compteurs initiaux pour DUPRE:
+2025-03-06 16:17:14,411 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,411 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,411 [INFO] 
+Compteurs initiaux pour DALLAY:
+2025-03-06 16:17:14,411 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,411 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,411 [INFO] 
+Compteurs initiaux pour GRAMOND:
+2025-03-06 16:17:14,411 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,411 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,411 [INFO] 
+Compteurs initiaux pour DALE:
+2025-03-06 16:17:14,411 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,411 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,411 [INFO] 
+Compteurs initiaux pour NTAMI:
+2025-03-06 16:17:14,411 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,411 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,411 [INFO] 
+Compteurs initiaux pour JOUANOLOU:
+2025-03-06 16:17:14,411 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,411 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,411 [INFO] 
+Compteurs initiaux pour BASCOU:
+2025-03-06 16:17:14,411 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,411 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,412 [INFO] 
+Compteurs initiaux pour DIARA:
+2025-03-06 16:17:14,412 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,412 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,412 [INFO] 
+Compteurs initiaux pour WAKIEU:
+2025-03-06 16:17:14,412 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,412 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,412 [INFO] 
+Compteurs initiaux pour CHALVIGNAC:
+2025-03-06 16:17:14,412 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,412 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,412 [INFO] 
+Compteurs initiaux pour NEHME:
+2025-03-06 16:17:14,412 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,412 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,412 [INFO] 
+Compteurs initiaux pour MASSEYS:
+2025-03-06 16:17:14,412 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,412 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,412 [INFO] 
+Compteurs initiaux pour FAIZ:
+2025-03-06 16:17:14,412 [INFO] NL pré-attribuées: 0 (NLv:0, NLs:0, NLd:0)
+2025-03-06 16:17:14,412 [INFO] Minimum NLv requis: 1
+2025-03-06 16:17:14,413 [INFO] 
+PHASE 1: Distribution du minimum de NLv
+2025-03-06 16:17:14,413 [INFO] ==================================================
+2025-03-06 16:17:14,413 [INFO] 
+Distribution NLv pour OWONA (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,413 [INFO] OWONA: NLv attribué (1/1)
+2025-03-06 16:17:14,413 [INFO] 
+Distribution NLv pour DIARA (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,413 [INFO] DIARA: NLv attribué (1/1)
+2025-03-06 16:17:14,413 [INFO] 
+Distribution NLv pour GARIN (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,413 [INFO] GARIN: NLv attribué (1/1)
+2025-03-06 16:17:14,413 [INFO] 
+Distribution NLv pour NTAMI (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,413 [INFO] NTAMI: NLv attribué (1/1)
+2025-03-06 16:17:14,413 [INFO] 
+Distribution NLv pour CHALVIGNAC (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,413 [INFO] CHALVIGNAC: NLv attribué (1/1)
+2025-03-06 16:17:14,413 [INFO] 
+Distribution NLv pour EPAILLY (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,413 [INFO] EPAILLY: NLv attribué (1/1)
+2025-03-06 16:17:14,413 [INFO] 
+Distribution NLv pour FRIOT (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,413 [INFO] FRIOT: NLv attribué (1/1)
+2025-03-06 16:17:14,413 [INFO] 
+Distribution NLv pour DARTY (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,413 [INFO] DARTY: NLv attribué (1/1)
+2025-03-06 16:17:14,413 [INFO] 
+Distribution NLv pour CHANTELOT (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,414 [INFO] CHANTELOT: NLv attribué (1/1)
+2025-03-06 16:17:14,414 [INFO] 
+Distribution NLv pour BEGUE (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,414 [INFO] BEGUE: NLv attribué (1/1)
+2025-03-06 16:17:14,414 [INFO] 
+Distribution NLv pour GRAMOND (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,414 [INFO] GRAMOND: NLv attribué (1/1)
+2025-03-06 16:17:14,414 [INFO] 
+Distribution NLv pour HILAL (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,414 [INFO] HILAL: NLv attribué (1/1)
+2025-03-06 16:17:14,414 [INFO] 
+Distribution NLv pour BASCOU (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,414 [INFO] BASCOU: NLv attribué (1/1)
+2025-03-06 16:17:14,414 [INFO] 
+Distribution NLv pour AVIT (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,414 [INFO] AVIT: NLv attribué (1/1)
+2025-03-06 16:17:14,414 [INFO] 
+Distribution NLv pour DALE (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,414 [INFO] DALE: NLv attribué (1/1)
+2025-03-06 16:17:14,414 [INFO] 
+Distribution NLv pour LEPAULT (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,414 [INFO] LEPAULT: NLv attribué (1/1)
+2025-03-06 16:17:14,414 [INFO] 
+Distribution NLv pour JOUANOLOU (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,414 [INFO] JOUANOLOU: NLv attribué (1/1)
+2025-03-06 16:17:14,414 [INFO] 
+Distribution NLv pour NEHME (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,414 [INFO] NEHME: NLv attribué (1/1)
+2025-03-06 16:17:14,414 [INFO] 
+Distribution NLv pour BERGOUIGNAN (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,414 [INFO] BERGOUIGNAN: NLv attribué (1/1)
+2025-03-06 16:17:14,414 [INFO] 
+Distribution NLv pour DUPRE (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,415 [INFO] DUPRE: NLv attribué (1/1)
+2025-03-06 16:17:14,415 [INFO] 
+Distribution NLv pour FAIZ (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,415 [INFO] FAIZ: NLv attribué (1/1)
+2025-03-06 16:17:14,415 [INFO] 
+Distribution NLv pour DUBAYLE (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,415 [WARNING] Impossible d'attribuer NLv à DUBAYLE
+2025-03-06 16:17:14,415 [INFO] 
+Distribution NLv pour DALLAY (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,415 [INFO] DALLAY: NLv attribué (1/1)
+2025-03-06 16:17:14,415 [INFO] 
+Distribution NLv pour VILARDELPESO (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,415 [INFO] VILARDELPESO: NLv attribué (1/1)
+2025-03-06 16:17:14,415 [INFO] 
+Distribution NLv pour WAKIEU (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,415 [INFO] WAKIEU: NLv attribué (1/1)
+2025-03-06 16:17:14,415 [INFO] 
+Distribution NLv pour MASSEYS (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,415 [INFO] MASSEYS: NLv attribué (1/1)
+2025-03-06 16:17:14,415 [INFO] 
+Distribution NLv pour ROUGIE (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,415 [WARNING] Plus de slots NLv disponibles pour ROUGIE
+2025-03-06 16:17:14,415 [INFO] 
+Distribution NLv pour VERVOUX (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,415 [WARNING] Plus de slots NLv disponibles pour VERVOUX
+2025-03-06 16:17:14,415 [INFO] 
+Distribution NLv pour HUGUENIN (minimum NLv: 1, actuel: 0)
+2025-03-06 16:17:14,415 [WARNING] Plus de slots NLv disponibles pour HUGUENIN
+2025-03-06 16:17:14,415 [INFO] 
+PHASE 2: Distribution du minimum global NLw restant
+2025-03-06 16:17:14,415 [INFO] ==================================================
+2025-03-06 16:17:14,415 [INFO] 
+Distribution pour OWONA (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,415 [INFO] OWONA: NLd attribué (2/3)
+2025-03-06 16:17:14,415 [INFO] OWONA: NLd attribué (3/3)
+2025-03-06 16:17:14,416 [INFO] 
+Distribution pour DIARA (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,416 [INFO] DIARA: NLd attribué (2/3)
+2025-03-06 16:17:14,416 [INFO] DIARA: NLd attribué (3/3)
+2025-03-06 16:17:14,416 [INFO] 
+Distribution pour GARIN (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,416 [INFO] GARIN: NLd attribué (2/3)
+2025-03-06 16:17:14,416 [INFO] GARIN: NLd attribué (3/3)
+2025-03-06 16:17:14,416 [INFO] 
+Distribution pour NTAMI (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,416 [INFO] NTAMI: NLd attribué (2/3)
+2025-03-06 16:17:14,416 [INFO] NTAMI: NLd attribué (3/3)
+2025-03-06 16:17:14,416 [INFO] 
+Distribution pour CHALVIGNAC (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,416 [INFO] CHALVIGNAC: NLd attribué (2/3)
+2025-03-06 16:17:14,416 [INFO] CHALVIGNAC: NLd attribué (3/3)
+2025-03-06 16:17:14,416 [INFO] 
+Distribution pour EPAILLY (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,416 [INFO] EPAILLY: NLd attribué (2/3)
+2025-03-06 16:17:14,416 [INFO] EPAILLY: NLd attribué (3/3)
+2025-03-06 16:17:14,416 [INFO] 
+Distribution pour FRIOT (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,416 [INFO] FRIOT: NLd attribué (2/3)
+2025-03-06 16:17:14,417 [INFO] FRIOT: NLd attribué (3/3)
+2025-03-06 16:17:14,417 [INFO] 
+Distribution pour DARTY (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,417 [INFO] DARTY: NLd attribué (2/3)
+2025-03-06 16:17:14,417 [INFO] DARTY: NLd attribué (3/3)
+2025-03-06 16:17:14,417 [INFO] 
+Distribution pour CHANTELOT (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,417 [INFO] CHANTELOT: NLd attribué (2/3)
+2025-03-06 16:17:14,417 [INFO] CHANTELOT: NLs attribué (3/3)
+2025-03-06 16:17:14,417 [INFO] 
+Distribution pour BEGUE (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,417 [INFO] BEGUE: NLd attribué (2/3)
+2025-03-06 16:17:14,417 [INFO] BEGUE: NLs attribué (3/3)
+2025-03-06 16:17:14,417 [INFO] 
+Distribution pour GRAMOND (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,418 [INFO] GRAMOND: NLd attribué (2/3)
+2025-03-06 16:17:14,418 [INFO] GRAMOND: NLd attribué (3/3)
+2025-03-06 16:17:14,418 [INFO] 
+Distribution pour HILAL (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,418 [INFO] HILAL: NLd attribué (2/3)
+2025-03-06 16:17:14,418 [INFO] HILAL: NLd attribué (3/3)
+2025-03-06 16:17:14,418 [INFO] 
+Distribution pour BASCOU (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,418 [INFO] BASCOU: NLd attribué (2/3)
+2025-03-06 16:17:14,418 [INFO] BASCOU: NLd attribué (3/3)
+2025-03-06 16:17:14,418 [INFO] 
+Distribution pour AVIT (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,418 [INFO] AVIT: NLd attribué (2/3)
+2025-03-06 16:17:14,418 [INFO] AVIT: NLd attribué (3/3)
+2025-03-06 16:17:14,418 [INFO] 
+Distribution pour DALE (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,418 [INFO] DALE: NLd attribué (2/3)
+2025-03-06 16:17:14,418 [INFO] DALE: NLd attribué (3/3)
+2025-03-06 16:17:14,418 [INFO] 
+Distribution pour LEPAULT (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,418 [INFO] LEPAULT: NLd attribué (2/3)
+2025-03-06 16:17:14,419 [INFO] LEPAULT: NLd attribué (3/3)
+2025-03-06 16:17:14,419 [INFO] 
+Distribution pour JOUANOLOU (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,419 [INFO] JOUANOLOU: NLd attribué (2/3)
+2025-03-06 16:17:14,419 [INFO] JOUANOLOU: NLd attribué (3/3)
+2025-03-06 16:17:14,419 [INFO] 
+Distribution pour NEHME (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,419 [INFO] NEHME: NLd attribué (2/3)
+2025-03-06 16:17:14,419 [INFO] NEHME: NLd attribué (3/3)
+2025-03-06 16:17:14,419 [INFO] 
+Distribution pour BERGOUIGNAN (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,419 [INFO] BERGOUIGNAN: NLd attribué (2/3)
+2025-03-06 16:17:14,419 [INFO] BERGOUIGNAN: NLd attribué (3/3)
+2025-03-06 16:17:14,419 [INFO] 
+Distribution pour DUPRE (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,419 [INFO] DUPRE: NLd attribué (2/3)
+2025-03-06 16:17:14,419 [INFO] DUPRE: NLd attribué (3/3)
+2025-03-06 16:17:14,419 [INFO] 
+Distribution pour FAIZ (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,419 [INFO] FAIZ: NLd attribué (2/3)
+2025-03-06 16:17:14,419 [INFO] FAIZ: NLd attribué (3/3)
+2025-03-06 16:17:14,419 [INFO] 
+Distribution pour DUBAYLE (minimum global: 3, actuel: 0)
+2025-03-06 16:17:14,419 [INFO] DUBAYLE: NLd attribué (1/3)
+2025-03-06 16:17:14,419 [INFO] DUBAYLE: NLd attribué (2/3)
+2025-03-06 16:17:14,420 [INFO] DUBAYLE: NLd attribué (3/3)
+2025-03-06 16:17:14,420 [INFO] 
+Distribution pour DALLAY (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,420 [INFO] DALLAY: NLd attribué (2/3)
+2025-03-06 16:17:14,420 [INFO] DALLAY: NLd attribué (3/3)
+2025-03-06 16:17:14,420 [INFO] 
+Distribution pour VILARDELPESO (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,420 [INFO] VILARDELPESO: NLd attribué (2/3)
+2025-03-06 16:17:14,420 [INFO] VILARDELPESO: NLd attribué (3/3)
+2025-03-06 16:17:14,420 [INFO] 
+Distribution pour WAKIEU (minimum global: 3, actuel: 1)
+2025-03-06 16:17:14,420 [INFO] WAKIEU: NLd attribué (2/3)
+2025-03-06 16:17:14,420 [INFO] WAKIEU: NLd attribué (3/3)
+2025-03-06 16:17:14,420 [INFO] MASSEYS: Minimum global déjà atteint (1/1)
+2025-03-06 16:17:14,420 [INFO] 
+Distribution pour ROUGIE (minimum global: 1, actuel: 0)
+2025-03-06 16:17:14,420 [INFO] ROUGIE: NLd attribué (1/1)
+2025-03-06 16:17:14,420 [INFO] 
+Distribution pour VERVOUX (minimum global: 1, actuel: 0)
+2025-03-06 16:17:14,420 [INFO] VERVOUX: NLs attribué (1/1)
+2025-03-06 16:17:14,420 [INFO] 
+Distribution pour HUGUENIN (minimum global: 1, actuel: 0)
+2025-03-06 16:17:14,420 [INFO] HUGUENIN: NLs attribué (1/1)
+2025-03-06 16:17:14,420 [INFO] 
+PHASE 3: Distribution complémentaire
+2025-03-06 16:17:14,421 [INFO] DALLAY: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,421 [INFO] BASCOU: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,421 [INFO] GRAMOND: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,421 [INFO] BERGOUIGNAN: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,421 [INFO] BEGUE: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,421 [INFO] AVIT: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,421 [INFO] NTAMI: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,421 [INFO] VILARDELPESO: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,421 [INFO] OWONA: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,421 [INFO] DIARA: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,421 [INFO] HILAL: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,422 [INFO] WAKIEU: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,422 [INFO] JOUANOLOU: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,422 [INFO] MASSEYS: NLd attribué (total: 2/2)
+2025-03-06 16:17:14,422 [INFO] LEPAULT: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,422 [INFO] NEHME: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,422 [INFO] DALE: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,422 [INFO] HUGUENIN: NLs attribué (total: 2/2)
+2025-03-06 16:17:14,422 [INFO] VERVOUX: NLs attribué (total: 2/2)
+2025-03-06 16:17:14,422 [INFO] EPAILLY: NLs attribué (total: 4/4)
+2025-03-06 16:17:14,422 [INFO] 
+RÉSULTAT FINAL DE LA DISTRIBUTION
+2025-03-06 16:17:14,422 [INFO] ========================================
+2025-03-06 16:17:14,422 [INFO] 
+AVIT (2 demi-parts):
+2025-03-06 16:17:14,422 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,422 [INFO] NLs: 1
+2025-03-06 16:17:14,422 [INFO] NLd: 2
+2025-03-06 16:17:14,422 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,422 [INFO] 
+BASCOU (2 demi-parts):
+2025-03-06 16:17:14,422 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,422 [INFO] NLs: 1
+2025-03-06 16:17:14,422 [INFO] NLd: 2
+2025-03-06 16:17:14,422 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,423 [INFO] 
+BEGUE (2 demi-parts):
+2025-03-06 16:17:14,423 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,423 [INFO] NLs: 2
+2025-03-06 16:17:14,423 [INFO] NLd: 1
+2025-03-06 16:17:14,423 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,423 [INFO] 
+BERGOUIGNAN (2 demi-parts):
+2025-03-06 16:17:14,423 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,423 [INFO] NLs: 1
+2025-03-06 16:17:14,423 [INFO] NLd: 2
+2025-03-06 16:17:14,423 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,423 [INFO] 
+CHALVIGNAC (2 demi-parts):
+2025-03-06 16:17:14,423 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,423 [INFO] NLs: 0
+2025-03-06 16:17:14,423 [INFO] NLd: 2
+2025-03-06 16:17:14,423 [INFO] Total: 3 (min: 3, max: 4)
+2025-03-06 16:17:14,423 [INFO] 
+CHANTELOT (2 demi-parts):
+2025-03-06 16:17:14,423 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,423 [INFO] NLs: 1
+2025-03-06 16:17:14,423 [INFO] NLd: 1
+2025-03-06 16:17:14,423 [INFO] Total: 3 (min: 3, max: 4)
+2025-03-06 16:17:14,423 [INFO] 
+DALE (2 demi-parts):
+2025-03-06 16:17:14,423 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,423 [INFO] NLs: 1
+2025-03-06 16:17:14,423 [INFO] NLd: 2
+2025-03-06 16:17:14,423 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,423 [INFO] 
+DALLAY (2 demi-parts):
+2025-03-06 16:17:14,423 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,423 [INFO] NLs: 1
+2025-03-06 16:17:14,423 [INFO] NLd: 2
+2025-03-06 16:17:14,423 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,423 [INFO] 
+DARTY (2 demi-parts):
+2025-03-06 16:17:14,423 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,423 [INFO] NLs: 0
+2025-03-06 16:17:14,423 [INFO] NLd: 2
+2025-03-06 16:17:14,423 [INFO] Total: 3 (min: 3, max: 4)
+2025-03-06 16:17:14,423 [INFO] 
+DIARA (2 demi-parts):
+2025-03-06 16:17:14,423 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,423 [INFO] NLs: 1
+2025-03-06 16:17:14,423 [INFO] NLd: 2
+2025-03-06 16:17:14,423 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,423 [INFO] 
+DUBAYLE (2 demi-parts):
+2025-03-06 16:17:14,423 [INFO] NLv: 0 (minimum requis: 1)
+2025-03-06 16:17:14,424 [INFO] NLs: 0
+2025-03-06 16:17:14,424 [INFO] NLd: 3
+2025-03-06 16:17:14,424 [INFO] Total: 3 (min: 3, max: 4)
+2025-03-06 16:17:14,424 [INFO] 
+DUPRE (2 demi-parts):
+2025-03-06 16:17:14,424 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,424 [INFO] NLs: 0
+2025-03-06 16:17:14,424 [INFO] NLd: 2
+2025-03-06 16:17:14,424 [INFO] Total: 3 (min: 3, max: 4)
+2025-03-06 16:17:14,424 [INFO] 
+EPAILLY (2 demi-parts):
+2025-03-06 16:17:14,424 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,424 [INFO] NLs: 1
+2025-03-06 16:17:14,424 [INFO] NLd: 2
+2025-03-06 16:17:14,424 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,424 [INFO] 
+FAIZ (2 demi-parts):
+2025-03-06 16:17:14,424 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,424 [INFO] NLs: 0
+2025-03-06 16:17:14,424 [INFO] NLd: 2
+2025-03-06 16:17:14,424 [INFO] Total: 3 (min: 3, max: 4)
+2025-03-06 16:17:14,424 [INFO] 
+FRIOT (2 demi-parts):
+2025-03-06 16:17:14,424 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,424 [INFO] NLs: 0
+2025-03-06 16:17:14,424 [INFO] NLd: 2
+2025-03-06 16:17:14,424 [INFO] Total: 3 (min: 3, max: 4)
+2025-03-06 16:17:14,424 [INFO] 
+GARIN (2 demi-parts):
+2025-03-06 16:17:14,424 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,424 [INFO] NLs: 0
+2025-03-06 16:17:14,424 [INFO] NLd: 2
+2025-03-06 16:17:14,424 [INFO] Total: 3 (min: 3, max: 4)
+2025-03-06 16:17:14,424 [INFO] 
+GRAMOND (2 demi-parts):
+2025-03-06 16:17:14,424 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,424 [INFO] NLs: 1
+2025-03-06 16:17:14,424 [INFO] NLd: 2
+2025-03-06 16:17:14,424 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,424 [INFO] 
+HILAL (2 demi-parts):
+2025-03-06 16:17:14,424 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,424 [INFO] NLs: 1
+2025-03-06 16:17:14,424 [INFO] NLd: 2
+2025-03-06 16:17:14,424 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,424 [INFO] 
+HUGUENIN (1 demi-parts):
+2025-03-06 16:17:14,424 [INFO] NLv: 0 (minimum requis: 1)
+2025-03-06 16:17:14,424 [INFO] NLs: 2
+2025-03-06 16:17:14,424 [INFO] NLd: 0
+2025-03-06 16:17:14,425 [INFO] Total: 2 (min: 1, max: 2)
+2025-03-06 16:17:14,425 [INFO] 
+JOUANOLOU (2 demi-parts):
+2025-03-06 16:17:14,425 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,425 [INFO] NLs: 1
+2025-03-06 16:17:14,425 [INFO] NLd: 2
+2025-03-06 16:17:14,425 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,425 [INFO] 
+LEPAULT (2 demi-parts):
+2025-03-06 16:17:14,425 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,425 [INFO] NLs: 1
+2025-03-06 16:17:14,425 [INFO] NLd: 2
+2025-03-06 16:17:14,425 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,425 [INFO] 
+MASSEYS (1 demi-parts):
+2025-03-06 16:17:14,425 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,425 [INFO] NLs: 0
+2025-03-06 16:17:14,425 [INFO] NLd: 1
+2025-03-06 16:17:14,425 [INFO] Total: 2 (min: 1, max: 2)
+2025-03-06 16:17:14,425 [INFO] 
+NEHME (2 demi-parts):
+2025-03-06 16:17:14,425 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,425 [INFO] NLs: 1
+2025-03-06 16:17:14,425 [INFO] NLd: 2
+2025-03-06 16:17:14,425 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,425 [INFO] 
+NTAMI (2 demi-parts):
+2025-03-06 16:17:14,425 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,425 [INFO] NLs: 1
+2025-03-06 16:17:14,425 [INFO] NLd: 2
+2025-03-06 16:17:14,425 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,425 [INFO] 
+OWONA (2 demi-parts):
+2025-03-06 16:17:14,425 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,425 [INFO] NLs: 1
+2025-03-06 16:17:14,425 [INFO] NLd: 2
+2025-03-06 16:17:14,425 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,425 [INFO] 
+ROUGIE (1 demi-parts):
+2025-03-06 16:17:14,425 [INFO] NLv: 0 (minimum requis: 1)
+2025-03-06 16:17:14,425 [INFO] NLs: 0
+2025-03-06 16:17:14,425 [INFO] NLd: 1
+2025-03-06 16:17:14,425 [INFO] Total: 1 (min: 1, max: 2)
+2025-03-06 16:17:14,425 [INFO] 
+VERVOUX (1 demi-parts):
+2025-03-06 16:17:14,425 [INFO] NLv: 0 (minimum requis: 1)
+2025-03-06 16:17:14,425 [INFO] NLs: 2
+2025-03-06 16:17:14,425 [INFO] NLd: 0
+2025-03-06 16:17:14,425 [INFO] Total: 2 (min: 1, max: 2)
+2025-03-06 16:17:14,426 [INFO] 
+VILARDELPESO (2 demi-parts):
+2025-03-06 16:17:14,426 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,426 [INFO] NLs: 1
+2025-03-06 16:17:14,426 [INFO] NLd: 2
+2025-03-06 16:17:14,426 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,426 [INFO] 
+WAKIEU (2 demi-parts):
+2025-03-06 16:17:14,426 [INFO] NLv: 1 (minimum requis: 1)
+2025-03-06 16:17:14,426 [INFO] NLs: 1
+2025-03-06 16:17:14,426 [INFO] NLd: 2
+2025-03-06 16:17:14,426 [INFO] Total: 4 (min: 3, max: 4)
+2025-03-06 16:17:14,426 [INFO] 
+VÉRIFICATION DE LA DISTRIBUTION NL
+2025-03-06 16:17:14,426 [INFO] ================================================================================
+2025-03-06 16:17:14,426 [INFO] 
+CATS:
+2025-03-06 16:17:14,426 [INFO] NLv:   5 /   5 (OK)
+2025-03-06 16:17:14,426 [INFO] NLs:   5 /   5 (OK)
+2025-03-06 16:17:14,426 [INFO] NLd:   5 /   5 (OK)
+2025-03-06 16:17:14,426 [INFO] Total:  15 /  15 (OK)
+2025-03-06 16:17:14,426 [INFO] 
+DOCTORS:
+2025-03-06 16:17:14,426 [INFO] NLv:  25 /  25 (OK)
+2025-03-06 16:17:14,426 [INFO] NLs:  23 /  23 (OK)
+2025-03-06 16:17:14,426 [INFO] NLd:  51 /  51 (OK)
+2025-03-06 16:17:14,426 [INFO] Total:  99 /  99 (OK)
+2025-03-06 16:17:15,679 [INFO] Postes personnalisés chargés: ['NR', 'NZ']
+2025-03-06 16:17:15,748 [INFO] Chargement des postes personnalisés: {'NR': CustomPost(name='NR', start_time=datetime.time(19, 0), end_time=datetime.time(23, 0), day_types={'weekday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x3573472d0>), 'NZ': CustomPost(name='NZ', start_time=datetime.time(20, 0), end_time=datetime.time(23, 0), day_types={'weekday', 'saturday', 'sunday_holiday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x357347250>)}
+2025-03-06 16:17:15,748 [INFO] Mise à jour des groupes avec les postes personnalisés
+2025-03-06 16:17:15,748 [INFO] Traitement du poste NR
+2025-03-06 16:17:15,748 [INFO] - Ajouté au groupe soir/nuit
+2025-03-06 16:17:15,748 [INFO] Traitement du poste NZ
+2025-03-06 16:17:15,748 [INFO] - Ajouté au groupe soir/nuit
+2025-03-06 16:17:20,866 [INFO] Sauvegarde desiderata pour AVIT
+2025-03-06 16:17:20,881 [INFO] Données sauvegardées
+2025-03-06 16:17:36,738 [INFO] Tentative d'ajout de post-attribution: 2025-05-08, période 3, AVIT, CS
+2025-03-06 16:17:45,448 [INFO] Post-attributions sauvegardées
+2025-03-06 16:17:45,448 [INFO] Post-attributions sauvegardées avec succès
+2025-03-06 16:17:45,482 [INFO] Chargement des postes personnalisés: {'NR': CustomPost(name='NR', start_time=datetime.time(19, 0), end_time=datetime.time(23, 0), day_types={'weekday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x357bf85d0>), 'NZ': CustomPost(name='NZ', start_time=datetime.time(20, 0), end_time=datetime.time(23, 0), day_types={'weekday', 'saturday', 'sunday_holiday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x357bf86d0>)}
+2025-03-06 16:17:45,482 [INFO] Mise à jour des groupes avec les postes personnalisés
+2025-03-06 16:17:45,482 [INFO] Traitement du poste NR
+2025-03-06 16:17:45,482 [INFO] - Ajouté au groupe soir/nuit
+2025-03-06 16:17:45,482 [INFO] Traitement du poste NZ
+2025-03-06 16:17:45,482 [INFO] - Ajouté au groupe soir/nuit
+2025-03-06 16:17:48,670 [INFO] Post-attributions sauvegardées
+2025-03-06 16:17:48,671 [INFO] Post-attributions sauvegardées avec succès
+2025-03-06 16:17:48,712 [INFO] Chargement des postes personnalisés: {'NR': CustomPost(name='NR', start_time=datetime.time(19, 0), end_time=datetime.time(23, 0), day_types={'weekday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x357c38650>), 'NZ': CustomPost(name='NZ', start_time=datetime.time(20, 0), end_time=datetime.time(23, 0), day_types={'weekday', 'saturday', 'sunday_holiday'}, assignment_type='both', possible_combinations={}, statistic_group=None, preserve_in_planning=False, force_zero_count=False, color=<PyQt6.QtGui.QColor object at 0x357c38550>)}
+2025-03-06 16:17:48,713 [INFO] Mise à jour des groupes avec les postes personnalisés
+2025-03-06 16:17:48,713 [INFO] Traitement du poste NR
+2025-03-06 16:17:48,713 [INFO] - Ajouté au groupe soir/nuit
+2025-03-06 16:17:48,713 [INFO] Traitement du poste NZ
+2025-03-06 16:17:48,713 [INFO] - Ajouté au groupe soir/nuit
+2025-03-06 16:21:12,605 [INFO] Données sauvegardées
