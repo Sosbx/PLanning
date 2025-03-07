@@ -4,7 +4,7 @@
 import sys
 import platform
 from PyQt6.QtGui import QColor, QGuiApplication, QScreen, QBrush
-from PyQt6.QtCore import QOperatingSystemVersion, QSysInfo, Qt
+from PyQt6.QtCore import QOperatingSystemVersion, QSysInfo, Qt, QObject, pyqtSignal
 
 class PlatformHelper:
     """
@@ -221,11 +221,20 @@ class PlatformHelper:
             widget.style().polish(widget)
             widget.update()
 
-class ColorSystem:
+# Classe de notification pour les changements de couleur
+class ColorNotifier(QObject):
+    """Classe pour notifier les changements de couleur dans le système"""
+    color_changed = pyqtSignal(str, QColor)  # Signal émis lorsqu'une couleur change (nom, nouvelle_couleur)
+    colors_reset = pyqtSignal()  # Signal émis lorsque toutes les couleurs sont réinitialisées
+
+class ColorSystem(QObject):
     def __init__(self):
-        # Palette optimisée pour l'accessibilité et la compatibilité multi-plateformes
-        # Couleurs de base
-        base_colors = {
+        super().__init__()
+        # Créer le notificateur de couleur
+        self.notifier = ColorNotifier()
+        
+        # Stocker les couleurs de base (non ajustées)
+        self.base_colors = {
             'primary': QColor('#1A5A96'),        # Bleu principal
             'secondary': QColor('#505A64'),      # Gris foncé
             'success': QColor('#2E8540'),        # Vert succès
@@ -241,7 +250,7 @@ class ColorSystem:
         }
         
         # Couleurs de texte
-        text_colors = {
+        self.text_colors = {
             'primary': QColor('#2C3E50'),    # Texte principal
             'secondary': QColor('#505A64'),  # Texte secondaire
             'light': QColor('#FFFFFF'),      # Texte clair
@@ -250,7 +259,7 @@ class ColorSystem:
         }
         
         # Couleurs de conteneur
-        container_colors = {
+        self.container_colors = {
             'background': QColor('#FFFFFF'), # Fond de conteneur
             'border': QColor('#CBD5E1'),     # Bordure de conteneur
             'hover': QColor('#E9EEF4'),      # Effet de survol
@@ -258,7 +267,7 @@ class ColorSystem:
         }
         
         # Couleurs de tableau
-        table_colors = {
+        self.table_colors = {
             'header': QColor('#C6D1E1'),     # En-tête de tableau
             'border': QColor('#B4C2D3'),     # Bordure de tableau
             'hover': QColor('#D8E1ED'),      # Ligne survolée
@@ -268,12 +277,12 @@ class ColorSystem:
         }
         
         # Couleurs de focus
-        focus_colors = {
+        self.focus_colors = {
             'outline': QColor('#1A5A96')     # Contour de focus
         }
         
         # Couleurs de desiderata
-        desiderata_colors = {
+        self.desiderata_colors = {
             'primary': {
                 'normal': QColor('#FFD4D4'),  # Rouge clair pour jours normaux
                 'weekend': QColor('#FFA8A8')  # Rouge plus foncé pour weekends
@@ -285,14 +294,14 @@ class ColorSystem:
         }
         
         # Couleurs pour les différents types de postes
-        post_type_colors = {
+        self.post_type_colors = {
             'consultation': QColor('#D0E2F3'),  # Bleu pâle pour consultations
             'visite': QColor('#D4EDDA'),        # Vert pâle pour visites
             'garde': QColor('#E2D4ED')          # Violet pâle pour gardes
         }
         
         # Couleurs pour les cartes de la landing page
-        card_colors = {
+        self.card_colors = {
             'planning': QColor('#E3F2FD'),
             'personnel': QColor('#E8F5E9'),
             'desiderata': QColor('#FFF8E1'),
@@ -302,25 +311,125 @@ class ColorSystem:
             'export': QColor('#F1F8E9')
         }
         
-        # Appliquer les ajustements de couleur spécifiques à la plateforme
-        self.colors = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in base_colors.items()}
+        # Initialiser les couleurs ajustées
+        self.colors = {}
+        
+        # Appliquer les ajustements initiaux
+        self._apply_adjustments()
+        
+        # Sauvegarder les couleurs originales pour pouvoir les restaurer
+        self.original_colors = self.colors.copy()
+    
+    def initialize_standard_colors(self):
+        """
+        Initialise toutes les couleurs standard du système.
+        Cette fonction doit être appelée au démarrage de l'application.
+        """
+        # S'assurer que toutes les couleurs de désidératas existent
+        if 'desiderata' not in self.colors:
+            self.colors['desiderata'] = {}
+        
+        if 'primary' not in self.colors['desiderata']:
+            self.colors['desiderata']['primary'] = {}
+        
+        if 'secondary' not in self.colors['desiderata']:
+            self.colors['desiderata']['secondary'] = {}
+        
+        # Assigner les couleurs par défaut si elles n'existent pas
+        if 'normal' not in self.colors['desiderata']['primary']:
+            self.colors['desiderata']['primary']['normal'] = QColor('#FFD4D4')  # Rouge clair
+        
+        if 'weekend' not in self.colors['desiderata']['primary']:
+            self.colors['desiderata']['primary']['weekend'] = QColor('#FFA8A8')  # Rouge plus foncé
+        
+        if 'normal' not in self.colors['desiderata']['secondary']:
+            self.colors['desiderata']['secondary']['normal'] = QColor('#D4E4FF')  # Bleu clair
+        
+        if 'weekend' not in self.colors['desiderata']['secondary']:
+            self.colors['desiderata']['secondary']['weekend'] = QColor('#A8C8FF')  # Bleu plus foncé
+
+        
+    def _apply_adjustments(self):
+        """
+        Applique les ajustements de couleur spécifiques à la plateforme à toutes les couleurs.
+        Cette méthode est appelée lors de l'initialisation et lorsque les paramètres changent.
+        """
+        # Appliquer les ajustements aux couleurs de base
+        self.colors = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in self.base_colors.items()}
         
         # Ajouter les dictionnaires de couleurs imbriqués avec ajustements
-        self.colors['text'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in text_colors.items()}
-        self.colors['container'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in container_colors.items()}
-        self.colors['table'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in table_colors.items()}
-        self.colors['focus'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in focus_colors.items()}
-        self.colors['card'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in card_colors.items()}
+        self.colors['text'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in self.text_colors.items()}
+        self.colors['container'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in self.container_colors.items()}
+        self.colors['table'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in self.table_colors.items()}
+        self.colors['focus'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in self.focus_colors.items()}
+        self.colors['card'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in self.card_colors.items()}
         
         # Traiter les couleurs de desiderata (structure imbriquée à deux niveaux)
         self.colors['desiderata'] = {}
-        for priority, contexts in desiderata_colors.items():
+        for priority, contexts in self.desiderata_colors.items():
             self.colors['desiderata'][priority] = {}
             for context, color in contexts.items():
                 self.colors['desiderata'][priority][context] = PlatformHelper.adjust_color_for_platform(color)
         
         # Ajouter les couleurs des types de postes
-        self.colors['post_types'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in post_type_colors.items()}
+        self.colors['post_types'] = {k: PlatformHelper.adjust_color_for_platform(v) for k, v in self.post_type_colors.items()}
+        
+    def set_color(self, key, color, emit_signal=True):
+        """
+        Définit une couleur dans le système et émet un signal de changement
+        
+        Args:
+            key (str): Clé de la couleur à modifier (peut être imbriquée avec des points, ex: 'desiderata.primary.normal')
+            color (QColor): Nouvelle couleur
+            emit_signal (bool): Si True, émet un signal de changement
+        """
+        # Créer une nouvelle instance de QColor pour éviter les références partagées
+        new_color = QColor(color)
+        
+        if key in self.colors:
+            # Cas simple: clé directe
+            self.colors[key] = new_color
+            
+            # Émettre le signal de changement si demandé
+            if emit_signal:
+                self.notifier.color_changed.emit(key, new_color)
+            
+            return True
+        elif '.' in key:
+            # Gestion des clés composées comme "card.planning" ou "desiderata.primary.normal"
+            parts = key.split('.')
+            
+            # Cas avec 2 niveaux (ex: "card.planning")
+            if len(parts) == 2:
+                main_key, sub_key = parts
+                if main_key in self.colors and isinstance(self.colors[main_key], dict) and sub_key in self.colors[main_key]:
+                    self.colors[main_key][sub_key] = new_color
+                    
+                    # Émettre le signal de changement
+                    if emit_signal:
+                        self.notifier.color_changed.emit(key, new_color)
+                    
+                    return True
+            
+            # Cas avec 3 niveaux (ex: "desiderata.primary.normal")
+            elif len(parts) == 3:
+                main_key, mid_key, sub_key = parts
+                if (main_key in self.colors and 
+                    isinstance(self.colors[main_key], dict) and 
+                    mid_key in self.colors[main_key] and 
+                    isinstance(self.colors[main_key][mid_key], dict) and 
+                    sub_key in self.colors[main_key][mid_key]):
+                    
+                    self.colors[main_key][mid_key][sub_key] = new_color
+                    
+                    # Émettre le signal de changement
+                    if emit_signal:
+                        self.notifier.color_changed.emit(key, new_color)
+                    
+                    return True
+        
+        print(f"Avertissement: Impossible de définir la couleur pour la clé '{key}'")
+        return False
         
     def get_color(self, key, context=None, priority=None):
         """
@@ -391,6 +500,56 @@ class ColorSystem:
         if 0 <= index < len(card_types):
             return self.get_color('card', card_types[index])
         return self.get_color('container', 'background')  # Couleur par défaut
+        
+    def recalculate_colors(self):
+        """
+        Recalcule toutes les couleurs avec les paramètres actuels.
+        Cette méthode doit être appelée lorsque les paramètres de couleur changent.
+        """
+        # Sauvegarder les couleurs personnalisées actuelles
+        custom_colors = {}
+        for key in ['primary', 'secondary', 'weekend', 'weekday']:
+            if key in self.colors:
+                custom_colors[key] = self.colors[key]
+        
+        # Réappliquer les ajustements
+        self._apply_adjustments()
+        
+        # Restaurer les couleurs personnalisées
+        for key, color in custom_colors.items():
+            self.colors[key] = color
+        
+        # Émettre un signal pour chaque couleur modifiée
+        for key in self.colors:
+            if isinstance(self.colors[key], dict):
+                for subkey, color in self.colors[key].items():
+                    if isinstance(color, dict):
+                        for subsubkey, subcolor in color.items():
+                            self.notifier.color_changed.emit(f"{key}.{subkey}.{subsubkey}", subcolor)
+                    else:
+                        self.notifier.color_changed.emit(f"{key}.{subkey}", color)
+            else:
+                self.notifier.color_changed.emit(key, self.colors[key])
+    
+    def reset_colors(self):
+        """Réinitialise toutes les couleurs à leurs valeurs par défaut"""
+        # Réappliquer les ajustements aux couleurs de base
+        self._apply_adjustments()
+        
+        # Émettre le signal de réinitialisation
+        self.notifier.colors_reset.emit()
+        
+        # Émettre un signal pour chaque couleur modifiée
+        for key in self.colors:
+            if isinstance(self.colors[key], dict):
+                for subkey, color in self.colors[key].items():
+                    if isinstance(color, dict):
+                        for subsubkey, subcolor in color.items():
+                            self.notifier.color_changed.emit(f"{key}.{subkey}.{subsubkey}", subcolor)
+                    else:
+                        self.notifier.color_changed.emit(f"{key}.{subkey}", color)
+            else:
+                self.notifier.color_changed.emit(key, self.colors[key])
 
 class StyleConstants:
     """Constants for styling the application."""

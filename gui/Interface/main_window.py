@@ -1,6 +1,6 @@
 # © 2024 HILAL Arkane. Tous droits réservés.
 # .gui/main_window.py
-from PyQt6.QtWidgets import QMainWindow, QTabWidget, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QLabel
+from PyQt6.QtWidgets import QMainWindow, QTabWidget, QPushButton, QVBoxLayout, QWidget, QHBoxLayout, QLabel, QMessageBox, QMenu
 from PyQt6.QtCore import Qt, QDate, QSize
 from PyQt6.QtGui import QIcon, QAction, QFont
 
@@ -20,6 +20,9 @@ from ..styles import color_system, GLOBAL_STYLE, ACTION_BUTTON_STYLE, StyleConst
 from core.Constantes.constraints import PlanningConstraints
 from core.post_attribution_handler import PostAttributionHandler
 from gui.Attributions.post_attribution_history_dialog import PostAttributionHistoryDialog
+from gui.Interface.Settings.settings_view import SettingsDialog
+from gui.Interface.Settings.settings_manager import SettingsManager
+from gui.Interface.Settings.settings_applier import SettingsApplier
 
 import logging
 logger = logging.getLogger(__name__)
@@ -59,9 +62,14 @@ class MainWindow(QMainWindow):
         # Initialiser le gestionnaire de post-attribution
         self.post_attribution_handler = PostAttributionHandler(self)
         
+        # Création du menu et de la barre d'outils
+        self.create_menu_bar()
+        self.create_toolbar()
+        
         # Ajouter l'onglet Accueil (icône maison) en premier avec une icône plus petite
         home_widget = QWidget()  # Widget vide pour l'onglet Accueil
         self.home_index = self.tab_widget.addTab(home_widget, self.create_tab_icon("icons/home.png", size=24), "")
+        
         
         # Style des onglets avec les nouvelles constantes
         self.tab_widget.setStyleSheet(f"""
@@ -338,23 +346,197 @@ class MainWindow(QMainWindow):
         event.accept()
         
     def create_menu_bar(self):
-        """Crée la barre de menu de l'application"""
-        self.menu_bar = self.menuBar()
+        """Crée la barre de menu principale"""
+        menu_bar = self.menuBar()
         
-        # Menu Planning
-        self.planning_menu = self.menu_bar.addMenu("Planning")
+        # Menu Fichier
+        file_menu = menu_bar.addMenu("&Fichier")
         
-        # Action pour l'historique des post-attributions
-        post_attr_history_action = self.planning_menu.addAction("Historique des Post-Attributions")
-        post_attr_history_action.triggered.connect(self.show_post_attribution_history)
+        # Action Enregistrer données
+        save_data_action = QAction("&Enregistrer données", self)
+        save_data_action.setShortcut("Ctrl+S")
+        save_data_action.triggered.connect(self.save_data)
+        file_menu.addAction(save_data_action)
         
-        # Menu Navigation
-        self.navigation_menu = self.menu_bar.addMenu("Navigation")
+        file_menu.addSeparator()
         
-        # Action pour retourner à la page d'accueil
-        home_action = self.navigation_menu.addAction("Page d'accueil")
-        home_action.triggered.connect(self.return_to_landing_page)
-        home_action.setIcon(QIcon(resource_path("icons/logo_SOSplanning.png")))
+        # Action Exporter Planning
+        export_action = QAction("&Exporter planning", self)
+        export_action.setShortcut("Ctrl+E")
+        # Connecter à une méthode d'export si elle existe
+        if hasattr(self, 'export_planning'):
+            export_action.triggered.connect(self.export_planning)
+        file_menu.addAction(export_action)
+        
+        file_menu.addSeparator()
+        
+        # Action Quitter
+        exit_action = QAction("&Quitter", self)
+        exit_action.setShortcut("Ctrl+Q")
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+        
+        # Menu Édition
+        edit_menu = menu_bar.addMenu("&Édition")
+        
+        # Action Préférences
+        preferences_action = QAction("&Paramètres d'affichage...", self)
+        preferences_action.setShortcut("Ctrl+P")
+        preferences_action.triggered.connect(self.show_settings_dialog)
+        edit_menu.addAction(preferences_action)
+        
+        # Menu Aide
+        help_menu = menu_bar.addMenu("&Aide")
+        
+        # Action À propos
+        about_action = QAction("À &propos", self)
+        about_action.triggered.connect(self.show_about_dialog)
+        help_menu.addAction(about_action)
+
+    def show_about_dialog(self):
+        """Affiche une boîte de dialogue 'À propos'"""
+        QMessageBox.about(self, "À propos de MedHora",
+                        "MedHora - Planification médicale\n\n"
+                        "© 2024 HILAL Arkane. Tous droits réservés.\n\n"
+                        "Version 1.0")
+
+    def create_toolbar(self):
+        """Crée la barre d'outils principale"""
+        # Créer la barre d'outils
+        toolbar = self.addToolBar("Barre d'outils principale")
+        toolbar.setMovable(False)
+        toolbar.setIconSize(QSize(24, 24))
+        
+        # Ajouter un bouton pour retourner à la landing page si le signal existe
+        if hasattr(self, 'return_to_landing'):
+            home_action = QAction("Accueil", self)
+            home_action.triggered.connect(self.on_return_to_landing)
+            toolbar.addAction(home_action)
+        
+        # Bouton Paramètres
+        settings_action = QAction("Paramètres d'affichage", self)
+        settings_action.triggered.connect(self.show_settings_dialog)
+        toolbar.addAction(settings_action)
+        
+        # Ajouter un séparateur
+        toolbar.addSeparator()
+
+    def on_return_to_landing(self):
+        """Fonction pour retourner à la landing page"""
+        if hasattr(self, 'return_to_landing'):
+            self.return_to_landing.emit()
+
+    def show_settings_dialog(self):
+        """Affiche la boîte de dialogue des paramètres"""
+        # Vérifier si le gestionnaire de paramètres est disponible
+        if not hasattr(self, 'settings_manager'):
+            self.settings_manager = SettingsManager()
+        
+        if not hasattr(self, 'settings_dialog') or self.settings_dialog is None:
+            self.settings_dialog = SettingsDialog(self.settings_manager, self)
+            self.settings_dialog.settings_applied.connect(self.refresh_widgets_after_settings)
+        
+        self.settings_dialog.show()
+        self.settings_dialog.raise_()
+        self.settings_dialog.activateWindow()
+
+    def on_settings_applied(self):
+        """Gère l'application des nouveaux paramètres à tous les composants du logiciel"""
+        print("MainWindow: Settings applied signal received")  # Debug
+        
+        # 1. Obtenir les paramètres actuels
+        settings = self.settings_manager.get_all_settings()
+        table_settings = settings.get('tables', {})
+        
+        # 2. Extraire les facteurs d'ajustement
+        font_factor = table_settings.get('font_size_factor', 1.0)
+        row_factor = table_settings.get('row_height_factor', 1.0)
+        col_factor = table_settings.get('column_width_factor', 1.0)
+        
+        print(f"Applying table settings: font={font_factor}, row={row_factor}, col={col_factor}")
+        
+        # 3. Mettre à jour tous les composants PlanningTableComponent dans l'application
+        self._update_all_planning_tables(font_factor, row_factor, col_factor)
+        
+        # 4. Forcer la mise à jour de l'interface
+        self.repaint()
+        
+        print("MainWindow: Settings propagated to all components")
+
+    def _update_all_planning_tables(self, font_factor, row_factor, col_factor):
+        """Met à jour toutes les instances de PlanningTableComponent dans l'application"""
+        # Planning principal
+        if hasattr(self, 'planning_tab') and hasattr(self.planning_tab, 'table'):
+            print("Updating planning_tab.table")
+            self._update_table(self.planning_tab.table, font_factor, row_factor, col_factor)
+        
+        # Vue par médecin
+        if hasattr(self, 'doctor_planning_view') and hasattr(self.doctor_planning_view, 'table'):
+            print("Updating doctor_planning_view.table")
+            self._update_table(self.doctor_planning_view.table, font_factor, row_factor, col_factor)
+        
+        # Vue de comparaison
+        if hasattr(self, 'planning_comparison_view'):
+            if hasattr(self.planning_comparison_view, 'table1'):
+                print("Updating planning_comparison_view.table1")
+                self._update_table(self.planning_comparison_view.table1, font_factor, row_factor, col_factor)
+            if hasattr(self.planning_comparison_view, 'table2'):
+                print("Updating planning_comparison_view.table2")
+                self._update_table(self.planning_comparison_view.table2, font_factor, row_factor, col_factor)
+        
+        # Rechercher récursivement d'autres tableaux
+        from gui.components.planning_table_component import PlanningTableComponent
+        for table in self.findChildren(PlanningTableComponent):
+            print(f"Found additional table: {table.objectName()}")
+            self._update_table(table, font_factor, row_factor, col_factor)
+
+    def _update_table(self, table, font_factor, row_factor, col_factor):
+        """Met à jour un tableau spécifique avec les nouveaux paramètres"""
+        try:
+            # 1. Mettre à jour les tailles de police
+            base_size = int(12 * font_factor)
+            header_size = int(14 * font_factor)
+            weekday_size = int(10 * font_factor)
+            
+            table.set_font_settings(
+                base_size=base_size,
+                header_size=header_size,
+                weekday_size=weekday_size
+            )
+            
+            # 2. Mettre à jour les hauteurs de ligne
+            min_height = int(table.min_row_height * row_factor)
+            max_height = int(table.max_row_height * row_factor)
+            table.set_min_row_height(min_height)
+            table.set_max_row_height(max_height)
+            
+            # 3. Mettre à jour les largeurs de colonne
+            min_day = int(table.min_col_widths["day"] * col_factor)
+            min_weekday = int(table.min_col_widths["weekday"] * col_factor)
+            min_period = int(table.min_col_widths["period"] * col_factor)
+            
+            max_day = int(table.max_col_widths["day"] * col_factor)
+            max_weekday = int(table.max_col_widths["weekday"] * col_factor)
+            max_period = int(table.max_col_widths["period"] * col_factor)
+            
+            table.set_min_column_widths(
+                day_width=min_day,
+                weekday_width=min_weekday,
+                period_width=min_period
+            )
+            
+            table.set_max_column_widths(
+                day_width=max_day,
+                weekday_width=max_weekday,
+                period_width=max_period
+            )
+            
+            # 4. Réoptimiser les dimensions
+            table.optimize_dimensions()
+            
+            print(f"Table updated with font={base_size}, rows={min_height}-{max_height}, cols={min_day}/{min_weekday}/{min_period}")
+        except Exception as e:
+            print(f"Error updating table: {str(e)}")
         
     def show_post_attribution_history(self):
         """Affiche l'historique des post-attributions"""
@@ -406,3 +588,59 @@ class MainWindow(QMainWindow):
         
         # Mettre à jour les autres vues si nécessaire
         self.update_data()
+
+    def refresh_widgets_after_settings(self):
+        """
+        Met à jour tous les widgets après un changement de paramètres.
+        Cette méthode est appelée quand les paramètres sont modifiés.
+        """
+        print("Rafraîchissement des widgets après changement de paramètres")
+        
+        # 1. Mise à jour des paramètres de tableau
+        settings = self.settings_manager.get_all_settings()
+        table_settings = settings.get('tables', {})
+        
+        # Extraire les facteurs d'ajustement
+        font_factor = table_settings.get('font_size_factor', 1.0)
+        row_factor = table_settings.get('row_height_factor', 1.0)
+        col_factor = table_settings.get('column_width_factor', 1.0)
+        
+        # Mettre à jour tous les tableaux
+        self._update_all_planning_tables(font_factor, row_factor, col_factor)
+        
+        # 2. Mettre à jour les désidératas si l'onglet existe
+        if hasattr(self, 'desiderata_tab') and self.desiderata_tab:
+            # Forcer une mise à jour du calendrier des désidératas
+            self.desiderata_tab.update_calendar()
+            self.desiderata_tab.update_stats()
+            
+        # 3. Mettre à jour le planning principal si l'onglet existe
+        if hasattr(self, 'planning_tab') and self.planning_tab:
+            # Forcer une mise à jour du calendrier de planning
+            if hasattr(self.planning_tab, 'refresh_planning'):
+                self.planning_tab.refresh_planning()
+                
+        # 4. Mettre à jour la vue par médecin si l'onglet existe
+        if hasattr(self, 'doctor_planning_view') and self.doctor_planning_view:
+            self.doctor_planning_view.update_table()
+            
+        # 5. Mettre à jour la vue de comparaison si l'onglet existe
+        if hasattr(self, 'comparison_view') and self.comparison_view:
+            self.comparison_view.update_comparison(preserve_selection=True)
+            
+        # 6. Mettre à jour les statistiques si l'onglet existe
+        if hasattr(self, 'stats_tab') and self.stats_tab:
+            self.update_stats_view()
+        
+        # 7. Mettre à jour toute l'interface pour refléter les nouvelles couleurs
+        from gui.styles import color_system, PlatformHelper
+        
+        # Forcer la mise à jour de tous les widgets visibles
+        for widget in self.findChildren(QWidget):
+            if widget.isVisible():
+                PlatformHelper.ensure_widget_style_updated(widget)
+        
+        # Forcer une mise à jour visuelle de la fenêtre entière
+        self.style().unpolish(self)
+        self.style().polish(self)
+        self.update()

@@ -5,8 +5,8 @@ import logging
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, 
                             QTableWidgetItem, QHeaderView, QTabWidget, QPushButton,
                             QMenu, QAbstractItemView)
-from PyQt6.QtGui import QBrush, QFont, QColor, QIcon, QAction, QPainter, QPen, QFontMetrics
-from PyQt6.QtCore import (Qt, QPropertyAnimation, QEasingCurve, QTimer, QSize, QRect,
+from PyQt6.QtGui import QBrush, QFont, QColor, QIcon, QAction, QPainter, QPen, QFontMetrics, QRegion
+from PyQt6.QtCore import (Qt, QPropertyAnimation, QEasingCurve, QTimer, QSize, QRect,QPoint,
                          pyqtSignal, pyqtSlot)
 from gui.styles import color_system, ACTION_BUTTON_STYLE
 from core.Constantes.models import ALL_POST_TYPES
@@ -144,6 +144,12 @@ class StatsView(QWidget):
         self.highlighted_row = -1
         self.highlighted_col = -1
         self.sort_order = {}  # {table_id: {column: order}}
+        
+        # Couleurs d'intervalle par défaut
+        self.interval_colors = {
+            'under_min': QColor(200, 255, 200, 255),  # Vert plus vif (sous le minimum)
+            'over_max': QColor(255, 200, 200, 255)    # Rouge plus vif (au-dessus du maximum)
+        }
         
         self.init_ui()
 
@@ -414,6 +420,95 @@ class StatsView(QWidget):
         self._apply_filter_to_table(self.weekly_stats_table)
         self._apply_filter_to_table(self.detailed_stats_table)
         self._apply_filter_to_table(self.weekday_group_stats_table)
+    
+    def initialize_table(self, table):
+        """Initialise un tableau avec des paramètres optimaux, incluant la fixation de la première colonne"""
+        # Configuration de base du tableau
+        table.setWordWrap(False)  # Désactiver le retour à la ligne automatique
+        table.setHorizontalScrollMode(QTableWidget.ScrollMode.ScrollPerPixel)
+        table.setVerticalScrollMode(QTableWidget.ScrollMode.ScrollPerPixel)
+        table.setAlternatingRowColors(True)
+        
+        # Adapter la hauteur des lignes et en-têtes
+        table.verticalHeader().setDefaultSectionSize(28)  # Hauteur uniforme des lignes
+        table.horizontalHeader().setMinimumHeight(36)     # Hauteur minimale des en-têtes
+        
+        # Configurer la première colonne (Assigné à) pour qu'elle reste fixe lors du défilement
+        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        table.setColumnWidth(0, max(150, table.columnWidth(0)))  # Largeur minimale garantie
+        
+        # Fixation de la première colonne pour qu'elle reste visible lors du défilement horizontal
+        table.horizontalHeader().setSectionsMovable(False)  # Empêcher le déplacement des colonnes
+        table.setCornerButtonEnabled(False)                # Désactiver le bouton de coin
+        
+        # Rendre la première colonne (Assigné à) toujours visible lors du défilement
+        # En utilisant la fonction interne de Qt
+        if hasattr(table, "setFrozenColumns"):
+            # Méthode directe si disponible (Qt 6.3+)
+            table.setFrozenColumns(1)
+        else:
+            # Méthode alternative pour les versions antérieures de Qt
+            table.horizontalHeader().setFirstSectionMovable(False)
+            # Ajouter une sous-classe de QTableView avec scrollé spécifique
+            self._configure_frozen_columns_workaround(table)
+
+    def _configure_frozen_columns_workaround(self, table):
+        """Configure un tableau pour maintenir la première colonne toujours visible, même avec les versions antérieures de Qt"""
+        # Sous-classer dynamiquement le viewport du tableau
+        original_viewport = table.viewport()
+        
+        # Créer une nouvelle classe de viewport qui modifie le comportement de défilement
+        class FrozenColumnViewport(type(original_viewport)):
+            def __init__(self, parent=None):
+                super().__init__(parent)
+                self._parent_table = parent
+                
+            def paintEvent(self, event):
+                super().paintEvent(event)
+                # Après avoir dessiné le viewport normal, redessiner la première colonne
+                self._redraw_frozen_column()
+                
+            def _redraw_frozen_column(self):
+                if not hasattr(self, "_parent_table") or not self._parent_table:
+                    return
+                    
+                painter = QPainter(self)
+                table = self._parent_table
+                
+                # Position horizontale de départ du viewport (pour savoir combien le tableau a défilé)
+                h_scroll = table.horizontalScrollBar().value()
+                
+                # Ne redessiner que si le tableau a été défilé
+                if h_scroll > 0:
+                    # Récupérer la largeur de la première colonne
+                    col_width = table.columnWidth(0)
+                    
+                    # Zone à redessiner (première colonne)
+                    clip_rect = QRect(0, 0, col_width, self.height())
+                    
+                    # Sauvegarder la position actuelle du viewport
+                    painter.save()
+                    painter.setClipRect(clip_rect)
+                    
+                    # Décaler le dessin pour compenser le défilement
+                    painter.translate(h_scroll, 0)
+                    
+                    # Redessiner le tableau dans la zone clippée (première colonne uniquement)
+                    table.render(painter, QPoint(0, 0), QRegion(clip_rect))
+                    
+                    # Restaurer l'état du painter
+                    painter.restore()
+                    
+                    # Tracer une ligne de séparation pour la colonne figée
+                    painter.setPen(QPen(QColor("#CBD5E1"), 2))
+                    painter.drawLine(col_width, 0, col_width, self.height())
+        
+        # Remplacer le viewport du tableau par notre version personnalisée
+        try:
+            new_viewport = FrozenColumnViewport(table)
+            table.setViewport(new_viewport)
+        except Exception as e:
+            logger.error(f"Erreur lors de la configuration de la colonne figée: {e}")
 
     def load_custom_posts(self):
         """Charge les postes personnalisés"""
@@ -624,10 +719,10 @@ class StatsView(QWidget):
                     max_val = combined_intervals[post_type]['max']
                     
                     if count < min_val:
-                        item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
+                        item.setBackground(self.interval_colors['under_min'])  # Vert plus vif
                         color_applied = True
                     elif max_val != float('inf') and count > max_val:
-                        item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                        item.setBackground(self.interval_colors['over_max'])  # Rouge plus vif
                         color_applied = True
                 
                 # Si aucune coloration conditionnelle n'a été appliquée, appliquer les couleurs par type d'utilisateur
@@ -672,14 +767,14 @@ class StatsView(QWidget):
     
     # 3. Ajout d'une méthode pour optimiser l'affichage des colonnes
     def optimize_column_widths(self, table):
-        """Optimise la largeur des colonnes en fonction du contenu avec un traitement spécial pour les groupes"""
+        """Optimise la largeur des colonnes en fonction du contenu avec un traitement spécial pour la colonne des noms"""
         # Première passe pour calculer les largeurs de contenu
         content_widths = {}
         font_metrics = QFontMetrics(table.font())
         
         # Largeur minimale garantie pour chaque type de colonne
         min_widths = {
-            'name': 100,  # Colonne des noms
+            'name': 120,  # Augmenter la largeur minimale pour les noms
             'group': 70,  # Colonnes de groupes
             'post': 50,   # Colonnes de postes
             'total': 60   # Colonne total
@@ -687,6 +782,25 @@ class StatsView(QWidget):
         
         # Vérifier s'il s'agit d'un tableau de groupes
         is_group_table = table == self.detailed_stats_table or table == self.weekday_group_stats_table
+        
+        # Traiter la première colonne (noms des assignés) de manière spéciale
+        # pour s'assurer qu'elle est suffisamment large pour le plus long nom
+        max_name_width = min_widths['name']
+        for row in range(table.rowCount()):
+            item = table.item(row, 0)
+            if item:
+                name_text = item.text()
+                text_width = font_metrics.horizontalAdvance(name_text)
+                # Ajouter un padding plus généreux pour les noms
+                text_width += 30
+                max_name_width = max(max_name_width, text_width)
+        
+        # Limiter la largeur maximale des noms pour éviter qu'elle ne prenne trop de place
+        max_name_width = min(max_name_width, 250)
+        
+        # Appliquer la largeur optimale à la colonne des noms
+        table.setColumnWidth(0, max_name_width)
+        
         
         # Évaluer la largeur nécessaire pour chaque colonne
         for col in range(table.columnCount()):
@@ -1258,10 +1372,10 @@ class StatsView(QWidget):
                         min_val = intervals.get('min', 0)
                         max_val = intervals.get('max', float('inf'))
                         if count < min_val:
-                            item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
+                            item.setBackground(self.interval_colors['under_min'])  # Vert plus vif
                             color_applied = True
                         elif max_val != float('inf') and count > max_val:
-                            item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                            item.setBackground(self.interval_colors['over_max'])  # Rouge plus vif
                             color_applied = True
                     
                     # Si aucune coloration conditionnelle n'a été appliquée, appliquer les couleurs par type d'utilisateur
@@ -1683,10 +1797,10 @@ class StatsView(QWidget):
                     min_val = group_intervals.get('min', 0)
                     max_val = group_intervals.get('max', float('inf'))
                     if count < min_val:
-                        item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
+                        item.setBackground(self.interval_colors['under_min'])  # Vert plus vif
                         color_applied = True
                     elif max_val != float('inf') and count > max_val:
-                        item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                        item.setBackground(self.interval_colors['over_max'])  # Rouge plus vif
                         color_applied = True
                 
                 # Si aucune coloration conditionnelle n'a été appliquée, appliquer les couleurs par type d'utilisateur
@@ -1848,10 +1962,10 @@ class StatsView(QWidget):
                     min_val = intervals.get('min', 0)
                     max_val = intervals.get('max', float('inf'))
                     if count < min_val:
-                        item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
+                        item.setBackground(self.interval_colors['under_min'])  # Vert plus vif
                         color_applied = True
                     elif max_val != float('inf') and count > max_val:
-                        item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                        item.setBackground(self.interval_colors['over_max'])  # Rouge plus vif
                         color_applied = True
                 
                 # Si aucune coloration conditionnelle n'a été appliquée, appliquer les couleurs par type d'utilisateur
@@ -1995,20 +2109,20 @@ class StatsView(QWidget):
                     max_val = nlw_intervals.get('max', float('inf'))
                     
                     if nl_total < min_val:
-                        item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
+                        item.setBackground(self.interval_colors['under_min'])  # Vert plus vif
                         color_applied = True
                     elif nl_total > max_val:
-                        item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                        item.setBackground(self.interval_colors['over_max'])  # Rouge plus vif
                         color_applied = True
                 else:  # Autres postes
                     intervals = weekend_post_intervals.get(post_type, {})
                     min_val = intervals.get('min', 0)
                     max_val = intervals.get('max', float('inf'))
                     if count < min_val:
-                        item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
+                        item.setBackground(self.interval_colors['under_min'])  # Vert plus vif
                         color_applied = True
                     elif max_val != float('inf') and count > max_val:
-                        item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                        item.setBackground(self.interval_colors['over_max'])  # Rouge plus vif
                         color_applied = True
                 
                 # Appliquer les couleurs de base seulement si pas de coloration conditionnelle
@@ -2344,7 +2458,7 @@ class StatsView(QWidget):
         if is_cat:
             target = intervals.get('target', 0)
             if target > 0 and value != target:  # Différent du quota prévu
-                item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                item.setBackground(self.interval_colors['over_max'])  # Rouge plus vif
                 color_applied = True
         else:
             # Pour les médecins, vérifier les intervalles
@@ -2352,10 +2466,10 @@ class StatsView(QWidget):
             max_val = intervals.get('max', float('inf'))
             
             if value < min_val:
-                item.setBackground(QColor(200, 255, 200, 255))  # Vert plus vif
+                item.setBackground(self.interval_colors['under_min'])  # Vert plus vif
                 color_applied = True
             elif max_val != float('inf') and value > max_val:
-                item.setBackground(QColor(255, 200, 200, 255))  # Rouge plus vif
+                item.setBackground(self.interval_colors['over_max'])  # Rouge plus vif
                 color_applied = True
         
         # Si aucune coloration conditionnelle n'a été appliquée, appliquer la couleur de base

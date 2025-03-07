@@ -51,6 +51,29 @@ class DesiderataCalendarWidget(PlanningTableComponent):
         self.setup_planning_dates(self.start_date, self.end_date)
         
         # Initialiser les couleurs du calendrier pour les desiderata
+        self.update_colors_from_system()
+        
+        # Connecter aux signaux du système de couleurs pour les mises à jour automatiques
+        from gui.styles import color_system
+        color_system.notifier.color_changed.connect(self.on_system_color_changed)
+        color_system.notifier.colors_reset.connect(self.on_system_colors_reset)
+        
+        # Remplir le calendrier avec les jours
+        self.populate_days()
+        
+        # Connecter les événements
+        self.cellPressed.connect(self.on_cell_pressed)
+        self.cellEntered.connect(self.on_cell_entered)
+        self.setMouseTracking(True)
+        self.viewport().installEventFilter(self)
+
+    # 2. Ajouter la méthode update_colors_from_system:
+
+    def update_colors_from_system(self):
+        """Met à jour les couleurs du calendrier depuis le système de couleurs"""
+        from gui.styles import color_system
+        
+        # Récupérer les couleurs actuelles du système
         self.desiderata_colors = {
             'base': {
                 'normal': color_system.colors['weekday'],
@@ -66,16 +89,49 @@ class DesiderataCalendarWidget(PlanningTableComponent):
             }
         }
         self.set_colors(self.desiderata_colors)
+
+    # 3. Ajouter la méthode on_system_color_changed:
+
+    def on_system_color_changed(self, color_key, color):
+        """
+        Gère les changements de couleurs du système
         
-        # Remplir le calendrier avec les jours
+        Args:
+            color_key: Clé de la couleur modifiée (format: 'primary', 'desiderata.primary.normal', etc.)
+            color: Nouvelle couleur
+        """
+        # Vérifier si la couleur modifiée est utilisée dans le calendrier
+        if color_key in ['weekend', 'weekday']:
+            # Mettre à jour les couleurs de base
+            self.desiderata_colors['base']['normal'] = color_system.colors['weekday']
+            self.desiderata_colors['base']['weekend'] = color_system.colors['weekend']
+            self.set_colors(self.desiderata_colors)
+            
+            # Forcer la mise à jour visuelle
+            self.store_selections()
+            self.populate_days()
+            self.restore_selections()
+            
+        elif color_key.startswith('desiderata.'):
+            # Une couleur de desiderata a été modifiée, mise à jour complète
+            self.update_colors_from_system()
+            
+            # Forcer la mise à jour visuelle
+            self.store_selections()
+            self.populate_days()
+            self.restore_selections()
+
+    # 4. Ajouter la méthode on_system_colors_reset:
+
+    def on_system_colors_reset(self):
+        """Gère la réinitialisation de toutes les couleurs du système"""
+        # Mettre à jour toutes les couleurs
+        self.update_colors_from_system()
+        
+        # Forcer la mise à jour visuelle
+        self.store_selections()
         self.populate_days()
-        
-        # Connecter les événements
-        self.cellPressed.connect(self.on_cell_pressed)
-        self.cellEntered.connect(self.on_cell_entered)
-        self.setMouseTracking(True)
-        self.viewport().installEventFilter(self)
-        
+        self.restore_selections()
     def update_dates(self, start_date, end_date):
         """Met à jour les dates du calendrier et préserve les sélections"""
         self.store_selections()  # Stocker les sélections avant de mettre à jour

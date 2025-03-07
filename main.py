@@ -12,6 +12,8 @@ from PyQt6.QtCore import QTimer, QThread, pyqtSignal
 from gui.Interface.main_window import MainWindow
 from gui.splash_screen import SplashScreen
 from gui.landing_page import LandingPage
+from gui.Interface.Settings.settings_manager import SettingsManager
+from gui.Interface.Settings.settings_applier import SettingsApplier
 from core.Constantes.models import Doctor, CAT, create_default_post_configuration
 from core.Constantes.data_persistence import DataPersistence
 from gui.styles import color_system, GLOBAL_STYLE
@@ -146,6 +148,20 @@ def main():
     
     logger = setup_logger()
     app = QApplication(sys.argv)
+    
+    # Initialiser les couleurs standard
+    color_system.initialize_standard_colors()
+    
+    # Initialiser le gestionnaire de paramètres
+    settings_manager = SettingsManager()
+    
+    # Initialiser l'appliqueur de paramètres
+    settings_applier = SettingsApplier(app, settings_manager)
+    
+    # Appliquer les paramètres initiaux
+    settings_applier.apply_settings()
+    
+    # Puis configurer le style général
     set_application_style(app)
 
     splash = SplashScreen()
@@ -162,6 +178,10 @@ def main():
         # Créer les fenêtres
         landing_page_instance = LandingPage()
         main_window_instance = MainWindow(doctors, cats, post_configuration, pre_attributions)
+        
+        # Partager l'instance du gestionnaire de paramètres
+        main_window_instance.settings_manager = settings_manager
+        main_window_instance.settings_applier = settings_applier
         
         # Connecter les signaux
         landing_page_instance.navigate_to_tab.connect(on_navigate_to_tab)

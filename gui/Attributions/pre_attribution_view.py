@@ -588,6 +588,25 @@ class PreAttributionTable(PlanningTableComponent):
         super().__init__()
         self.cal = France()
         self.pre_attribution_widget = pre_attribution_widget
+        
+        # Configurer les couleurs du tableau
+        from gui.styles import color_system
+        colors = {
+            "primary": {
+                "weekend": color_system.get_color('desiderata', 'primary', 'weekend'),
+                "normal": color_system.get_color('desiderata', 'primary', 'normal')
+            },
+            "secondary": {
+                "weekend": color_system.get_color('desiderata', 'secondary', 'weekend'),
+                "normal": color_system.get_color('desiderata', 'secondary', 'normal')
+            },
+            "base": {
+                "weekend": color_system.get_color('weekend'),
+                "normal": color_system.get_color('weekday')
+            }
+        }
+        self.set_colors(colors)
+        
         self.setup_planning_dates(start_date, end_date)
         self.populate_days()
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)

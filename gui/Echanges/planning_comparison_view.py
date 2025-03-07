@@ -156,25 +156,10 @@ class PlanningComparisonView(QWidget):
         self.table1 = PlanningTableComponent(self)
         self.table2 = PlanningTableComponent(self)
         
-        # Configuration des couleurs pour les deux tables - Utilisation du système de couleurs
-        colors = {
-            "primary": {
-                "weekend": color_system.get_rgba_color('danger', alpha=150),   # Rouge vif pour weekend
-                "normal": color_system.get_rgba_color('danger', alpha=100)     # Rouge clair pour jour normal
-            },
-            "secondary": {
-                "weekend": color_system.get_rgba_color('info', alpha=150),     # Bleu vif pour weekend
-                "normal": color_system.get_rgba_color('info', alpha=100)       # Bleu clair pour jour normal
-            },
-            "base": {
-                "weekend": color_system.get_color('weekend'),
-                "normal": color_system.get_color('weekday')
-            }
-        }
+        # Configuration des couleurs pour les deux tables
+        self.table1.set_colors(PlanningTableComponent.get_standard_colors())
+        self.table2.set_colors(PlanningTableComponent.get_standard_colors())
 
-        # Appliquer directement ces couleurs
-        self.table1.set_colors(colors)
-        self.table2.set_colors(colors)
         
         # Configuration des dimensions adaptatives
         for table in [self.table1, self.table2]:

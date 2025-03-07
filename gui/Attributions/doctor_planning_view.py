@@ -186,22 +186,9 @@ class DoctorPlanningView(QWidget):
         # Activer la mise en gras des postes
         self.table.set_bold_posts(True)
 
-        # Configurer les couleurs du tableau
-        colors = {
-            "primary": {
-                "weekend": QColor(255, 150, 150),
-                "normal": QColor(255, 200, 200)
-            },
-            "secondary": {
-                "weekend": QColor(150, 200, 255),
-                "normal": QColor(180, 220, 255)
-            },
-            "base": {
-                "weekend": WEEKEND_COLOR,
-                "normal": WEEKDAY_COLOR
-            }
-        }
-        self.table.set_colors(colors)
+        # Configurer les couleurs du tableau en utilisant les couleurs standard
+        self.table.set_colors(PlanningTableComponent.get_standard_colors())
+        
 
         # Connecter le signal de clic à notre méthode
         self.table.cell_clicked.connect(self._on_cell_clicked_date_period)

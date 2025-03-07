@@ -8,7 +8,7 @@ from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 from workalendar.europe import France
 from typing import Dict, List, Optional, Tuple, Callable, Any
-
+from gui.Interface.Settings.settings_applier import SettingsApplier
 
 class PlanningTableComponent(QTableWidget):
     """
@@ -29,6 +29,11 @@ class PlanningTableComponent(QTableWidget):
         self.end_date = None
         self.current_colors = {}
         self.cell_renderer = None  # Fonction pour personnaliser le rendu des cellules
+        
+        # Connecter le signal de changement de couleur du système
+        from gui.styles import color_system
+        color_system.notifier.color_changed.connect(self.on_system_color_changed)
+        color_system.notifier.colors_reset.connect(self.on_system_colors_reset)
         
         # Dimensions des cellules
         self.min_row_height = 20    # Hauteur minimale des lignes en pixels
@@ -56,6 +61,10 @@ class PlanningTableComponent(QTableWidget):
         
         # Configuration de base
         self.init_table()
+        
+        # Initialiser les couleurs depuis le système
+        self.update_colors_from_system()
+
         
     def init_table(self):
         """Initialise les propriétés de base du tableau"""
@@ -282,6 +291,119 @@ class PlanningTableComponent(QTableWidget):
                    Chaque type doit avoir les contextes "normal" et "weekend"
         """
         self.current_colors = colors
+    
+    def get_standard_colors():
+        """
+        Retourne les couleurs standardisées pour tous les tableaux.
+        Cette méthode statique garantit que tous les composants utilisent les mêmes couleurs.
+        
+        Returns:
+            dict: Dictionnaire de couleurs pour les désidératas et bases
+        """
+        from gui.styles import color_system
+        
+        return {
+            "primary": {
+                "weekend": color_system.colors['desiderata']['primary']['weekend'],
+                "normal": color_system.colors['desiderata']['primary']['normal']
+            },
+            "secondary": {
+                "weekend": color_system.colors['desiderata']['secondary']['weekend'],
+                "normal": color_system.colors['desiderata']['secondary']['normal']
+            },
+            "base": {
+                "weekend": color_system.colors['weekend'],
+                "normal": color_system.colors['weekday']
+            }
+        }
+    def update_colors_from_system(self):
+        """Met à jour les couleurs du tableau depuis le système de couleurs"""
+        self.set_colors(PlanningTableComponent.get_standard_colors())
+
+
+    def on_system_color_changed(self, color_key, color):
+        """Gère les changements de couleurs du système"""
+        # Mettre à jour les couleurs si nécessaire
+        update_needed = False
+        
+        if color_key in ['weekend', 'weekday']:
+            update_needed = True
+        elif color_key.startswith('desiderata.'):
+            update_needed = True
+        
+        if update_needed:
+            # Sauvegarder la sélection actuelle
+            if hasattr(self, 'store_selections'):
+                self.store_selections()
+            
+            # Mettre à jour les couleurs
+            self.update_colors_from_system()
+            
+            # Repeupler le tableau
+            if hasattr(self, 'populate_days') and self.rowCount() > 0:
+                self.populate_days()
+            
+            # Restaurer la sélection
+            if hasattr(self, 'restore_selections'):
+                self.restore_selections()
+            
+            # Force update
+            self.viewport().update()
+
+    def on_system_colors_reset(self):
+        """Gère la réinitialisation complète des couleurs"""
+        # Sauvegarder la sélection actuelle
+        if hasattr(self, 'store_selections'):
+            self.store_selections()
+        
+        # Mettre à jour les couleurs
+        self.update_colors_from_system()
+        
+        # Repeupler le tableau
+        if hasattr(self, 'populate_days') and self.rowCount() > 0:
+            self.populate_days()
+        
+        # Restaurer la sélection
+        if hasattr(self, 'restore_selections'):
+            self.restore_selections()
+        
+        # Force update
+        self.viewport().update()
+    
+    def store_selections(self):
+        """Sauvegarde les sélections actuelles pour les restaurer plus tard"""
+        if not hasattr(self, '_saved_selections'):
+            self._saved_selections = {}
+        
+        self._saved_selections = {}
+        
+        # Sauvegarder la sélection actuelle
+        if hasattr(self, 'selected_date'):
+            self._saved_selections['selected_date'] = self.selected_date
+        
+        if hasattr(self, 'selected_period'):
+            self._saved_selections['selected_period'] = self.selected_period
+
+    def restore_selections(self):
+        """Restaure les sélections sauvegardées"""
+        if not hasattr(self, '_saved_selections'):
+            return
+        
+        # Restaurer la date sélectionnée
+        if 'selected_date' in self._saved_selections:
+            self.selected_date = self._saved_selections['selected_date']
+        
+        # Restaurer la période sélectionnée
+        if 'selected_period' in self._saved_selections:
+            self.selected_period = self._saved_selections['selected_period']
+        
+        # Restaurer la sélection visuelle si nécessaire
+        if hasattr(self, 'selected_date') and hasattr(self, 'selected_period'):
+            # Restaurer la sélection visuelle en émettant le signal approprié
+            if self.selected_date is not None:
+                period = self.selected_period if self.selected_period is not None else -1
+                self.cell_clicked.emit(self.selected_date, period)
+
         
     def set_cell_renderer(self, renderer: Callable[[date, int, Any], Tuple[str, Dict]]):
         """
@@ -716,6 +838,7 @@ class PlanningTableComponent(QTableWidget):
     def set_font_settings(self, font_family=None, base_size=None, header_size=None, period_size=None, weekday_size=None):
         """
         Configure les paramètres de police pour le tableau avec ajustements spécifiques à la plateforme
+        et aux préférences utilisateur.
         
         Args:
             font_family (str): Famille de police à utiliser
@@ -729,15 +852,33 @@ class PlanningTableComponent(QTableWidget):
         platform = PlatformHelper.get_platform()
         font_adjustments = PlatformHelper.get_platform_font_adjustments()
         
-        # Ajuster les tailles de police en fonction de la plateforme
+        # Obtenir les paramètres de tableaux depuis l'appliqueur de paramètres, s'il existe
+        try:
+            
+            settings_applier = self.parent().findChild(SettingsApplier)
+            if settings_applier:
+                table_settings = settings_applier.get_table_settings()
+                table_font_factor = table_settings.get('font_size_factor', 1.0)
+            else:
+                # Essayer d'obtenir le gestionnaire de paramètres global
+                from gui import main_window
+                if hasattr(main_window, 'settings_applier'):
+                    table_settings = main_window.settings_applier.get_table_settings()
+                    table_font_factor = table_settings.get('font_size_factor', 1.0)
+                else:
+                    table_font_factor = 1.0
+        except (ImportError, AttributeError):
+            table_font_factor = 1.0
+        
+        # Ajuster les tailles de police en fonction de la plateforme ET des préférences utilisateur
         if base_size:
-            base_size = int(base_size * font_adjustments['base_size_factor'])
+            base_size = int(base_size * font_adjustments['base_size_factor'] * table_font_factor)
         if header_size:
-            header_size = int(header_size * font_adjustments['header_size_factor'])
+            header_size = int(header_size * font_adjustments['header_size_factor'] * table_font_factor)
         if period_size:
-            period_size = int(period_size * font_adjustments['period_size_factor'])
+            period_size = int(period_size * font_adjustments['period_size_factor'] * table_font_factor)
         if weekday_size:
-            weekday_size = int(weekday_size * font_adjustments['weekday_size_factor'])
+            weekday_size = int(weekday_size * font_adjustments['weekday_size_factor'] * table_font_factor)
         
         # Stocker les paramètres
         self._font_settings = {
@@ -805,3 +946,152 @@ class PlanningTableComponent(QTableWidget):
                     if self._font_settings.get('bold_posts', True) and item.text().strip():
                         custom_font.setBold(True)
                     item.setFont(custom_font)
+
+    def sync_colors_with_system():
+        """
+        Méthode statique pour synchroniser les couleurs de toutes les instances
+        de PlanningTableComponent avec le système de couleurs.
+        
+        Cette méthode doit être appelée lorsque les couleurs du système changent.
+        """
+        from gui.styles import color_system
+        import sys
+        
+        # Obtenir les couleurs actuelles du système
+        updated_colors = {
+            "primary": {
+                "weekend": color_system.colors['desiderata']['primary']['weekend'],
+                "normal": color_system.colors['desiderata']['primary']['normal']
+            },
+            "secondary": {
+                "weekend": color_system.colors['desiderata']['secondary']['weekend'],
+                "normal": color_system.colors['desiderata']['secondary']['normal']
+            },
+            "base": {
+                "weekend": color_system.colors['weekend'],
+                "normal": color_system.colors['weekday']
+            }
+        }
+        
+        # Debug
+        print("Synchronizing all PlanningTableComponent instances with system colors")
+        
+        # Obtenir toutes les instances de PlanningTableComponent
+        from PyQt6.QtWidgets import QApplication
+        app = QApplication.instance()
+        tables = []
+        
+        for widget in app.allWidgets():
+            if isinstance(widget, PlanningTableComponent):
+                tables.append(widget)
+        
+        print(f"Found {len(tables)} PlanningTableComponent instances")
+        
+        # Mettre à jour les couleurs de chaque instance
+        for table in tables:
+            # Sauvegarder la sélection actuelle
+            if hasattr(table, 'store_selections'):
+                table.store_selections()
+            
+            # Appliquer les nouvelles couleurs
+            table.set_colors(updated_colors)
+            
+            # Mettre à jour les cellules avec les nouvelles couleurs
+            if hasattr(table, 'populate_days'):
+                table.populate_days()
+            
+            # Restaurer la sélection
+            if hasattr(table, 'restore_selections'):
+                table.restore_selections()
+            
+            # Force update
+            table.viewport().update()
+
+    def update_from_settings(self):
+        """
+        Met à jour le tableau en fonction des paramètres actuels.
+        Cette méthode est appelée lorsque les paramètres d'affichage sont modifiés.
+        """
+        # Rechercher les paramètres de table dans l'application
+        try:
+            # Tenter d'accéder aux paramètres via l'appliqueur de paramètres
+            from gui.Interface.Settings.settings_applier import SettingsApplier
+            main_window = None
+            settings_applier = None
+            
+            # Chercher la fenêtre principale ou un appliqueur de paramètres
+            widget = self
+            while widget and not settings_applier:
+                if widget.parentWidget():
+                    widget = widget.parentWidget()
+                    if hasattr(widget, 'settings_applier'):
+                        main_window = widget
+                        settings_applier = widget.settings_applier
+                        break
+                else:
+                    break
+            
+            # Si on n'a pas trouvé d'appliqueur de paramètres, chercher dans l'application
+            if not settings_applier:
+                from PyQt6.QtWidgets import QApplication
+                for widget in QApplication.instance().topLevelWidgets():
+                    if hasattr(widget, 'settings_applier'):
+                        settings_applier = widget.settings_applier
+                        break
+            
+            if settings_applier:
+                # Obtenir les paramètres de table
+                table_settings = settings_applier.get_table_settings()
+                font_factor = table_settings.get('font_size_factor', 1.0)
+                row_factor = table_settings.get('row_height_factor', 1.0)
+                col_factor = table_settings.get('column_width_factor', 1.0)
+                
+                # Mettre à jour les tailles de police
+                base_size = int(12 * font_factor)
+                header_size = int(14 * font_factor)
+                weekday_size = int(10 * font_factor)
+                
+                self.set_font_settings(
+                    base_size=base_size,
+                    header_size=header_size,
+                    weekday_size=weekday_size
+                )
+                
+                # Mettre à jour les hauteurs de ligne
+                min_height = int(self.min_row_height * row_factor)
+                max_height = int(self.max_row_height * row_factor)
+                self.set_min_row_height(min_height)
+                self.set_max_row_height(max_height)
+                
+                # Mettre à jour les largeurs de colonne
+                min_day = int(self.min_col_widths["day"] * col_factor)
+                min_weekday = int(self.min_col_widths["weekday"] * col_factor)
+                min_period = int(self.min_col_widths["period"] * col_factor)
+                
+                max_day = int(self.max_col_widths["day"] * col_factor)
+                max_weekday = int(self.max_col_widths["weekday"] * col_factor)
+                max_period = int(self.max_col_widths["period"] * col_factor)
+                
+                self.set_min_column_widths(
+                    day_width=min_day,
+                    weekday_width=min_weekday,
+                    period_width=min_period
+                )
+                
+                self.set_max_column_widths(
+                    day_width=max_day,
+                    weekday_width=max_weekday,
+                    period_width=max_period
+                )
+                
+                # Réoptimiser les dimensions
+                self.optimize_dimensions()
+                
+                # Forcer la mise à jour visuelle
+                self.update()
+                
+                print(f"Table {self.objectName()} updated with settings")
+            else:
+                print("No settings_applier found for table update")
+        except Exception as e:
+            print(f"Error updating table from settings: {str(e)}")
