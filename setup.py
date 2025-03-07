@@ -1,83 +1,67 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 from Cython.Build import cythonize
+from Cython.Distutils import build_ext
 import os
-import time
+import sys
 
-# Liste des modules à compiler avec Cython
-core_modules = [
-    # Core Generators
-    "core/Generator/Optimizer/backtracking.py",
-    "core/Generator/Optimizer/distribution_optimizer.py",
-    "core/Generator/Optimizer/PlanningOptimizer.py",
-    "core/Generator/Optimizer/weekend_optimizer.py",
-    "core/Generator/Weekday/weekday_gen.py",
-    "core/Generator/Weekend/planning_generator.py",
+# Determine the extensions to compile with Cython
+def get_extensions():
+    extensions = []
     
-    # Core Analyzers
-    "core/Analyzer/pre_analyzer.py",
-    "core/Analyzer/availability_matrix.py",
-    "core/Analyzer/combinations_analyzer.py",
+    # Explicitly list the files to compile
+    files_to_compile = [
+        'core/Generator/Optimizer/backtracking.py',
+        'core/Generator/Optimizer/distribution_optimizer.py',
+        'core/Generator/Optimizer/PlanningOptimizer.py',
+        'core/Generator/Optimizer/weekend_optimizer.py',
+        'core/Generator/Weekday/weekday_gen.py',
+        'core/Generator/Weekend/planning_generator.py',
+    ]
     
-    # Core Constants and Models
-    "core/Constantes/constraints.py",
-    "core/Constantes/custom_post.py",
-    "core/Constantes/models.py",
-    "core/Constantes/day_type.py",
-    "core/Constantes/QuotasTracking.py",
+    for file_path in files_to_compile:
+        # Normalize path
+        normalized_path = file_path.replace('\\', '/')
+        # Create module path
+        module_path = normalized_path.replace('/', '.').replace('.py', '')
+        
+        # Create an Extension object for each Python file
+        extensions.append(
+            Extension(
+                module_path,
+                [normalized_path],
+                extra_compile_args=['/O2'] if sys.platform == 'win32' else ['-O2'],
+                extra_link_args=[],
+            )
+        )
     
-    # Main entry point
-    "main.py"
-]
+    return extensions
 
-# Compiler directives pour Cython avec protection renforcée
-compiler_directives = {
-    'language_level': "3",
+# Cython compiler directives for maximum obfuscation
+cython_directives = {
+    'language_level': 3,
+    'embedsignature': False,
+    'emit_code_comments': False,
+    # 'docstrings': False,  # Removed as it might not be supported in this Cython version
+    'binding': False,
     'boundscheck': False,
     'wraparound': False,
-    'initializedcheck': False,
-    'nonecheck': False,
     'cdivision': True,
-    'embedsignature': False,  # Supprime les signatures Python
-    'annotation_typing': False,  # Supprime les informations de type
-    'binding': False,  # Désactive la génération de code de binding
-    'optimize.use_switch': True,  # Utilise les switch statements C
-    'optimize.inline_defnode_calls': True,  # Inline les appels de fonctions
-    'remove_docstrings': True,  # Supprime les docstrings
-    'profile': False,  # Désactive le profiling
+    'nonecheck': False,
+    # 'annotation_typing': False,  # Removed as it might not be supported in this Cython version
 }
 
-# Configuration de l'obfuscation
-import random
-import string
-
-def generate_random_name(length=8):
-    return ''.join(random.choices(string.ascii_letters, k=length))
-
-# Renomme les modules de manière aléatoire
-obfuscated_modules = [(module, generate_random_name()) for module in core_modules]
-
 setup(
-    name='PlanificateurSOSMedecins',
-    version='1.0.0',
+    name="Planning4",
+    version="4.0",
     packages=find_packages(),
     ext_modules=cythonize(
-        [module for module, _ in obfuscated_modules],
-        compiler_directives=compiler_directives,
-        compile_time_env={
-            "CYTHON_RELEASE": True,
-            "OBFUSCATED": True,
-            "BUILD_TIME": str(int(time.time())),
-        }
+        get_extensions(),
+        compiler_directives=cython_directives,
+        annotate=False,  # Don't generate HTML annotation files
     ),
-    # Inclure les fichiers non-Python nécessaires
+    cmdclass={'build_ext': build_ext},
+    include_package_data=True,
     package_data={
-        '': ['*.png', '*.json', '*.txt', '*.pkl'],
+        '': ['*.png', '*.ico', '*.jpg', '*.jpeg', '*.gif'],
     },
-    # Dépendances requises
-    install_requires=[
-        'PyQt5',
-        'numpy',
-        'pandas',
-        'pyinstaller',
-    ],
 )

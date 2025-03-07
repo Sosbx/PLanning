@@ -127,9 +127,9 @@ class PlatformHelper:
         platform = PlatformHelper.get_platform()
         if platform == 'Windows':
             # Correction spéciale pour la couleur de weekend - assurer qu'elle est grise et non bleue
-            # Comparer avec la couleur du weekend définie dans ColorSystem
-            from gui.styles import color_system
-            if color.name() == color_system.colors.get('weekend').name():
+            # Au lieu d'importer color_system (qui crée une dépendance circulaire),
+            # vérifier directement si la couleur correspond à la couleur de weekend (#E2E8F0)
+            if color.name().upper() == "#E2E8F0":
                 # Forcer une teinte grise pour le weekend
                 grey_color = QColor(230, 230, 235)  # Gris légèrement bleuté
                 return grey_color
